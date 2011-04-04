@@ -1,0 +1,61 @@
+0.4r2 [2011-10-31]:
+*	replaced UTF-8 codecvt
+
+0.4r1 [2011-10-29]:
++	multipart/mixed coded
+*	formurl-encoded refactored to bring in line with other POSTDATA parsers
+*	updated examples
+*	updated Makefile
++	made Fastcgipp_m0sh::Http::Form::*::operator ([<>!=]=)|[<>]) fully functional
+*	other refactoring in http/http.(hpp|tcc)
+
+0.4 [2011-10-24]:
++	multipart/form-data complete
+*	multipart makes heavy use of regex
+->	(note: just the regex is copied from CGI.pm)
++	Singleton regexes to emulate Perl's /o
+
+0.3r1 [2011-10-14]:
++	Boyer-moore string search in multipart parser
++	Continuation-based urlencoded parser
++	Atomic counters
+
+0.3 [2011-06-13]:
+->	Name change; this is now an official fork
+
+0.2 [2011-05-03]:
+->	library rework
+
+0.1 [2011-04-19]:
+*	Http::Session templated to allow arbitrary char vector types
+	with  STL interface
+*	Request template-inlined due to variadic template for Http::Session
+=>	mv: lib/src/{request => fcgistream}.cpp
+-	misc/*
+-	stxxl/* (not needed anymore)
+
+0.0.5 [2011-04-17]
++	completion: stxxl-mosh/BigTypes.h
+
+0.0.4 [2011-04-17]
+*	include/fastcgi++/*: spacing and line length formatting
+*	lib/src/*: spacing and line length formatting
+
+0.0.3 [2011-04-17]
+*	lib/src/protocol.cpp: line length reformatting
+*	lib/src/request.cpp: line length reformatting
+
+0.0.2 [2011-04-04]:
+*	stxxl: modularization of find and search to separate files
+-	Makefile: examples
+
+0.0.1 [2011-04-04]:
+*	Makefile: readability
++	Fastcgipp::Request: support for ROLE == FILTER, AUTHORIZER
++	dependency: stxxl
++	dependency: cgi-mosh
++	stxxl::find<Iterator,Comparable,Predicate>
++	stxxl::search
+-	built-in cgi
+
+

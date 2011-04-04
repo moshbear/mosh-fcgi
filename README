@@ -1,0 +1,19 @@
+File: README
+V: 0.4.1, 2011-10-29 m0shbear
+==
+
+
+M0shbear's fork of GNU Fastcgi++.
+
+Requirements:
+*	Boost
+*	Intel Thread Building Blocks (optional if in c++11 mode)
+Features added:
+* support for FCGI_ROLE_AUTHORIZER
+* support for FCGI_ROLE_FILTER
+* Http::Session: support for multipart/mixed
+
+
+Features removed:
+* non-essentials from Http::Session. This involves environment variables stored
+    as strings, numbers, dates, or IPv4 addresses.

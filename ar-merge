@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Archive file merger
+# (C) 2011 m0shbear
+
+OLDDIR="$(pwd)"
+MYTARGET="$(pwd)/$1"
+shift;
+MYDIR=$(tempfile)
+rm $MYDIR
+mkdir $MYDIR
+cd $MYDIR
+for i in $(seq 1 $#); do
+	if "${OLDDIR}/tools/is_abspath" "${BASH_ARGV[i]}" ; then
+		ar x "${BASH_ARGV[i]}"
+	else
+		ar x "${OLDDIR}/${BASH_ARGV[i]}"
+	fi
+done
+ar cr "$MYTARGET" *
+ranlib "$MYTARGET"
+cd "$OLDDIR"
+rm -rf $MYDIR
+
