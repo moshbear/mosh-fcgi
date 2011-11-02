@@ -1,4 +1,4 @@
-//! \file transceiver.cpp Defines member functions for Fastcgipp_m0sh::Transceiver
+//! \file transceiver.cpp Defines member functions for Transceiver
 /***************************************************************************
 * Copyright (C) 2007 Eddie                                                 *
 *                                                                          *
@@ -18,170 +18,199 @@
 * along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
+#include <functional>
+#include <vector>
 
-#include <fastcgipp-mosh/transceiver.hpp>
+#include <boost/function.hpp>
+#include <boost/shared_array.hpp>
 
-int Fastcgipp_m0sh::Transceiver::transmit()
+extern "C" {
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <poll.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+}
+
+#include <mosh/fcgi/exceptions.hpp>
+#include <mosh/fcgi/bits/block.hpp>
+#include <mosh/fcgi/protocol/types.hpp>
+#include <mosh/fcgi/protocol/full_id.hpp>
+#include <mosh/fcgi/protocol/header.hpp>
+#include <mosh/fcgi/protocol/message.hpp>
+#include <mosh/fcgi/transceiver.hpp>
+#include <mosh/fcgi/bits/namespace.hpp>
+
+//! Predicate for comparing the file descriptor of a pollfd
+struct equals_fd : public std::unary_function<pollfd, bool> {
+	int fd;
+	explicit equals_fd(int fd): fd(fd) {}
+	bool operator()(const pollfd& x) const {
+		return x.fd == fd;
+	};
+};
+
+//! Predicate for testing if the revents in a pollfd is non-zero
+inline bool revents_zero(const pollfd& x)
 {
-	while (1) {{
-			Buffer::SendBlock sendBlock(buffer.requestRead());
-			if (sendBlock.size) {
-				ssize_t sent = write(sendBlock.fd, sendBlock.data, sendBlock.size);
-				if (sent < 0) {
-					if (errno == EPIPE) {
-						pollFds.erase(std::find_if(pollFds.begin(), pollFds.end(), equalsFd(sendBlock.fd)));
-						fdBuffers.erase(sendBlock.fd);
-						sent = sendBlock.size;
-					} else if (errno != EAGAIN) throw Exceptions::SocketWrite(sendBlock.fd, errno);
-				}
+	return x.revents;
+}
 
-				buffer.freeRead(sent);
-				if (sent != sendBlock.size)
-					break;
-			} else
-				break;
+MOSH_FCGI_BEGIN
+
+int Transceiver::transmit() {
+	while (1) {
+	Buffer::Send_block send_block(buffer.request_read());
+	if (send_block.size) {
+		ssize_t sent = write(send_block.fd, send_block.data, send_block.size);
+		if (sent < 0) {
+			if (errno == EPIPE) {
+				poll_fds.erase(std::find_if(poll_fds.begin(), poll_fds.end(), equals_fd(send_block.fd)));
+				fd_buffers.erase(send_block.fd);
+				sent = send_block.size;
+			} else if (errno != EAGAIN)
+				throw exceptions::Socket_write(send_block.fd, errno);
 		}
+		buffer.free_read(sent);
+		if (sent != send_block.size)
+			break;
+		} else
+			break;
 	}
-
 	return buffer.empty();
 }
 
-void Fastcgipp_m0sh::Transceiver::Buffer::secureWrite(size_t size, Protocol::FullId id, bool kill)
-{
-	writeIt->end += size;
-	if (minBlockSize > (writeIt->data.get() + Chunk::size - writeIt->end) && ++writeIt == chunks.end()) {
+void Transceiver::Buffer::secure_write(size_t size, protocol::Full_id id, bool kill) {
+	write_it->end += size;
+	if (min_block_size > (write_it->data.get() + Chunk::size - write_it->end) && ++write_it == chunks.end()) {
 		chunks.push_back(Chunk());
-		--writeIt;
+		--write_it;
 	}
 	frames.push(Frame(size, kill, id));
 }
 
-bool Fastcgipp_m0sh::Transceiver::handler()
-{
+bool Transceiver::handler() {
 	using namespace std;
-	using namespace Protocol;
+	using namespace protocol;
 
-	bool transmitEmpty = transmit();
+	bool transmit_empty = transmit();
 
-	int retVal = poll(&pollFds.front(), pollFds.size(), 0);
-	if (retVal == 0) {
-		if (transmitEmpty) return true;
-		else return false;
+	int ret_val = poll(&poll_fds.front(), poll_fds.size(), 0);
+	if (ret_val == 0) {
+		return (transmit_empty);
 	}
-	if (retVal < 0) throw Exceptions::Poll(errno);
+	if (ret_val < 0)
+		throw exceptions::Poll(errno);
 
-	std::vector<pollfd>::iterator pollFd = find_if(pollFds.begin(), pollFds.end(), reventsZero);
+	vector<pollfd>::iterator poll_fd = find_if(poll_fds.begin(), poll_fds.end(), revents_zero);
 
-	if (pollFd->revents & POLLHUP) {
-		fdBuffers.erase(pollFd->fd);
-		pollFds.erase(pollFd);
+	if (poll_fd->revents & POLLHUP) {
+		fd_buffers.erase(poll_fd->fd);
+		poll_fds.erase(poll_fd);
 		return false;
 	}
 
-	int fd = pollFd->fd;
+	int fd = poll_fd->fd;
 	if (fd == socket) {
 		sockaddr_un addr;
 		socklen_t addrlen = sizeof(sockaddr_un);
-		fd = accept(fd, (sockaddr*)&addr, &addrlen);
+		fd = accept(fd, reinterpret_cast<sockaddr*>(&addr), &addrlen);
 		fcntl(fd, F_SETFL, (fcntl(fd, F_GETFL) | O_NONBLOCK) ^ O_NONBLOCK);
 
-		pollFds.push_back(pollfd());
-		pollFds.back().fd = fd;
-		pollFds.back().events = POLLIN | POLLHUP;
+		poll_fds.push_back(pollfd());
+		poll_fds.back().fd = fd;
+		poll_fds.back().events = POLLIN | POLLHUP;
 
-		Message& messageBuffer = fdBuffers[fd].messageBuffer;
-		messageBuffer.size = 0;
-		messageBuffer.type = 0;
-	} else if (fd == wakeUpFdIn) {
+		Message& message_buffer = fd_buffers[fd].message_buffer;
+		message_buffer.size = 0;
+		message_buffer.type = 0;
+	} else if (fd == wakeup_fd_in) {
 		char x;
-		read(wakeUpFdIn, &x, 1);
+		ssize_t r = read(wakeup_fd_in, &x, 1);
 		return false;
 	}
 
-	Message& messageBuffer = fdBuffers[fd].messageBuffer;
-	Header& headerBuffer = fdBuffers[fd].headerBuffer;
+	Message& message_buffer = fd_buffers[fd].message_buffer;
+	Header& header_buffer = fd_buffers[fd].header_buffer;
 
 	ssize_t actual;
 	// Are we in the process of recieving some part of a frame?
-	if (!messageBuffer.data) {
+	if (!message_buffer.data) {
 		// Are we recieving a partial header or new?
-		actual = read(fd, (char*)&headerBuffer + messageBuffer.size, sizeof(Header) - messageBuffer.size);
-		if (actual < 0 && errno != EAGAIN) throw Exceptions::SocketRead(fd, errno);
-		if (actual > 0) messageBuffer.size += actual;
-		if (messageBuffer.size != sizeof(Header)) {
-			if (transmitEmpty) return true;
-			else return false;
+		actual = read(fd, reinterpret_cast<char*>(&header_buffer) + message_buffer.size, sizeof(Header) - message_buffer.size);
+		if (actual < 0 && errno != EAGAIN)
+			throw exceptions::Socket_read(fd, errno);
+		if (actual > 0)
+			message_buffer.size += actual;
+		if (message_buffer.size != sizeof(Header)) {
+			return (transmit_empty);
 		}
 
-		messageBuffer.data.reset(new char[sizeof(Header)+headerBuffer.getContentLength()+headerBuffer.getPaddingLength()]);
-		memcpy(static_cast<void*>(messageBuffer.data.get()), static_cast<const void*>(&headerBuffer), sizeof(Header));
+		message_buffer.data.reset(new char[sizeof(Header)+header_buffer.get_content_length()+header_buffer.get_padding_length()]);
+		memcpy(static_cast<void*>(message_buffer.data.get()), static_cast<const void*>(&header_buffer), sizeof(Header));
 	}
 
-	const Header& header = *(const Header*)messageBuffer.data.get();
-	size_t needed = header.getContentLength() + header.getPaddingLength() + sizeof(Header) - messageBuffer.size;
-	actual = read(fd, messageBuffer.data.get() + messageBuffer.size, needed);
-	if (actual < 0 && errno != EAGAIN) throw Exceptions::SocketRead(fd, errno);
-	if (actual > 0) messageBuffer.size += actual;
+	const Header& header = *reinterpret_cast<const Header*>(message_buffer.data.get());
+	size_t needed = header.get_content_length() + header.get_padding_length() + sizeof(Header) - message_buffer.size;
+	actual = read(fd, static_cast<char*>(message_buffer.data.get()) + message_buffer.size, needed);
+	if (actual < 0 && errno != EAGAIN)
+		throw exceptions::Socket_read(fd, errno);
+	if (actual > 0)
+		message_buffer.size += actual;
 
 	// Did we recieve a full frame?
 	if (actual == needed) {
-		sendMessage(FullId(headerBuffer.getRequestId(), fd), messageBuffer);
-		messageBuffer.size = 0;
-		messageBuffer.data.reset();
+		send_message(Full_id(header_buffer.get_request_id(), fd), message_buffer);
+		message_buffer.size = 0;
+		message_buffer.data.reset();
 		return false;
 	}
-	if (transmitEmpty) return true;
-	else return false;
+	return (transmit_empty);
 }
 
-void Fastcgipp_m0sh::Transceiver::Buffer::freeRead(size_t size)
-{
-	pRead += size;
-	if (pRead >= chunks.begin()->end) {
-		if (writeIt == chunks.begin()) {
-			pRead = writeIt->data.get();
-			writeIt->end = pRead;
+void Transceiver::Buffer::free_read(size_t size) {
+	p_read += size;
+	if (p_read >= chunks.begin()->end) {
+		if (write_it == chunks.begin()) {
+			p_read = write_it->data.get();
+			write_it->end = p_read;
 		} else {
-			if (writeIt == --chunks.end()) {
+			if (write_it == --chunks.end()) {
 				chunks.begin()->end = chunks.begin()->data.get();
 				chunks.splice(chunks.end(), chunks, chunks.begin());
 			} else
 				chunks.pop_front();
-			pRead = chunks.begin()->data.get();
+			p_read = chunks.begin()->data.get();
 		}
 	}
 	if ((frames.front().size -= size) == 0) {
-		if (frames.front().closeFd) {
-			pollFds.erase(std::find_if(pollFds.begin(), pollFds.end(), equalsFd(frames.front().id.fd)));
+		if (frames.front().close_fd) {
+			poll_fds.erase(std::find_if(poll_fds.begin(), poll_fds.end(), equals_fd(frames.front().id.fd)));
 			close(frames.front().id.fd);
-			fdBuffers.erase(frames.front().id.fd);
+			fd_buffers.erase(frames.front().id.fd);
 		}
 		frames.pop();
 	}
 
 }
 
-void Fastcgipp_m0sh::Transceiver::wake()
-{
-	char x;
-	write(wakeUpFdOut, &x, 1);
-}
-
-Fastcgipp_m0sh::Transceiver::Transceiver(int fd_, boost::function<void(Protocol::FullId, Message)> sendMessage_)
-	: sendMessage(sendMessage_), pollFds(2), socket(fd_), buffer(pollFds, fdBuffers)
-{
+Transceiver::Transceiver(int fd_, boost::function<void(protocol::Full_id, protocol::Message)> send_message_)
+	: send_message(send_message_), poll_fds(2), socket(fd_), buffer(poll_fds, fd_buffers) {
 	socket = fd_;
 
 	// Let's setup an in/out socket for waking up poll()
-	int socPair[2];
-	socketpair(AF_UNIX, SOCK_STREAM, 0, socPair);
-	wakeUpFdIn = socPair[0];
-	fcntl(wakeUpFdIn, F_SETFL, (fcntl(wakeUpFdIn, F_GETFL) | O_NONBLOCK) ^ O_NONBLOCK);
-	wakeUpFdOut = socPair[1];
+	int soc_pair[2];
+	socketpair(AF_UNIX, SOCK_STREAM, 0, soc_pair);
+	wakeup_fd_in = soc_pair[0];
+	fcntl(wakeup_fd_in, F_SETFL, (fcntl(wakeup_fd_in, F_GETFL) | O_NONBLOCK) ^ O_NONBLOCK);
+	wakeup_fd_out = soc_pair[1];
 
 	fcntl(socket, F_SETFL, (fcntl(socket, F_GETFL) | O_NONBLOCK) ^ O_NONBLOCK);
-	pollFds[0].events = POLLIN | POLLHUP;
-	pollFds[0].fd = socket;
-	pollFds[1].events = POLLIN | POLLHUP;
-	pollFds[1].fd = wakeUpFdIn;
+	poll_fds[0].events = POLLIN | POLLHUP;
+	poll_fds[0].fd = socket;
+	poll_fds[1].events = POLLIN | POLLHUP;
+	poll_fds[1].fd = wakeup_fd_in;
 }
+
+MOSH_FCGI_END

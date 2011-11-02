@@ -29,8 +29,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include <fastcgipp-mosh/request.hpp>
-#include <fastcgipp-mosh/manager.hpp>
+#include <mosh/fcgi/request.hpp>
+#include <mosh/fcgi/manager.hpp>
 
 // I like to have an independent error log file to keep track of exceptions while debugging.
 // You might want a different filename. I just picked this because everything has access there.
@@ -57,7 +57,7 @@ void error_log(const char* msg)
 // need to use wide characters. We'll keep everything as narrow characters
 // and pass the 'char' type along to the Fastcgipp::Request template.
 
-class ShowGnu: public Fastcgipp_m0sh::Request<char>
+class ShowGnu: public MOSH_FCGI::Request<char>
 {
 	// Now we define the actual function that sends a response to the client.
 	bool response()
@@ -91,13 +91,13 @@ class ShowGnu: public Fastcgipp_m0sh::Request<char>
 		// sent to us from the client and we were actually sent an if-modified since value,
 		// we don't need to send the image to them.
 		int s_etag;
-		try { s_etag = lexical_cast<int>(session.environment["HTTP_IF_NONE_MATCH"]); }
+		try { s_etag = lexical_cast<int>(session.envs["HTTP_IF_NONE_MATCH"]); }
 		catch(bad_lexical_cast &) { s_etag = 0; }
 		posix_time::ptime s_ifmodsince;
 		{
 			stringstream dateStream;
 			boost::shared_ptr<posix_time::time_input_facet> facet(new posix_time::time_input_facet("%a, %d %b %Y %H:%M:%S GMT"));
-			dateStream.str(session.environment["HTTP_IF_MODIFIED_SINCE"]);
+			dateStream.str(session.envs["HTTP_IF_MODIFIED_SINCE"]);
 			dateStream.imbue(locale(locale::classic(), new posix_time::time_input_facet("%a, %d %b %Y %H:%M:%S GMT")));
 			dateStream >> s_ifmodsince;
 		}
@@ -152,7 +152,7 @@ int main()
 	{
 		// First we make a Fastcgipp::Manager object, with our request handling class
 		// as a template parameter.
-		Fastcgipp::Manager<ShowGnu> fcgi;
+		MOSH_FCGI::Manager<ShowGnu> fcgi;
 		// Now just call the object handler function. It will sleep quietly when there
 		// are no requests and efficiently manage them when there are many.
 		fcgi.handler();

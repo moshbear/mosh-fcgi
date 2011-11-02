@@ -21,8 +21,8 @@
 #include <fstream>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
-#include <fastcgipp-mosh/request.hpp>
-#include <fastcgipp-mosh/manager.hpp>
+#include <mosh/fcgi/request.hpp>
+#include <mosh/fcgi/manager.hpp>
 
 // In this example we are going to use boost::asio to handle our timers and callback.
 // Unfortunately because fastcgi buffers the output before sending it to the client by
@@ -52,13 +52,13 @@ void error_log(const char* msg)
 }
 
 // Let's make our request handling class. It must do the following:
-// 1) Be derived from Fastcgipp::Request
-// 2) Define the virtual response() member function from Fastcgipp::Request()
+// 1) Be derived from MOSH_FCGI::Request
+// 2) Define the virtual response() member function from MOSH_FCGI::Request()
 
 // First things first let's decide on what kind of character set we will use. Let's just
 // use good old ISO-8859-1 this time. No wide characters
 
-class Timer: public Fastcgipp::Request<char>
+class Timer: public MOSH_FCGI::Request<char>
 {
 public:
 	Timer(): state(START) {}
@@ -91,14 +91,14 @@ private:
 				// Make a five second timer
 				t.reset(new boost::asio::deadline_timer(io, boost::posix_time::seconds(5)));
 
-				// Now we work with our callback. Defined in the Fastcgipp::Request is a boost::function
-				// that takes a Fastcgipp::Message (defined in fastcgi++/protocol.hpp) as a single argument.
+				// Now we work with our callback. Defined in the MOSH_FCGI::Request is a boost::function
+				// that takes a MOSH_FCGI::Message (defined in fastcgi++/protocol.hpp) as a single argument.
 				// This callback function will pass the message on to this request therebye calling the response()
 				// function again. The callback function is thread safe. That means you can pass messages back to
 				// requests from other threads.
 
 				// Let's build the message we want sent back to here.
-				Fastcgipp::Message msg;
+				MOSH_FCGI::protocol::Message msg;
 				// The first part of the message we have to define is the type. A type of 0 means a fastcgi message
 				// and is used internally. All other values we can use ourselves to define different message types (sql queries,
 				// file grabs, etc...). We will use type=1 for timer stuff.
@@ -150,9 +150,9 @@ int main()
 		boost::asio::io_service::work w(io);
 		boost::thread t(boost::bind(&boost::asio::io_service::run, &io));
 
-		// Now we make a Fastcgipp::Manager object, with our request handling class
+		// Now we make a MOSH_FCGI::Manager object, with our request handling class
 		// as a template parameter.
-		Fastcgipp::Manager<Timer> fcgi;
+		MOSH_FCGI::Manager<Timer> fcgi;
 		// Now just call the object handler function. It will sleep quietly when there
 		// are no requests and efficiently manage them when there are many.
 		fcgi.handler();

@@ -20,8 +20,8 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <fstream>
 
-#include <fastcgipp_m0sh/request.hpp>
-#include <fastcgipp_m0sh/manager.hpp>
+#include <mosh/fcgi/request.hpp>
+#include <mosh/fcgi/manager.hpp>
 
 // I like to have an independent error log file to keep track of exceptions while debugging.
 // You might want a different filename. I just picked this because everything has access there.
@@ -53,11 +53,11 @@ void error_log(const char* msg)
 // Anyway, moving right along, the streams will code convert all the UTF-32 data to UTF-8
 // before it is sent out to the client. This way we get the best of both worlds.
 //
-// So, whenever we are going to use UTF-8, our template parameter for Fastcgipp::Request<charT>
+// So, whenever we are going to use UTF-8, our template parameter for Fastcgipp::Request<char_type>
 // should be wchar_t. Keep in mind that this suddendly makes
 // everything wide character and utf compatible. Including HTTP header data (cookies, urls, yada-yada).
 
-class HelloWorld: public Fastcgipp_m0sh::Request<wchar_t>
+class HelloWorld: public MOSH_FCGI::Request<wchar_t>
 {
 	bool response()
 	{
@@ -106,7 +106,7 @@ int main()
 	{
 		// First we make a Fastcgipp::Manager object, with our request handling class
 		// as a template parameter.
-		Fastcgipp_m0sh::Manager<HelloWorld> fcgi;
+		MOSH_FCGI::Manager<HelloWorld> fcgi;
 		// Now just call the object handler function. It will sleep quietly when there
 		// are no requests and efficiently manage them when there are many.
 		fcgi.handler();

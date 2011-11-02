@@ -19,68 +19,47 @@
 ****************************************************************************/
 // Copy-pasted from wikipedia.
 
+#include <algorithm>
 #include <cstddef>
 #include <climits>
 #include <cstring>
 #include <stdexcept>
+#include <vector>
 
-#include <boost/scoped_array.hpp>
-#include <fastcgipp-mosh/bits/boyer_moore.hpp>
-
-typedef char char_t;
+#include <mosh/fcgi/boyer_moore.hpp>
+#include <mosh/fcgi/bits/namespace.hpp>
 
 namespace { // local static functions
 
 
-// Preconditions:
-// 	p != 0
-// 	(sizeof pi / sizeof pi[0]) == len
-void compute_prefix_func(const char *p, size_t len, short *pi)
-{
+std::vector<short> compute_prefix_func(const std::vector<char>& p) {
         short k = 0;
-        pi[0] = k;
+	std::vector<short> pi(p.size());
 
-        for (size_t q = 1; q < len; q++) {
+        pi[0] = k;
+        for (size_t q = 1; q < p.size(); q++) {
                 while ((k > 0) && (p[k] != p[q]))
                         k = pi[k - 1];
                 if (p[k] == p[q])
                         k++;
                 pi[q] = k;
         }
+	return pi;
 }
- 
-// Preconditions: 
-// 	* str != 0
-// 	* (sizeof result / sizeof result[0]) == 1 << (CHAR_BIT - 1)
-void prepare_badcharacter_heuristic(const char *str, size_t size, int *result)
-{
-	for (size_t i = 0; i < (1 << CHAR_BIT); ++i)
-		result[i] = size;
 
-	for (size_t i = 0; i < size; i++)
+std::vector<int> prepare_badcharacter_heuristic(const std::vector<char>& str) {
+	std::vector<int> result(1 << CHAR_BIT, str.size());
+	for (size_t i = 0; i < str.size(); i++)
 		result[static_cast<size_t>(str[i])] = i;
+	return result;
 }
  
-// Preconditions:
-// 	normal != 0
-void prepare_goodsuffix_heuristic(const char *normal, size_t size, int *result)
-{
-        const char *left = normal;
-        const char *right = left + size;
-        char reversed[size + 1];
-        char *tmp = reversed + size;
-        size_t i;
-	size_t j;
-        char test;
- 
-        /* reverse string */
-        *tmp = 0;
-        while (left < right)
-                *(--tmp) = *(left++);
+std::vector<int> prepare_goodsuffix_heuristic(const std::vector<char>& normal) {
+	std::vector<char> reversed(normal);
+	std::reverse(reversed.begin(), reversed.end());
+	std::vector<short> prefix_reversed = compute_prefix_func(reversed);
 
-
-	boost::scoped_array<short> prefix_reversed(new short[size]);
-        compute_prefix_func(reversed, size, prefix_reversed.get());
+	std::vector<int> result(normal.size() + 1);
  
         /* can't figure out how to handle first and last positions with the rest
         its algorithm is slightly different */
@@ -88,14 +67,16 @@ void prepare_goodsuffix_heuristic(const char *normal, size_t size, int *result)
         //result of 0 will only be accessed when we find a match
         //so it stores the good suffix skip of the first character
         //(last in reverse calculation)
-        result[0] = size - prefix_reversed[size - 1];
+        result[0] = normal.size() - prefix_reversed[normal.size() - 1];
         //The last value in the prefix calculation is always
         //the same for a string in both directions
- 	for (i = 1, result[size] = 1; prefix_reversed[i++]; result[size]++);
+	result[normal.size()] = 1;
+ 	for (size_t i = 1; prefix_reversed[i++]; result[normal.size()]++);
  
-        for (i = 1; i < size; i++) {
-                test = 0;
-                for (j = i; j < size - 1; j++) {                   
+        for (size_t i = 1; i < normal.size(); i++) {
+                size_t test = 0;
+		size_t j = i;
+                for (; j < normal.size() - 1; j++) {                  
                         if (prefix_reversed[j] == i) {
                                 test = 1;
                                 if (prefix_reversed[j + 1] == 0) {
@@ -104,49 +85,47 @@ void prepare_goodsuffix_heuristic(const char *normal, size_t size, int *result)
                                 }
                         }
                 }
- 
+ 		int& res = result[normal.size() - i];
                 if (test == 1)
-                        result[size - i] = size;
+                        res = normal.size();
                 else if (test == 2)
-                        result[size - i] = j + 1 - i;
+                        res = j + 1 - i;
                 else
-                        result[size - i] = size - prefix_reversed[size - 1];
+                        res = normal.size() - prefix_reversed[normal.size() - 1];
         }
+	return result;
 }
+
 } // anonymous namespace
 
+MOSH_FCGI_BEGIN
 /*
  * Boyer-Moore search algorithm
  */
-void Boyer_moore_searcher::__init__(const char *needle, size_t len) {
+void Boyer_moore_searcher::__init__(const char* needle, size_t len) {
         if(len != 0) {
 		if (needle == 0)
 			throw std::invalid_argument("Precondition (needle != 0 || len == 0) failed");
+		this->needle = std::vector<char>(needle, needle + len);
 	        // Initialize heuristics
-		this->badcharacter.reset(new int[1 << CHAR_BIT]);
-		this->goodsuffix.reset(new int[len + 1]);
-	        prepare_badcharacter_heuristic(needle, len, this->badcharacter.get());
-		prepare_goodsuffix_heuristic(needle, len, &(*(this->goodsuffix.get())));
-		this->needle.reset(new char[len + 1]);
-		memcpy(this->needle.get(), needle, len + 1);
+		badcharacter = prepare_badcharacter_heuristic(this->needle);
+		goodsuffix = prepare_goodsuffix_heuristic(this->needle);
 	}
+	this->needle.push_back('\0');
 	this->needle_len = len;
 }
 
-ssize_t Boyer_moore_searcher::_search(const char *haystack, size_t haystack_len) const {
-	
+ssize_t Boyer_moore_searcher::_search(const char* haystack, size_t haystack_len) const {
 	if (haystack_len == 0 || needle_len == 0)
 		return 0;
 	if (needle_len == 0 && haystack_len != 0)
 		return -1;
         // Boyer-Moore search 
-        size_t s = 0;
-        while(s <= (haystack_len - needle_len))
-        {
+        ssize_t s = 0;
+        while(s <= (haystack_len - needle_len)) {
                 size_t j = needle_len;
                 while((j > 0) && (needle[j - 1] == haystack[s + j - 1]))
                         j--;
- 
                 if(j > 0) {
                         int k = badcharacter[(size_t) haystack[s + j - 1]];
                         int m;
@@ -154,9 +133,10 @@ ssize_t Boyer_moore_searcher::_search(const char *haystack, size_t haystack_len)
                                 s += m;
                         else
                                 s += goodsuffix[j];
-                } else {
+                } else
 			return s;
-                }
         }
 	return -1;
 }
+
+MOSH_FCGI_END

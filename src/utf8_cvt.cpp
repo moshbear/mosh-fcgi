@@ -1,9 +1,29 @@
+//! @file utf8_cvt.cpp UTF-8 codecvt facet
+/***************************************************************************
+* Copyright (C) 2011 m0shbear                                              *
+*                                                                          *
+* This file is part of fastcgi++.                                          *
+*                                                                          *
+* fastcgi++ is free software: you can redistribute it and/or modify it     *
+* under the terms of the GNU Lesser General Public License as  published   *
+* by the Free Software Foundation, either version 3 of the License, or (at *
+* your option) any later version.                                          *
+*                                                                          *
+* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
+* ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
+* FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
+* License for more details.                                                *
+*                                                                          *
+* You should have received a copy of the GNU Lesser General Public License *
+* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
+****************************************************************************/
+#include <algorithm>
 #include <locale>
+#include <cstdint>
 #include <cwchar>
-#include <fastcgipp-mosh/bits/stdint.hpp>
-#include <fastcgipp-mosh/bits/utf8_cvt.hpp>
+#include <mosh/fcgi/bits/utf8_cvt.hpp>
+#include <mosh/fcgi/bits/namespace.hpp>
 
-using std::mbstate_t;
 using std::size_t;
 using std::codecvt_base;
 using std::codecvt;
@@ -16,11 +36,11 @@ namespace {
  */
 enum Native_utf { utf16, utf32 };
 
-enum Surrogate_id { hi, lo, neither };
+enum Surrogate_id { surr_hi, surr_lo, surr_neither };
 
 struct Utf16_pair {
-	uint16_t hi;
-	uint32_t lo;
+	uint16_t surr_hi;
+	uint32_t surr_lo;
 	enum { ok, error, noconv } err;
 };
 
@@ -31,10 +51,10 @@ template<> Native_utf native_utf<4>() { return utf32; }
 Surrogate_id surrogate(wchar_t wc) {
 	return
 		(wc >= 0xD800 && wc <= 0xDBFF)
-			? hi
+			? surr_hi
 		: ( wc >= 0xDC00 && wc <= 0xDFFF)
-			? lo
-		: neither;
+			? surr_lo
+		: surr_neither;
 }
 
 Utf16_pair to_surrogate(uint32_t wc) {
@@ -48,22 +68,22 @@ Utf16_pair to_surrogate(uint32_t wc) {
 		return p;
 	}
 	p.err = Utf16_pair::ok;
-	p.hi = 0xD800;
-	p.lo = 0xDC00;
-	wc -= 0x10000;
-	p.lo |= (wc & 0x3FF);
-	wc >>= 10;
-	p.hi |= wc; 
+	p.surr_hi = 0xD800;
+	p.surr_lo = 0xDC00;
+		wc -= 0x10000;
+		p.surr_lo |= (wc & 0x3FF);
+		wc >>= 10;
+		p.surr_hi |= wc; 
 	return p;
 }
 
 uint32_t from_surrogate(Utf16_pair p) {
 	uint32_t ret;
-	p.hi -= 0xD800;
-	p.lo -= 0xDC00;
-	ret = p.hi;
+	p.surr_hi -= 0xD800;
+	p.surr_lo -= 0xDC00;
+	ret = p.surr_hi;
 	ret <<= 10;
-	ret += p.lo;
+	ret += p.surr_lo;
 	ret += 0x10000;
 	return ret;
 
@@ -73,6 +93,8 @@ bool is_mb_cont(char ch) { return ((ch & 0xC0) == 0x80); /* 10xxxxxx */ }
 
 int in_needbytes(unsigned char ch) {
 	if (is_mb_cont(ch)) // !(10)
+		return -1;
+	if (ch >= 0xF5) // 3 trailing bytes encoding a code point above U+10FFFF	
 		return -1;
 	if (ch <= 0x7F) // 0 (ASCII)
 		return 0;
@@ -102,18 +124,12 @@ int out_needbytes(uint32_t wc) {
 	if (wc > 0x10FFFF) // maximum Unicode code point; see RFC3629
 		return -1;
 	if (wc > 0xFFFF) {
-		/* if (cesu8)
-		 * 	return 6;
-		 * else
-		 */	return 4;
+		return 4;
 	}
 	if (wc > 0x07FF)
 		return 3;
 	if (wc > 0x007F)
 		return 2;
-	/* if (utf8_mod && (wc  == 0))
-	 * 	return 2; // C0 80
-	 */
 	return 1;
 }
 
@@ -128,16 +144,6 @@ unsigned char setch_lead(char ch, int shift) {
 }
 
 unsigned char setch_mb(char ch) { return (0x80 | ch); }
-
-template <typename InputIterator>
-bool in_range(InputIterator i, InputIterator j, InputIterator in) {
-	while (i != j) {
-		if (i == in)
-			return true;
-		++i;
-	}
-	return false;
-}
 
 // Preconditions: [to, to + shift] is accessible
 int u8_encode(wchar_t ch, char* to) {
@@ -158,6 +164,8 @@ int u8_encode(wchar_t ch, char* to) {
 
 }
 
+MOSH_FCGI_BEGIN
+
 codecvt_base::result Utf8_cvt::do_in(
 			std::mbstate_t&, const char* from,
 			const char* from_end, const char *& from_next,
@@ -176,15 +184,12 @@ codecvt_base::result Utf8_cvt::do_in(
 			return codecvt_base::error;
 		}
 		// is there enough src bytes?
-		if (in_range(from, from + shift, from_end))
+		if (std::distance(from, from_end) <= shift)
 			break;
 		// is there enough dst wchars?
 		if (my_utf == utf16 && (shift == 3)) {
 			// is there enough room in dst for a surrogate pair?
-			if (in_range(to, to + 2, to_end))
-				break;
-		}  else {
-			if (in_range(to, to + 1, to_end))
+			if (std::distance(to, to_end) <= 1)
 				break;
 		}
 		// we work with 32-bit code points so that we can work with [U+0000, U+10FFFF]
@@ -200,17 +205,18 @@ codecvt_base::result Utf8_cvt::do_in(
 			cp |= getch_mb(*from);
 			--shift;
 		}
+		// space check done at :171
 		if (my_utf == utf16) {
 			if (cp >= 0x10000) {
 				Utf16_pair surr = to_surrogate(cp);
-				*to = surr.hi;
-				*++to = surr.lo;
+				*to++ = surr.surr_hi;
+				*to++ = surr.surr_lo;
+
 			} else
-				*to = static_cast<wchar_t>(cp);
+				*to++ = static_cast<wchar_t>(cp);
 		} else {
-			*to = cp;
+			*to++ = cp;
 		}
-		++to; // either this or replacing *to with *to++
 	}
 	from_next = from;
 	to_next = to;
@@ -226,51 +232,43 @@ codecvt_base::result Utf8_cvt::do_out(
 			char* to, char* to_end, char *& to_next) const
 {
 	Native_utf my_utf = native_utf<sizeof(wchar_t)>();
-out_loop:
 	while (from != from_end && to != to_end) {
 		uint32_t cp;
 		Utf16_pair p;
 		if (my_utf == utf16
-		&& (surrogate(*from) == hi) && !in_range(from, from + 1, from_end)) {
-			p.hi = *from;
-			p.lo = *++from;
-			if (surrogate(p.lo) != lo) {
-				from_next = from;
+		&& (surrogate(*from) == surr_hi) && (std::distance(from, from_end) >= 2)) {
+			p.surr_hi = *from;
+			p.surr_lo = *(from + 1);
+			if (surrogate(p.surr_lo) != surr_lo) {
+				++from;
+u8_cvt_do_out_err:		from_next = from;
 				to_next = to;
 				return codecvt_base::error;
 			}
-			/* if (cesu8) { 
-			 *	if (in_range(to, to + 5, to_end))
-			 *		break;
-			 *	u8_encode(p.hi, to);
-			 *	u8_encode(p.lo, to + 3);
-			 *	++from;
-			 *	to += 6;
-			 *	goto out_loop;
-			 * } else */
-				cp = from_surrogate(p);
+			cp = from_surrogate(p);
 		} else
 			cp = *from;
-		++from;
-		if (in_range(to, to + out_needbytes(cp), to_end))
+		if (out_needbytes(cp) == -1) 
+			goto u8_cvt_do_out_err;
+		if (std::distance(to, to_end) < out_needbytes(cp))
 			break;
-		if ((u8_encode(cp, to)) == -1) {
-			from_next = from;
-			to_next = to;
-			return codecvt_base::error;
-		}
+		if ((u8_encode(cp, to)) == -1) 
+			goto u8_cvt_do_out_err;
+		++from; // increment after all the checks so that from_next is loaded
+			// with the correct value of from
+		to += out_needbytes(cp);
 	}
 	from_next = from;
 	to_next = to;
-	if (from_end == from)
-		return codecvt_base::partial;
-	else
+	if (from == from_end)
 		return codecvt_base::ok;
+	else
+		return codecvt_base::partial;
 
 }
 
 int Utf8_cvt::do_length(std::mbstate_t&, const char* from,
-			const char* from_end, std::size_t limit) const
+const char* from_end, std::size_t limit) const
 {
 	int len = 0;
 	Native_utf my_utf = native_utf<sizeof(wchar_t)>();
@@ -279,7 +277,7 @@ int Utf8_cvt::do_length(std::mbstate_t&, const char* from,
 		// found bad character
 		if (shift < 0)
 			break;
-		if (in_range(from, from + shift, from_end))
+		if (std::distance(from, from_end) <= shift)
 			break;
 		from += shift;
 		// Increment len by 2 if we're dealing with UTF-16 and
@@ -296,3 +294,4 @@ int Utf8_cvt::do_length(std::mbstate_t&, const char* from,
 	return len;
 }
 
+MOSH_FCGI_END

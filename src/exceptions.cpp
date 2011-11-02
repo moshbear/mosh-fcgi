@@ -18,47 +18,53 @@
 * along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
-#include <fastcgipp-mosh/exceptions.hpp>
-
+#include <mosh/fcgi/exceptions.hpp>
+#include <mosh/fcgi/protocol/types.hpp>
+#include <mosh/fcgi/protocol/vars.hpp>
+#include <mosh/fcgi/protocol/full_id.hpp>
 #include <sstream>
+#include <mosh/fcgi/bits/namespace.hpp>
 
-Fastcgipp_m0sh::Exceptions::Param::Param(Fastcgipp_m0sh::Protocol::FullId id_): Request(id_)
+
+MOSH_FCGI::exceptions::Param::Param(MOSH_FCGI::protocol::Full_id id_): Request(id_)
 {
 	std::stringstream sstr;
-	sstr << "Error in parameter code conversion in request #" << id.fcgiId << " of file descriptor #" << id.fd;
+	sstr << "Error in parameter code conversion in request #" << id.fcgi_id << " of file descriptor #" << id.fd;
 	msg = sstr.str();
 }
 
-Fastcgipp_m0sh::Exceptions::Stream::Stream(Fastcgipp_m0sh::Protocol::FullId id_): Request(id_)
+MOSH_FCGI::exceptions::Stream::Stream(MOSH_FCGI::protocol::Full_id id_): Request(id_)
 {
 	std::stringstream sstr;
-	sstr << "Error in output stream code conversion in request #" << id.fcgiId << " of file descriptor #" << id.fd;
+	sstr << "Error in output stream code conversion in request #" << id.fcgi_id << " of file descriptor #" << id.fd;
 	msg = sstr.str();
 }
 
-Fastcgipp_m0sh::Exceptions::RecordOutOfOrder::RecordOutOfOrder(Fastcgipp_m0sh::Protocol::FullId id_, Protocol::RecordType expectedRecord_, Protocol::RecordType recievedRecord_)
-	: Request(id_), expectedRecord(expectedRecord_), recievedRecord(recievedRecord_)
+MOSH_FCGI::exceptions::Record_out_of_order::Record_out_of_order(MOSH_FCGI::protocol::Full_id id_, protocol::Record_type expected_record_, protocol::Record_type recieved_record_)
+	: Request(id_), expected_record(expected_record_), recieved_record(recieved_record_)
 {
 	std::stringstream sstr;
-	sstr << "Error: Parameter of type " << Protocol::recordTypeLabels[recievedRecord] << " when type " << Protocol::recordTypeLabels[expectedRecord] << " was expected in request #" << id.fcgiId << " of file descriptor #" << id.fd;
+	sstr << "Error: Parameter of type " << protocol::record_type_labels[static_cast<unsigned>(recieved_record)]
+		<< " when type " << protocol::record_type_labels[static_cast<unsigned>(expected_record)]
+		<< " was expected in request #" << id.fcgi_id << " of file descriptor #" << id.fd;
 	msg = sstr.str();
 }
 
-Fastcgipp_m0sh::Exceptions::SocketWrite::SocketWrite(int fd_, int erno_): Socket(fd_, erno_)
+MOSH_FCGI::exceptions::Socket_write::Socket_write(int fd_, int erno_): Socket(fd_, erno_)
 {
 	std::stringstream sstr;
 	sstr << "Error writing to socket #" << fd << " with errno=" << erno;
 	msg = sstr.str();
 }
 
-Fastcgipp_m0sh::Exceptions::SocketRead::SocketRead(int fd_, int erno_): Socket(fd_, erno_)
+MOSH_FCGI::exceptions::Socket_read::Socket_read(int fd_, int erno_): Socket(fd_, erno_)
 {
 	std::stringstream sstr;
 	sstr << "Error reading from socket #" << fd << " with errno=" << erno;
 	msg = sstr.str();
 }
 
-Fastcgipp_m0sh::Exceptions::Poll::Poll(int erno_): erno(erno_)
+MOSH_FCGI::exceptions::Poll::Poll(int erno_): erno(erno_)
 {
 	std::stringstream sstr;
 	sstr << "Error in poll with errno=" << erno;

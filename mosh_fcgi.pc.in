@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: mosh_fcgi
+Description: C++ library for the FastCGI protocol
+URL: http://www.nongnu.org/fastcgipp
+Version: @VERSION@
+Requires: 
+Libs: -L${libdir} @pkgConfigLibs@
+Cflags: -I${includedir}

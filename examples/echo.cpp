@@ -19,10 +19,20 @@
 ****************************************************************************/
 
 #include <fstream>
+#include <algorithm>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
-#include <fastcgipp-mosh/request.hpp>
-#include <fastcgipp-mosh/manager.hpp>
+extern "C" {
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+}
+
+#include <mosh/fcgi/http/form.hpp>
+#include <mosh/fcgi/request.hpp>
+#include <mosh/fcgi/manager.hpp>
+
+#include <mosh/fcgi/bits/namespace.hpp>
 
 // I like to have an independent error log file to keep track of exceptions while debugging.
 // You might want a different filename. I just picked this because everything has access there.
@@ -53,64 +63,68 @@ void error_log(const char* msg)
 // Anyway, moving right along, the streams will code convert all the UTF-32 data to UTF-8
 // before it is sent out to the client. This way we get the best of both worlds.
 //
-// So, whenever we are going to use UTF-8, our template parameter for Fastcgipp::Request<charT>
+// So, whenever we are going to use UTF-8, our template parameter for Fastcgipp::Request<char_type>
 // should be wchar_t. Keep in mind that this suddendly makes
 // everything wide character and utf compatible. Including HTTP header data (cookies, urls, yada-yada).
 
-class Echo: public Fastcgipp_m0sh::Request<wchar_t>
+class Echo: public MOSH_FCGI::Request<wchar_t>
 {
-	void dumpfile(Fastcgipp_m0sh::Http::Form::MP_entry<wchar_t, std::vector<char> > const& f) {
+	void dump_mp(MOSH_FCGI::http::form::MP_entry<wchar_t> const& f) {
 		out << "<ul>";
-		if (!f.filename.empty())
+		if (f.is_file())
 			out << "<li><b>filename</b>: " << f.filename << "</li>\r\n";
 		if (!f.content_type.empty())
-			out << "<li><b>content-type</b>: " << f.content_type "</li>\r\n";
+			out << "<li><b>content-type</b>: " << f.content_type << "</li>\r\n";
 		if (!f.headers.empty()) {
 			out << "<li><b>headers:</b>: <ul>";
-			for (std::map<std::string, std::wstring>::const_iterator jj = f.headers.begin();
-				jj != f.headers.end();
-				++jj)
-			{
-				out << "<li><b>" << jj->first << "</b>: " << jj->second << "</li>\r\n";
+			for (auto& h : f.headers) {
+				out << "<li><b>" << h.first.c_str() << "</b>: "
+				    << h.second << "</li>\r\n";
 			}
-			out << "</ul></li>\r\n"
+			out << "</ul></li>\r\n";
 		}
-		if (!f.data().empty()) {
+		if (f.is_file()) {
+			f.make_file_persistent();
+			const std::string& s = f.get_disk_filename();
+			out << "<li><b>file location</b>: " << s.c_str() << "<br />\r\n";
+			struct stat sb;
+			stat(s.c_str(), &sb);
+			out << "<b>size</b>: " << sb.st_size << "</li>\r\n";
+		} else {		
 			out << "<li><b>data</b>: ";
-			out.dump(&(f.data()[0]), f.data().size());
+			for (auto& g : f.get_data())
+				out << g;
 			out << "</li>\r\n";
 		}
 		out << "</ul>\r\n";
 	}
 
-	void dumpmixed(Fastcgipp_m0sh::Http::Form::MP_mixed_entry<wchar_t, std::vector<char> > const& m) {
+	void dump_mm(MOSH_FCGI::http::form::MP_mixed_entry<wchar_t>& m) {
 		out << "<ul>";
-		if (!f.headers.empty()) {
+		if (!m.headers.empty()) {
 			out << "<li><b>headers</b>: <ul>";
-			for (std::map<std::string, std::wstring>::const_iterator jj = f.headers.begin();
-				jj != f.headers.end();
-				++jj)
-			{
-				out << "<li><b>" << jj->first << "</b>: " << jj->second << "</li>\r\n";
+			for (auto& h : m.headers) {
+				out << "<li><b>" << h.first.c_str() << "</b>: "
+				    << h.second << "</li>\r\n";
 			}
-			out << "</ul></li>\r\n"
+			out << "</ul></li>\r\n";
 		}
-		const std::vector<Fastcgipp_m0sh::Http::Form::MP_entry<wchar_t, std::vector<char> > >& v = f.values;
+		auto& v = m.values;
 		if (v.size() > 0) {
 			out << "<li><b>files</b>: ";
-			if (!v.is_scalar_value()) {
-				size_t i_sz = it->second.values().size();
+			if (!m.is_scalar_value()) {
+				size_t i_sz = v.size();
 				for (size_t i = 0; i < i_sz; ++i) {
 					if (i == 0)
 						out << "<ul>";
 					out << "<li>";
-					dumpfile(it->second.values()[i]);
+					dump_mp(v[i]);
 					out << "</li>\r\n";
 					if (i == i_sz - 1)
 						out << "</ul><br />\r\n";
 				}
-			} else 
-				dumpfile(it->second.value());
+			} else if (v.size() == 1)
+				dump_mp(v[0]);
 			out << "</ul>\r\n";
 		}
 		out << "</ul>\r\n";
@@ -118,7 +132,7 @@ class Echo: public Fastcgipp_m0sh::Request<wchar_t>
 		
 	bool response()
 	{
-		wchar_t langString[] = { 0x0440, 0x0443, 0x0441, 0x0441, 0x043a, 0x0438, 0x0439, 0x0000 };
+		wchar_t langString[] = L"русский";
 
 		// Let's make our header, note the charset=utf-8. Remember that HTTP headers
 		// must be terminated with \r\n\r\n. NOT just \n\n.
@@ -132,104 +146,71 @@ class Echo: public Fastcgipp_m0sh::Request<wchar_t>
 
 		out << "<h1>Session Parameters</h1>";
 		out << "<p><ul>";
-		for (std::map<std::string, std::string>::const_iterator i = session.environment.begin();
-			it != session.environment.end();
-			++it
-		)
-			out << "<li><b>" << it->first << "</b>: "
-				<< it->second << "</li>\r\n";
+		for (auto& e : session.envs) {
+			out << "<li><b>" << e.first.c_str() << "</b>: "
+				<< e.second.c_str() << "</li>\r\n";
+		}
 		out << "</ul></p>";
 		if (!session.gets.empty()) {
 			out << "<h1>GETs</h1><br />\r\n<ul>";
-			for (std::map<std::wstring, Fastcgipp_mosh::Http::Form::Entry<wchar_t> >::const_iterator i = session.gets.begin();
-				it != session.gets.end();
-				++it
-			) {
-				out << "<li><b>" << it->first << "</b>: ";
-				if (!it->second.is_scalar_value()) {
-					size_t i_sz = it->second.values().size();
+			for (auto& g : session.gets) {
+				out << "<li><b>" << g.first << "</b>: ";
+				if (!g.second.is_scalar_value()) {
+					size_t i_sz = g.second.values.size();
 					for (size_t i = 0; i < i_sz; ++i) {
 						if (i == 0)
 							out << "<ul>";
-						out << "<li>" << it->second.values()[i] << "</li>\r\n";
+						out << "<li>" << g.second.values[i] << "</li>\r\n";
 						if (i == i_sz - 1)
 							out << "</ul>\r\n";
 					}
-					out << "</li>";
-				}
+				} else
+					out << g.second.value();
+				out << "</li>";
+					
 			}
 			out << "</ul><br />\r\n";
 		}
 		if (!session.posts.empty()) {
-			out << "<h1>POSTs</h1> (application/x-www-formurl-encoded)<br />\r\n<ul>";
-			for (std::map<std::wstring, Fastcgipp_m0sh::Http::Form::Entry<wchar_t> >::const_iterator i = session.posts.begin();
-				it != session.posts.end();
-				++it
-			) {
-				out << "<li><b>" << it->first << "</b>: ";
-				if (!it->second.is_scalar_value()) {
-					size_t i_sz = it->second.values().size();
-					for (size_t i = 0; i < i_sz; ++i) {
-						if (i == 0)
-							out << "<ul>";
-						out << "<li>" << it->second.values()[i] << "</li>\r\n";
-						if (i == i_sz - 1)
-							out << "</ul><br />\r\n";
-					}
-				} else
-					out << it->second.value();
-
-				out << "</li>\r\n";
-			}
-		}
-			
-		if (!session.multipart_posts.empty()) {
-			out << "<h1>POSTs</h1> (multipart/form-data)<br />\r\n<ul>";
-			for (std::map<std::wstring, Fastcgipp_m0sh::Http::Form::Entry<wchar_t, Fastcgipp_m0sh::Http::Form::MP_entry<wchar_t, std::vector<char> > > >::const_iterator i = session.multipart_posts.begin();
-				it != session.multipart_posts.end();
-				++it
-			) {
-				out << "<li><b>" << it->first << "</b>: ";
-				if (!it->second.is_scalar_value()) {
-					size_t i_sz = it->second.values().size();
+			out << "<h1>POSTs</h1><br />\r\n<ul>";
+			for (auto& p : session.posts) {
+				out << "<li><b>" << p.first << "</b>: ";
+				if (!p.second.is_scalar_value()) {
+					size_t i_sz = p.second.values.size();
 					for (size_t i = 0; i < i_sz; ++i) {
 						if (i == 0)
 							out << "<ul>";
 						out << "<li>";
-						dumpfile(it->second.values()[i]);
+						dump_mp(p.second.values[i]);
 						out << "</li>\r\n";
 						if (i == i_sz - 1)
 							out << "</ul><br />\r\n";
 					}
 				} else 
-					dumpfile(it->second.value());
+					dump_mp(p.second.value());
 				out << "</li>\r\n";
 
 			}
 		}
 		
-		if (!session.multipart_mixed_posts.empty()) {
+		if (!session.mm_posts.empty()) {
 			out << "<h1>POST files</h1> (multipart/mixed)<br />\r\n<ul>";
-			for (std::map<std::wstring, Fastcgipp_m0sh::Http::Form::Entry<wchar_t, Fastcgipp_m0sh::Http::Form::MP_mixed_entry<wchar_t, std::vector<char> > > >::const_iterator i = session.multipart_mixed_posts.begin();
-				it != session.multipart_mixed_posts.end();
-				++it
-			) {
-				out << "<li><b>" << it->first << "</b>: ";
-				if (!it->second.is_scalar_value()) {
-				
-					size_t i_sz = it->second.values().size();
+			for (auto& mm : session.mm_posts) {
+				out << "<li><b>" << mm.first << "</b>: ";
+				if (!mm.second.is_scalar_value()) {
+					size_t i_sz = mm.second.values.size();
 					for (size_t i = 0; i < i_sz; ++i) {
 						if (i == 0)
 							out << "<ul>";
 						out << "<li>";
-						dumpmixed(it->second.values()[i]);
+						dump_mm(mm.second.values[i]);
 						out << "</li>\r\n";
 						if (i == i_sz - 1)
 							out << "</ul><br />\r\n";
 					}
 					out << "</li>\r\n";
-				} else 
-					dumpmixed(it->second.value());
+				} else if (mm.second.values.size() == 0)
+					dump_mm(mm.second.values[0]);
 				out << "</li>\r\n";
 			}
 			out << "</ul>\r\n";
@@ -253,7 +234,7 @@ int main()
 	{
 		// First we make a Fastcgipp::Manager object, with our request handling class
 		// as a template parameter.
-		Fastcgipp::Manager<Echo> fcgi;
+		MOSH_FCGI::Manager<Echo> fcgi;
 		// Now just call the object handler function. It will sleep quietly when there
 		// are no requests and efficiently manage them when there are many.
 		fcgi.handler();

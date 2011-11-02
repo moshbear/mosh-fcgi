@@ -21,8 +21,8 @@
 #include <fstream>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
-#include <fastcgipp-mosh/request.hpp>
-#include <fastcgipp-mosh/manager.hpp>
+#include <mosh/fcgi/request.hpp>
+#include <mosh/fcgi/manager.hpp>
 
 // I like to have an independent error log file to keep track of exceptions while debugging.
 // You might want a different filename. I just picked this because everything has access there.
@@ -47,7 +47,7 @@ void error_log(const char* msg)
 // First things first let's decide on what kind of character set we will use. Let's just
 // use good old ISO-8859-1 this time. No wide characters
 
-class Upload: public Fastcgipp_m0sh::Request<char>
+class Upload: public m0sh::fcgi::Request<char>
 {
 public:
 	Upload(): doneHeader(false), totalBytesReceived(0) {}
@@ -92,7 +92,7 @@ private:
 	{
 		doHeader();
 
-		out << (totalBytesReceived+=bytesReceived) << '/' << environment().contentLength << "<br />";
+		out << (totalBytesReceived+=bytesReceived) << '/' << session.envs["CONTENT_LENGTH"] << "<br />";
 		out.flush();    // Make sure to flush the buffer so it is actually sent.
 	}
 };
@@ -104,7 +104,7 @@ int main()
 	{
 		// First we make a Fastcgipp::Manager object, with our request handling class
 		// as a template parameter.
-		Fastcgipp_m0sh::Manager<Upload> fcgi;
+		m0sh::fcgi::Manager<Upload> fcgi;
 		// Now just call the object handler function. It will sleep quietly when there
 		// are no requests and efficiently manage them when there are many.
 		fcgi.handler();
