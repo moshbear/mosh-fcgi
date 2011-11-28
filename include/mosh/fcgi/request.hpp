@@ -155,7 +155,7 @@ protected:
 	 * @sa out
 	 */
 	void setloc(std::locale loc) {
-		loc = std::locale(loc, new Iconv_cvt<char_type, char, Iconv::IC_state*>);
+		loc = std::locale(loc, new Iconv_cvt<char_type, char>);
 		out.imbue(loc);
 		err.imbue(loc);
 	}

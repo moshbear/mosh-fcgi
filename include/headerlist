@@ -2,12 +2,13 @@
 HEADER_LIST = \
 mosh/fcgi/bits/block.hpp \
 mosh/fcgi/bits/cmp.hpp \
-mosh/fcgi/bits/config.h \
-mosh/fcgi/bits/config.h.in \
 mosh/fcgi/bits/hash.hpp \
+mosh/fcgi/bits/iconv.hpp \
+mosh/fcgi/bits/iconv.tcc \
+mosh/fcgi/bits/iconv_cvt.hpp \
 mosh/fcgi/bits/namespace.hpp \
+mosh/fcgi/bits/native_utf.hpp \
 mosh/fcgi/bits/singleton.hpp \
-mosh/fcgi/bits/utf8_cvt.hpp \
 mosh/fcgi/boyer_moore.hpp \
 mosh/fcgi/exceptions.hpp \
 mosh/fcgi/fcgistream/fcgistream.hpp \
@@ -20,6 +21,7 @@ mosh/fcgi/http/conv/converter.hpp \
 mosh/fcgi/http/conv/qp.hpp \
 mosh/fcgi/http/conv/url.hpp \
 mosh/fcgi/http/form.hpp \
+mosh/fcgi/http/misc.hpp \
 mosh/fcgi/http/session/fcgi_session.hpp \
 mosh/fcgi/http/session/session.hpp \
 mosh/fcgi/http/session/session.tcc \
@@ -41,6 +43,5 @@ mosh/fcgi/protocol/unknown_type.hpp \
 mosh/fcgi/protocol/vars.hpp \
 mosh/fcgi/protocol.hpp \
 mosh/fcgi/request.hpp \
-mosh/fcgi/transceiver.hpp \
-mosh/fcgi/unicode.hpp
+mosh/fcgi/transceiver.hpp
 

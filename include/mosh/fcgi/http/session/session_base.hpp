@@ -31,6 +31,7 @@
 #include <mosh/fcgi/http/form.hpp>
 #include <mosh/fcgi/http/conv/converter.hpp>
 #include <mosh/fcgi/bits/singleton.hpp>
+#include <mosh/fcgi/bits/iconv.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -82,11 +83,15 @@ protected:
 	virtual bool init_mp(const std::string& mp_bound) = 0;
 	
 	//! Convert input to unicode
+	void set_charset(const std::string& s = "");
 	std::basic_string<char_type> to_unicode();
-	
+	std::unique_ptr<Iconv::IC_state> ic;
+
+
 	//! Decode encoded data using a converter
 	std::string process_encoded_data();
 	std::unique_ptr<Converter> conv;
+	
 
 	/*! @brief Get an instance of the regex cache.
 	 * On first invocation, the regex_cache constructor is called,

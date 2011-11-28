@@ -9,7 +9,7 @@ include $(top_srcdir)/include/headerlist
 
 INCLUDES = -I$(top_srcdir)/include
 AM_CPPFLAGS = $(BOOST_CPPFLAGS)
-LD_HTTP = $(BOOST_REGEX_LIBS) $(BOOST_DATE_TIME_LIBS) $(CRYPTOPP_LIBS)
+LD_HTTP = $(BOOST_REGEX_LIBS) $(BOOST_DATE_TIME_LIBS) -lnss3
 LD_CORE = $(BOOST_THREAD_LIBS) 
 LDADD = $(LD_CORE) $(LD_HTTP)
 
@@ -27,7 +27,5 @@ libmosh_fcgi_la_SOURCES = $(HEADER_LIST) \
 	protocol.cpp \
 	qp.cpp \
 	transceiver.cpp \
-	unicode.cpp \
-	url.cpp \
-	utf8_cvt.cpp
+	url.cpp
 

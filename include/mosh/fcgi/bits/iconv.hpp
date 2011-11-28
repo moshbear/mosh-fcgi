@@ -29,6 +29,11 @@ namespace Iconv {
 
 struct IC_state;
 
+/*! @brief Make an iconv state.
+ * @param[in] istate external charset
+ * @param[in] ostate internal charset
+ * @return IC_state with given charsets
+ */
 IC_state* make_state(const std::string& istate, const std::string& ostate);
 
 struct Deleter {

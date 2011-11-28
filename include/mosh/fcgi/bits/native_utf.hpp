@@ -1,4 +1,4 @@
-//! @file unicode.cpp - utf8 encode/decode
+//! @file mosh/fcgi/bits/native_utf.hpp Native UTF type
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *
@@ -18,40 +18,46 @@
 * along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
-#include <locale>
-#include <string>
-#include <sstream>
-#include <stdexcept>
-#include <cstdint>
+#ifndef MOSH_FCGI_NATIVE_UTF_HPP
+#define MOSH_FCGI_NATIVE_UTF_HPP
 
-#include <mosh/fcgi/unicode.hpp>
-#include <mosh/fcgi/bits/utf8_cvt.hpp>
+#include <string>
+#include <limits>
+extern "C" {
+#include <netinet/in.h>
+#include <arpa/inet.h>
+}
+
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
 
-template<> std::wstring unicode::in<wchar_t>(const char* in, const char* in_end, const char*& in_next) {
-	using namespace std;
-	wstring ret;
-	ret.resize(in_end - in);
-	mbstate_t dummy;
-	wchar_t* r_next;
-	use_facet<codecvt<wchar_t, char, mbstate_t> >(locale(locale::classic(), new Utf8_cvt))
-		.in(dummy, in, in_end, in_next, &(*ret.begin()), &(*ret.end()), r_next);
-	ret.resize(r_next - ret.data());
-	return ret;
+template <size_t N> 
+struct native_utf {
+	static std::string value();
+};
+
+template<> std::string native_utf<1>::value() {
+	if (std::numeric_limits<char>::is_signed)
+		return "US-ASCII"; // char is signed, must go 7-bit
+	else
+		return "ISO-8859-1";
 }
 
-template<> std::string unicode::out<wchar_t>(const wchar_t* in, const wchar_t* in_end, const wchar_t*& in_next) {
-	using namespace std;
-	string ret;
-	ret.resize(in_end - in);
-	mbstate_t dummy;
-	char* r_next;
-	use_facet<codecvt<wchar_t, char, mbstate_t> >(locale(locale::classic(), new Utf8_cvt))
-		.out(dummy, in, in_end, in_next, &(*ret.begin()), &(*ret.end()), r_next);
-	ret.resize(r_next - ret.data());
-	return ret;
+template<> std::string native_utf<2>::value() {
+	if (htons(1) == ntohs(1))
+		return "UTF-16BE";
+	else
+		return "UTF-16LE";
+}
+template<> std::string native_utf<4>::value() {
+	if (htonl(1) == ntohl(1))
+		return "UTF32BE";
+	else
+		return "UTF32LE";
 }
 
 MOSH_FCGI_END
+
+#endif
+

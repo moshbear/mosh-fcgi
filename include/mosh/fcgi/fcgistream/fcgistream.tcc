@@ -60,8 +60,9 @@ int Fcgistream<char_type, traits>::Fcgibuf::empty_buffer() {
 		locale loc = this->getloc();
 		if (count) {
 			if (sizeof(char_type) != sizeof(char)) {
+				Iconv::IC_state* i = ic.get();
 				if (use_facet<codecvt<char_type, char, Iconv::IC_state*> >(loc)
-				        .out(ic.get(), p_stream_pos, this->pptr(), p_stream_pos,
+				        .out(i, p_stream_pos, this->pptr(), p_stream_pos,
 				             to_next, data_block.data + data_block.size, to_next)
 				        == codecvt_base::error) {
 					pbump(-(this->pptr() - this->pbase()));

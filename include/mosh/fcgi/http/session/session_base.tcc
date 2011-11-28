@@ -23,6 +23,7 @@
 #define FASTCGIPP_HTTP_SESSION_SESSION_BASE_TCC
 
 #include <algorithm>
+#include <locale>
 #include <memory>
 #include <map>
 #include <stdexcept>
@@ -32,9 +33,12 @@
 #include <boost/regex.hpp>
 #include <mosh/fcgi/boyer_moore.hpp>
 #include <mosh/fcgi/protocol/funcs.hpp>
-#include <mosh/fcgi/unicode.hpp>
 #include <mosh/fcgi/http/conv/converter.hpp>
 #include <mosh/fcgi/bits/singleton.hpp>
+#include <mosh/fcgi/bits/iconv.hpp>
+#include <mosh/fcgi/bits/iconv_cvt.hpp>
+#include <mosh/fcgi/bits/iconv.tcc>
+#include <mosh/fcgi/bits/native_utf.hpp>
 #include <mosh/fcgi/http/form.hpp>
 #include <mosh/fcgi/http/session/session_base.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
@@ -51,6 +55,17 @@ struct Session_base<ct>::regex_cache {
 	{ }
 };
 
+template <typename ct>
+void Session_base<ct>::set_charset(const std::string& s) {
+	if (s.empty()) {
+		if (sizeof(ct) > 1)
+			ic.reset(Iconv::make_state("UTF-8", native_utf<sizeof(ct)>::value()));
+		else
+			ic.reset(Iconv::make_state("US-ASCII", native_utf<sizeof(ct)>::value())); 
+	} else
+		ic.reset(Iconv::make_state(s, native_utf<sizeof(ct)>::value()));
+}
+
 template <>
 std::string Session_base<char>::to_unicode() {
 	std::string _s = std::move(ubuf);
@@ -59,8 +74,14 @@ std::string Session_base<char>::to_unicode() {
 
 template <>
 std::wstring Session_base<wchar_t>::to_unicode() {
+	using namespace std;
+	wstring ret;
+	wchar_t* dummy;
+	ret.resize(ubuf.size());
 	const char* f_next;
-	std::wstring ret = unicode::in<wchar_t>(ubuf.data(), ubuf.data() + ubuf.size(), f_next);
+	Iconv::IC_state* i = ic.get();
+	use_facet<codecvt<wchar_t, char, Iconv::IC_state*>>(locale(locale::classic(), new Iconv_cvt<wchar_t, char>))
+		.in(i, ubuf.data(), ubuf.data() + ubuf.size(), f_next, &(*ret.begin()), &(*ret.end()), dummy);
 	size_t rem = (ubuf.data() + ubuf.size() - f_next);
 	ubuf.erase(ubuf.begin(), ubuf.end() - rem);
 	return ret;
@@ -98,6 +119,7 @@ void Session_base<char_type>::fill(const char* data, size_t size) {
 							(name_size > 0x7F ? 4 : 1) +
 							(value_size > 0x7F ? 4 : 1));
 		this->envs.insert(std::make_pair(k, v));
+		this->set_charset("UTF-8");
 		if (k == "CONTENT_TYPE") {
 			if (v.size()) {
 				std::string formT("application/x-www-formurl-encoded");

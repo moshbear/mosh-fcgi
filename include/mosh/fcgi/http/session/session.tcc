@@ -70,6 +70,7 @@ struct Session<ct, pt>::Mp_regex_cache {
 	boost::regex cd_fname; // filename="...
 	boost::regex w1; // \b(\w)
 	// for Content-Type
+	boost::regex ct_cs; // charset="...
 	Boyer_moore_searcher mp_mixed; // multipart/mixed
 	boost::regex cte; // valid Content-Transfer-Encoding strings
 	boost::regex cte_ign; // ignored Content-Transfer-Encodings
@@ -85,6 +86,7 @@ struct Session<ct, pt>::Mp_regex_cache {
 		_mosh_fcgi__move_construct(cd_name, ("[\\s;]name=\"([^\"]*)\"", _p_o));
 		_mosh_fcgi__move_construct(cd_fname, (" filename=((\"[^\"]*\")|([a-z\\d!#'*+,.^_`{}|~]*))", _p_o | _i));
 		_mosh_fcgi__move_construct(w1, ("\\b(\\w)", _p_o));
+		_mosh_fcgi__move_construct(ct_cs, (" charset=((\"[^\"]*\")|([a-z\\d!#'*+,.^_`{}|~]*))", _p_o | _i)); 
 		_mosh_fcgi__move_construct(cte, ("(quoted-printable|base64|8bit|binary)", _p_o | _i));
 		_mosh_fcgi__move_construct(cte_ign, ("(8bit|binary)", _p_o));
 	}
@@ -182,7 +184,8 @@ void Session<ct, pt>::fill_post(const char* data, size_t size) {
 	else
 		this->fill_ue(data, size);
 }
-	
+
+// Precondition: this->ic untouched since this->fill
 template <typename ct, typename pt>
 void Session<ct, pt>::fill_ue(const char* data, size_t size) {
 	const char* const data_end = data + size;
@@ -267,11 +270,12 @@ void Session<ct, pt>::fill_mp(const char* data, size_t size) {
 				return;
 			auto header = this->mp_read_header(this->xbuf);
 			this->xbuf.clear();
+			this->set_charset("UTF-8");
 			data = _eoh + 4;
-				// Parse the headers
-			boost::smatch m;
+			// Parse the headers
 			MP_entry cur_entry;
 			{ /* Content-Disposition */
+				boost::smatch m;
 				auto& r_cd = header["Content-Disposition"];
 				if (boost::regex_match(r_cd, m, this->mp_vars->rc().cd_name)) {
 					this->ubuf = std::string(m[1].first, m[1].second);
@@ -283,10 +287,16 @@ void Session<ct, pt>::fill_mp(const char* data, size_t size) {
 				}
 			} /* Content-Disposition */
 			{ /* Content-Type */
+				// Check Value
 				auto& r_ct = header["Content-Type"];
 				const char* _dummy; // dummy
 				this->mp_vars->mixed = (this->mp_vars->rc().mp_mixed.search(r_ct.data(), r_ct.size(), _dummy));
 				this->mp_vars->mm_vars.stop_parsing = false;
+				// Check Attribute charset
+				boost::smatch m;
+				if (boost::regex_match(r_ct, m, this->mp_vars->rc().ct_cs)) {
+					cur_entry.charset = std::string(m[1].first, m[1].second);
+				}
 			} /* Content-Type */
 			{ /* Content-Transfer-Encoding */
 				boost::smatch m;
@@ -307,7 +317,7 @@ void Session<ct, pt>::fill_mp(const char* data, size_t size) {
 			for (auto& h : header) {
 				this->ubuf = h.second;
 				if (!h.first.compare("Content-Type")) {
-					cur_entry.content_type = this->to_unicode();
+					cur_entry.content_type = this->ubuf;
 
 				} else {
 					cur_entry.add_header(h.first, this->to_unicode());
@@ -354,6 +364,9 @@ void Session<ct, pt>::fill_mp(const char* data, size_t size) {
 			if (this->mp_vars->mixed) {
 				this->fill_mm(data, bound - data);
 			} else {
+				if (!cur.charset.empty()) {
+					this->set_charset(cur.charset);
+				}
 				if (!cur.ct_encoding.empty()) {
 					this->xbuf.append(data, bound);
 					if (cur.is_file()) {
@@ -416,6 +429,14 @@ void Session<ct, pt>::fill_mm(const char* data, size_t size) {
 					cur_mp.filename = this->to_unicode();
 				}
 			} /* Content-Disposition */
+			{ /* Content-Type */
+				auto& r_ct = header["Content-Type"];
+				// Check Attribute charset
+				boost::smatch m;
+				if (boost::regex_match(r_ct, m, this->mp_vars->rc().ct_cs)) {
+					cur_mp.charset = std::string(m[1].first, m[1].second);
+				}
+			} /* Content-Type */
 			{ /* Content-Transfer-Encoding */
 				boost::smatch m;
 				if (regex_match(header["Content-Transfer-Encoding"], m, this->mp_vars->rc().cte)) {
@@ -429,7 +450,7 @@ void Session<ct, pt>::fill_mm(const char* data, size_t size) {
 			for (auto& h : header) {
 				this->ubuf = h.second;
 				if (!h.first.compare("Content-Type")) {
-					cur_mp.content_type = this->to_unicode();
+					cur_mp.content_type = this->ubuf;
 				} else {
 					cur_mp.add_header(h.first, this->to_unicode());
 				}
@@ -455,7 +476,9 @@ void Session<ct, pt>::fill_mm(const char* data, size_t size) {
 			bool found = cur.boundary_searcher().search(data, (data_end - data), bound);
 			if (!found)
 				bound = data_end;
-			
+			if (!mp.charset.empty()) {
+				this->set_charset(mp.charset);
+			}	
 			if (!mp.ct_encoding.empty()) {
 				this->xbuf.append(data, bound);
 				if (mp.is_file()) {

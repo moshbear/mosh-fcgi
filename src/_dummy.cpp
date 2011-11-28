@@ -19,4 +19,3 @@
 ****************************************************************************/
 
 #include "dummy/boost_regex.cpp"
-#include "dummy/cryptopp.cpp"

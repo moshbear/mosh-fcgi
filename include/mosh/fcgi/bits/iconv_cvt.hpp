@@ -40,7 +40,7 @@ public:
 	 * 			locale using it is destroyed;
 	 * 			If @c 1, the user explicitly deletes it.
 	 */
-	explicit Utf8_cvt(std::size_t nomanageref = 0)
+	explicit Iconv_cvt(std::size_t nomanageref = 0)
 	: std::codecvt<in_type, ex_type, Iconv::IC_state*>(nomanageref)
 	{ }
 
@@ -93,9 +93,10 @@ protected:
 	 * @return @c std::codecvt::ok
 	 */
 	virtual std::codecvt_base::result do_unshift(Iconv::IC_state*&,
-			ex_type* to, ex_type* /*to_limit*/, ex_type*& to_next) const {
+			ex_type* to, ex_type* /*to_limit*/, ex_type*& to_next) const
+	{
 		to_next = to;
-		return ok;
+		return std::codecvt_base::ok;
 	}
 	/*! @brief Return encoding width.
 	 * @return 0 (variable-width)

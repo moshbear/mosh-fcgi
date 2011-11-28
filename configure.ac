@@ -16,17 +16,17 @@ BOOST_FUNCTION
 BOOST_REGEX
 BOOST_SMART_PTR
 BOOST_THREADS
+BOOST_TOKENIZER
 BOOST_SYSTEM
 
-PKG_CHECK_MODULES([CRYPTOPP], [libcrypto++], [have_cryptopp=yes],
-	[AC_SEARCH_LIBS([_ZTIN8CryptoPP14CBC_EncryptionE], [crypto++ cryptopp],
-		    [have_cryptopp=yes],
+PKG_CHECK_MODULES([NSS], [nss], [have_nss=yes],
+	[AC_SEARCH_LIBS([HASH_Create], [nss nss3],
+		    [have_nss=yes],
 		    [true],
 		    [-lpthread])
 ])
-AC_SUBST([CRYPTO_CFLAGS], [$CRYPTOPP_CFLAGS])
-AC_SUBST([CRYPTO_CXXFLAGS], [$CRYPTOPP_CXXFLAGS])
-AC_SUBST([CRYPTO_LIBS], [$CRYPTOPP_LIBS])
+AC_SUBST([NSS_CFLAGS], [$NSS_CFLAGS])
+AC_SUBST([NSS_LIBS], [$NSS_LIBS])
 
 AC_PROG_CXX
 
@@ -37,12 +37,13 @@ AC_COMPILE_CHECK([c++11 angle brackets], [ template <typename T> class Q { }; ] 
 AC_COMPILE_CHECK([c++11 auto], , [ int foo; auto bar = foo; ], [AC_MSG_NOTICE([working])], [AC_MSG_ERROR([no auto support])])
 AC_COMPILE_CHECK([c++11 rvalue reference], [int p() { return 0; } ] , [ int&& q = p(); ], [AC_MSG_NOTICE([working])], [AC_MSG_ERROR([no rvalue reference support])])
 AC_COMPILE_CHECK([c++11 lambda], , [ auto&& foo = [] (int x) { return x; }; ], [AC_MSG_NOTICE([working])], [AC_MSG_ERROR([no lambda support])])
+AC_COMPILE_CHECK([c++11 nullptr], , [ void *x = nullptr; ], [AC_MSG_NOTICE([working])], [AC_MSG_ERROR([no nullptr support])]) 
 AC_COMPILE_CHECK([c++11 strongly-typed enum], [ enum class foo : char { v0 = 0, v1 = 1}; ], [ foo f; ], [AC_MSG_NOTICE([working])],  [AC_MSG_ERROR([no strongly-typed enum support])])
 dnl todo: rb-for workaround where applicable
 AC_COMPILE_CHECK([c++11 range-based for], , [ int foo[2] = {0, 1}; for (auto& bar : foo); ], [AC_MSG_NOTICE([working])], [AC_MSG_ERROR([no range-based for support])])
 AC_MSG_NOTICE([checking for library features])
 AC_COMPILE_CHECK([<cstdint>], [#include <cstdint>], , [AC_MSG_NOTICE([yes])], [AC_MSG_ERROR([no <cstdint>])])
-AC_COMPILE_CHECK([unique_ptr], [#include <memory>], [ std::unique_ptr<void> p; ], [AC_MSG_NOTICE([working])],[AC_MSG_ERROR([no unique_ptr])])
+AC_COMPILE_CHECK([c++11 smart pointer], [#include <memory>], [ std::unique_ptr<void> p; std::shared_ptr<void> q; ], [AC_MSG_NOTICE([working])],[AC_MSG_ERROR([no unique_ptr])])
 AC_COMPILE_CHECK([c++11 fstream], [#include <iostream>
 					#include <fstream>
 					#include <utility>],

@@ -407,7 +407,7 @@ public:
 	 * @param[in] content_type content type
 	 */
 	MP_entry(const string_type& name, const string_type& filename = string_type(),
-		const string_type& content_type = string_type())
+		const std::string& content_type = "")
 	: base_type(Type::mp_entry, name), filename(filename), content_type(content_type)
 	{
 		if (filename.empty()) {
@@ -593,7 +593,9 @@ public:
 	//! the file name; if empty, then data is form input instead of file input
 	std::basic_string<char_type> filename;
 	//! value of Content-Type header
-	std::basic_string<char_type> content_type;
+	std::string content_type;
+	//! charset
+	std::string charset;
 	//! Content-Transfer-Encoding (this field is not used internally)
 	std::string ct_encoding;	
 	//! list of all headers
@@ -673,11 +675,12 @@ private:
 		
 		// Get sha1 of all headers
 		{
-			CryptoPP::SHA1 hash;
+			HASHContext* hash = HASH_Create(HASH_AlgSHA1);
 			hash::hash(hash, headers);
 			hash::hash(hash, filename);
 			hash::hash(hash, content_type);
 			auto h = hash::hash_finalize(hash);
+			HASH_Destroy(hash);
 
 			// Print the values of each byte in h in %02x format
 			std::stringstream ss;

@@ -46,7 +46,7 @@ Iconv::IC_state* Iconv::make_state(const std::string& istate, const std::string&
 {
 	Iconv::IC_state* ic = new Iconv::IC_state;
 	if (ic == nullptr)
-		throw std::bad_alloc("iconv: no memory for state");
+		throw std::bad_alloc();
 	if (istate == ostate) {
 		ic->ic_in = nullptr;
 		ic->ic_out = nullptr;
@@ -84,7 +84,7 @@ std::codecvt_base::result Iconv_cvt<in_type, ex_type>::do_in(
 			in_type* to, in_type* to_end, in_type*& to_next
 		) const
 {
-	const char* ic_from = reinterpet_cast<const char*>(from);
+	char* ic_from = const_cast<char*>(reinterpret_cast<const char*>(from));
 	char* ic_to = reinterpret_cast<char*>(to);
 	size_t ic_fsize = (from_end - from) * sizeof(ex_type);
 	size_t ic_tsize = (to_end - to) * sizeof(in_type);
@@ -110,10 +110,11 @@ std::codecvt_base::result Iconv_cvt<in_type, ex_type>::do_in(
 		case EILSEQ: // Invalid input
 			cvt_ret = std::codecvt_base::error;
 			break;
+		}
 	}
 	
-	from_next = from_end - ((ic_fsize / sizeof(ex_type)) + ((ic_fsize % sizeof(ex_type)) ? 1 : 0);
-	to_next = to_end - ((ic_tsize / sizeof(in_type)) + ((ic_tsize % sizeof(in_type)) ? 1 : 0);
+	from_next = from_end - (ic_fsize / sizeof(ex_type)) + ((ic_fsize % sizeof(ex_type)) ? 1 : 0);
+	to_next = to_end - (ic_tsize / sizeof(in_type)) + ((ic_tsize % sizeof(in_type)) ? 1 : 0);
 	return cvt_ret;
 }
 
@@ -124,7 +125,7 @@ std::codecvt_base::result Iconv_cvt<in_type, ex_type>::do_out(
 			ex_type* to, ex_type* to_end, ex_type*& to_next
 		) const
 {
-	const char* ic_from = reinterpet_cast<const char*>(from);
+	char* ic_from = const_cast<char*>(reinterpret_cast<const char*>(from));
 	char* ic_to = reinterpret_cast<char*>(to);
 	size_t ic_fsize = (from_end - from) * sizeof(ex_type);
 	size_t ic_tsize = (to_end - to) * sizeof(in_type);
@@ -150,10 +151,11 @@ std::codecvt_base::result Iconv_cvt<in_type, ex_type>::do_out(
 		case EILSEQ: // Invalid input
 			cvt_ret = std::codecvt_base::error;
 			break;
+		}
 	}
 	
-	from_next = from_end - ((ic_fsize / sizeof(ex_type)) + ((ic_fsize % sizeof(ex_type)) ? 1 : 0);
-	to_next = to_end - ((ic_tsize / sizeof(in_type)) + ((ic_tsize % sizeof(in_type)) ? 1 : 0);
+	from_next = from_end - (ic_fsize / sizeof(ex_type)) + ((ic_fsize % sizeof(ex_type)) ? 1 : 0);
+	to_next = to_end - (ic_tsize / sizeof(in_type)) + ((ic_tsize % sizeof(in_type)) ? 1 : 0);
 	return cvt_ret;
 }
 
