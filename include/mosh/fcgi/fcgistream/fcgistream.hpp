@@ -110,8 +110,11 @@ public:
 	 * @throws std::invalid_argument if native encoding cannot be converted to argument type
 	 * @param[in] s Output charset
 	 */
-	void set_output_charset(const std::string& s) {
-		ic.reset(Iconv::make_state(s, native_utf<sizeof(char_type)>::value()), Iconv::Deleter);
+	void set_output_charset(const std::string& s = "") {
+		if (s.empty() && sizeof(char_type) > 1)
+			ic.reset(Iconv::make_state("UTF-8", native_utf<sizeof(char_type)>::value()), Iconv::Deleter);
+		else
+			ic.reset(Iconv::make_state(s, native_utf<sizeof(char_type)>::value()), Iconv::Deleter);
 	} 
 
 private:
