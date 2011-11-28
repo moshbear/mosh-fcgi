@@ -28,23 +28,45 @@
 #include <ios>
 #include <istream>
 #include <locale>
+#include <memory>
+#include <limits>
+extern "C" {
+#include <netinet/in.h>
+#include <arpa/inet.h>
+}
+
 
 #include <mosh/fcgi/protocol/types.hpp>
 #include <mosh/fcgi/protocol/full_id.hpp>
 #include <mosh/fcgi/transceiver.hpp>
+#include <mosh/fcgi/bits/iconv.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
-#include <mosh/fcgi/bits/utf8_cvt.hpp>
 
 MOSH_FCGI_BEGIN
 
-//! Create a locale
-//! @tparam character type of string
-template<class char_type> inline std::locale make_locale(std::locale& loc) { return loc; }
+template <size_t N> 
+struct native_utf {
+	static std::string value();
+};
 
-//! Create a locale imbued with Utf8_cvt
-template<> std::locale inline make_locale<wchar_t>(std::locale& loc)
-{
-        return std::locale(loc, new Utf8_cvt);
+template<> std::string native_utf<1>::value() {
+	if (std::numeric_limits<char>::is_signed)
+		return "US-ASCII"; // char is signed, must go 7-bit
+	else
+		return "ISO-8859-1";
+}
+
+template<> std::string native_utf<2>::value() {
+	if (htons(1) == ntohs(1))
+		return "UTF-16BE";
+	else
+		return "UTF-16LE";
+}
+template<> std::string native_utf<4>::value() {
+	if (htonl(1) == ntohl(1))
+		return "UTF32BE";
+	else
+		return "UTF32LE";
 }
 
 //! Stream class for output of client data through FastCGI
@@ -83,6 +105,15 @@ public:
 	 * @param[in] stream Reference to input stream that should be transmitted.
 	 */
 	void dump(std::basic_istream<char>& stream);
+	
+	/*! @brief Sets the output character set.
+	 * @throws std::invalid_argument if native encoding cannot be converted to argument type
+	 * @param[in] s Output charset
+	 */
+	void set_output_charset(const std::string& s) {
+		ic.reset(Iconv::make_state(s, native_utf<sizeof(char_type)>::value()), Iconv::Deleter);
+	} 
+
 private:
 	/*! @brief Stream buffer class for output of client data through FastCGI
 	 * This class is derived from std::basic_streambuf<_char_type, traits>. It acts just
@@ -94,7 +125,7 @@ private:
 	class Fcgibuf: public std::basic_streambuf<_char_type, traits>
 	{
 	public:
-		Fcgibuf() : dump_ptr(0), dump_size(0) {
+		Fcgibuf() : dump_ptr(0), dump_size(0), ic(Iconv::make_state("", ""), Iconv::Deleter) {
 			setp(buffer, buffer + buff_size);
 		}
 		/*! @brief After construction constructor
@@ -133,7 +164,7 @@ private:
 		typedef typename std::basic_streambuf<_char_type, traits>::int_type int_type;
 		typedef typename std::basic_streambuf<_char_type, traits>::traits_type traits_type;
 		typedef typename std::basic_streambuf<_char_type, traits>::char_type char_type;
-
+		
 		int_type overflow(int_type c = traits_type::eof()) {
 			if (empty_buffer() < 0)
 				return traits_type::eof();
@@ -156,7 +187,7 @@ private:
 
 		//! Code converts, packages and transmits all data in the stream buffer along with the dump data
 		int empty_buffer();
-		//! Transceiver object to use for transmissio
+		//! Transceiver object to use for transmission
 		Transceiver* transceiver;
 		//! Size of the internal stream buffer
 		static const int buff_size = 8192;
@@ -165,8 +196,10 @@ private:
 		//! Complete ID associated with the request
 		protocol::Full_id id;
 
-		//! Type of output stream (Er_r or Ou_t)
+		//! Type of output stream (Err or Out)
 		protocol::Record_type type;
+
+		std::shared_ptr<Iconv::IC_state> ic;
 	};
 	//! Stream buffer object
 	Fcgibuf buffer;

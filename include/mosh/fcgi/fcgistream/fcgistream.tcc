@@ -1,6 +1,7 @@
 //! @file mosh/fcgi/fcgistream/fcgistream.tcc Defines member functions for Fcgistream
 /***************************************************************************
-* Copyright (C) 2007 Eddie                                                 *
+* Copyright (C) 2011 m0shbear                                              *
+*               2007 Eddie                                                 *
 *                                                                          *
 * This file is part of fastcgi++.                                          *
 *                                                                          *
@@ -32,8 +33,10 @@
 #include <mosh/fcgi/protocol/vars.hpp>
 #include <mosh/fcgi/protocol/full_id.hpp>
 #include <mosh/fcgi/protocol/header.hpp>
-#include <mosh/fcgi/bits/utf8_cvt.hpp>
 #include <mosh/fcgi/fcgistream.hpp>
+#include <mosh/fcgi/bits/iconv.hpp>
+#include <mosh/fcgi/bits/iconv_cvt.hpp>
+#include <mosh/fcgi/bits/iconv.tcc>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -53,13 +56,12 @@ int Fcgistream<char_type, traits>::Fcgibuf::empty_buffer() {
 		if (wanted_size > numeric_limits<uint16_t>::max()) wanted_size = numeric_limits<uint16_t>::max();
 		Block data_block(transceiver->request_write(wanted_size));
 		data_block.size = (data_block.size / chunk_size) * chunk_size;
-		mbstate_t cs = mbstate_t();
 		char* to_next = data_block.data + sizeof(Header);
 		locale loc = this->getloc();
 		if (count) {
 			if (sizeof(char_type) != sizeof(char)) {
-				if (use_facet<codecvt<char_type, char, mbstate_t> >(loc)
-				        .out(cs, p_stream_pos, this->pptr(), p_stream_pos,
+				if (use_facet<codecvt<char_type, char, Iconv::IC_state*> >(loc)
+				        .out(ic.get(), p_stream_pos, this->pptr(), p_stream_pos,
 				             to_next, data_block.data + data_block.size, to_next)
 				        == codecvt_base::error) {
 					pbump(-(this->pptr() - this->pbase()));

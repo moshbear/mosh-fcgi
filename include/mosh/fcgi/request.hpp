@@ -154,7 +154,7 @@ protected:
 	 * @sa out
 	 */
 	void setloc(std::locale loc) {
-		loc = make_locale<char_type>(loc);
+		loc = std::locale(loc, new Utf8_cvt);
 		out.imbue(loc);
 		err.imbue(loc);
 	}
