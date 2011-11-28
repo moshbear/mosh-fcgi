@@ -38,7 +38,6 @@
 #include <mosh/fcgi/bits/block.hpp>
 #include <mosh/fcgi/transceiver.hpp>
 #include <mosh/fcgi/fcgistream.hpp>
-#include <mosh/fcgi/bits/utf8_cvt.hpp>
 #include <mosh/fcgi/http.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
@@ -147,7 +146,7 @@ protected:
 	/*!
 	 * This function both sets loc to the locale passed to it and imbues the locale into the
 	 * out and err stream. The user should always call this function as opposed to setting the
-	 * locales directly is this functions insures the utf8 code conversion is functioning properly.
+	 * locales directly is this functions insures the iconv code conversion is functioning properly.
 	 *
 	 * @param[in] loc New locale
 	 * @sa loc
