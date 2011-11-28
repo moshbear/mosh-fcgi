@@ -37,7 +37,6 @@
 #include <mosh/fcgi/bits/singleton.hpp>
 #include <mosh/fcgi/bits/iconv.hpp>
 #include <mosh/fcgi/bits/iconv_cvt.hpp>
-#include <mosh/fcgi/bits/iconv.tcc>
 #include <mosh/fcgi/bits/native_utf.hpp>
 #include <mosh/fcgi/http/form.hpp>
 #include <mosh/fcgi/http/session/session_base.hpp>

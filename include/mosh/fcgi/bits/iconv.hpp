@@ -21,23 +21,62 @@
 #ifndef MOSH_FCGI_ICONV_HPP
 #define MOSH_FCGI_ICONV_HPP
 
+#include <string>
+#include <locale>
+#include <cerrno>
+#include <stdexcept>
+extern "C" {
+#include <iconv.h>
+}
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
 
 namespace Iconv {
 
-struct IC_state;
+struct IC_state {
+	iconv_t ic_in;
+	iconv_t ic_out;
+};
+
 
 /*! @brief Make an iconv state.
  * @param[in] istate external charset
  * @param[in] ostate internal charset
  * @return IC_state with given charsets
  */
-IC_state* make_state(const std::string& istate, const std::string& ostate);
+IC_state* make_state(const std::string& istate, const std::string& ostate) {
+	Iconv::IC_state* ic = new Iconv::IC_state;
+	if (ic == nullptr)
+		throw std::bad_alloc();
+	if (istate == ostate) {
+		ic->ic_in = nullptr;
+		ic->ic_out = nullptr;
+		return ic;
+	}
+	
+	errno = 0;
+	ic->ic_in = iconv_open(ostate.c_str(), istate.c_str());
+	if (errno != 0)
+		goto icm_undo_in;
+	ic->ic_out = iconv_open(istate.c_str(), ostate.c_str());
+	if (errno != 0)
+		goto icm_undo_out;
+	return ic;
+
+icm_undo_out:
+	iconv_close(ic->ic_in);	
+icm_undo_in:
+	delete ic;
+	throw std::invalid_argument("iconv: cannot convert between " + istate + " and " + ostate);
+}
 
 struct Deleter {
-	void operator()(IC_state*) const;
+	void operator()(IC_state* ic) const {
+		iconv_close(ic->ic_in);
+		iconv_close(ic->ic_out);
+		delete ic;
+	}	
 };
 
 }

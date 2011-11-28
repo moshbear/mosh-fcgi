@@ -74,7 +74,7 @@ class Echo: public MOSH_FCGI::Request<wchar_t>
 		if (f.is_file())
 			out << "<li><b>filename</b>: " << f.filename << "</li>\r\n";
 		if (!f.content_type.empty())
-			out << "<li><b>content-type</b>: " << f.content_type << "</li>\r\n";
+			out << "<li><b>content-type</b>: " << f.content_type.c_str() << "</li>\r\n";
 		if (!f.headers.empty()) {
 			out << "<li><b>headers:</b>: <ul>";
 			for (auto& h : f.headers) {

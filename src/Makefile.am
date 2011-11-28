@@ -21,6 +21,7 @@ libmosh_fcgi_la_SOURCES = $(HEADER_LIST) \
 	_dummy.cpp \
 	base64.cpp \
 	boyer_moore.cpp \
+	codecvt_ic.cpp \
 	converter.cpp \
 	exceptions.cpp \
 	http_misc.cpp \

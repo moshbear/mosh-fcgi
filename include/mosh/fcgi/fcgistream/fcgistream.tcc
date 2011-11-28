@@ -36,7 +36,6 @@
 #include <mosh/fcgi/fcgistream.hpp>
 #include <mosh/fcgi/bits/iconv.hpp>
 #include <mosh/fcgi/bits/iconv_cvt.hpp>
-#include <mosh/fcgi/bits/iconv.tcc>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN

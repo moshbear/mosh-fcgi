@@ -128,6 +128,7 @@ bool Transceiver::handler() {
 	} else if (fd == wakeup_fd_in) {
 		char x;
 		ssize_t r = read(wakeup_fd_in, &x, 1);
+		r = r;
 		return false;
 	}
 
@@ -196,9 +197,7 @@ void Transceiver::Buffer::free_read(size_t size) {
 }
 
 Transceiver::Transceiver(int fd_, boost::function<void(protocol::Full_id, protocol::Message)> send_message_)
-	: send_message(send_message_), poll_fds(2), socket(fd_), buffer(poll_fds, fd_buffers) {
-	socket = fd_;
-
+	: buffer(poll_fds, fd_buffers), send_message(send_message_), poll_fds(2), socket(fd_)  {
 	// Let's setup an in/out socket for waking up poll()
 	int soc_pair[2];
 	socketpair(AF_UNIX, SOCK_STREAM, 0, soc_pair);

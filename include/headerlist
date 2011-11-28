@@ -4,7 +4,6 @@ mosh/fcgi/bits/block.hpp \
 mosh/fcgi/bits/cmp.hpp \
 mosh/fcgi/bits/hash.hpp \
 mosh/fcgi/bits/iconv.hpp \
-mosh/fcgi/bits/iconv.tcc \
 mosh/fcgi/bits/iconv_cvt.hpp \
 mosh/fcgi/bits/namespace.hpp \
 mosh/fcgi/bits/native_utf.hpp \

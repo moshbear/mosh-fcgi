@@ -22,6 +22,7 @@
 #ifndef MOSH_FCGI_REQUEST_HPP
 #define MOSH_FCGI_REQUEST_HPP
 
+#include <locale>
 #include <queue>
 #include <map>
 #include <string>

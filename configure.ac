@@ -30,7 +30,7 @@ AC_SUBST([NSS_LIBS], [$NSS_LIBS])
 
 AC_PROG_CXX
 
-CXX="${CXX} -std=c++0x"
+CXX="${CXX} -std=c++0x -Wall"
 
 AC_MSG_NOTICE([checking for language features])
 AC_COMPILE_CHECK([c++11 angle brackets], [ template <typename T> class Q { }; ] , [ Q<Q<int>> foo; ], [AC_MSG_NOTICE([working])], [AC_MSG_ERROR([no improved angle bracket support])])
@@ -62,7 +62,7 @@ AC_TYPE_UINT16_T
 AC_TYPE_UINT32_T
 AC_TYPE_UINT64_T
 
-pkgConfigLibs="-lmosh_fcgi $BOOST_THREAD_LIBS $BOOST_REGEX_LIBS $BOOST_DATE_TIME_LIBS $CRYPTOPP_LIBS"
+pkgConfigLibs="-lmosh_fcgi $BOOST_THREAD_LIBS $BOOST_REGEX_LIBS $BOOST_DATE_TIME_LIBS $NSS_LIBS"
 
 AC_SUBST(pkgConfigLibs)
 
