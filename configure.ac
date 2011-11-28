@@ -1,4 +1,4 @@
-AC_INIT([mosh_fcgi], [0.4r2], [m0shbear <andrey@moshbear.net>], [mosh_fcgi])
+AC_INIT([mosh_fcgi], [0.5], [m0shbear <andrey@moshbear.net>], [mosh_fcgi])
 AC_CONFIG_AUX_DIR(m4)
 AC_CONFIG_FILES(mosh_fcgi.pc)
 AC_CONFIG_HEADERS([include/mosh/fcgi/bits/config.h])

@@ -1,13 +1,14 @@
 File: README
-V: 0.4.2, 2011-11-22 m0shbear
+V: 0.5, 2011-11-28 m0shbear
 ==
 
 M0shbear's fork of GNU Fastcgi++.
 
 Requirements:
-*	Boost
-*	Crypto++
 *	C++11 compiler
+*	POSIX
+*	Boost
+*	NSS
 
 Features added:
 * support for FCGI_ROLE_AUTHORIZER

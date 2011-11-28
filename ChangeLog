@@ -1,4 +1,14 @@
-0.4r3 [2011-01-02]:
+
+0.5.0 [2011-11-28]:
++	nss
++	iconv codecvt
++	Content-Transfer-Encoding
++	Converter
++	refactored Session
++	refactored to C++11
++	ntohl/ntohs for endian conversion
+
+0.4r3 [2011-11-02]:
 +	autotools
 
 0.4r2 [2011-10-31]:
