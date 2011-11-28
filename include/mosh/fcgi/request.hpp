@@ -36,6 +36,8 @@
 #include <mosh/fcgi/protocol/message.hpp>
 #include <mosh/fcgi/exceptions.hpp>
 #include <mosh/fcgi/bits/block.hpp>
+#include <mosh/fcgi/bits/iconv.hpp>
+#include <mosh/fcgi/bits/iconv_cvt.hpp>
 #include <mosh/fcgi/transceiver.hpp>
 #include <mosh/fcgi/fcgistream.hpp>
 #include <mosh/fcgi/http.hpp>
@@ -153,7 +155,7 @@ protected:
 	 * @sa out
 	 */
 	void setloc(std::locale loc) {
-		loc = std::locale(loc, new Utf8_cvt);
+		loc = std::locale(loc, new Iconv_cvt<char_type, char, Iconv::IC_state*>);
 		out.imbue(loc);
 		err.imbue(loc);
 	}
