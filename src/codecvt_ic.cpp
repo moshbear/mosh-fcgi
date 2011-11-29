@@ -22,6 +22,11 @@
 #include <mosh/fcgi/bits/iconv.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
+/*
+ * Generate stub codecvt functions so that the compiler can create a working vtable for
+ * derived codecvt<T1, T2, T3> classes.
+ */
+
 #define DO_IN(i, e, s) \
 	template<> \
 	codecvt_base::result \
@@ -55,10 +60,13 @@
 #define DO_MAX_LENGTH(i, e, s) \
 	template<> int codecvt<i, e, s>::do_max_length() const throw() { return 0; }
 
+// Now do partial specialization for codecvt<T1,T2,Iconv::IC_state*>
+
 #define IC MOSH_FCGI::Iconv::IC_state*
 
 namespace std {
 
+// Required specialization: <wchar_t, char, Iconv::IC_state*>
 DO_IN(char, char, IC)
 DO_OUT(char, char, IC)
 DO_UNSHIFT(char, char, IC)
@@ -67,6 +75,7 @@ DO_ALWAYS_NOCONV(char, char, IC)
 DO_LENGTH(char, char, IC)
 DO_MAX_LENGTH(char, char, IC)
 
+// Required specialization: <char, char, Iconv::IC_state*>
 DO_IN(wchar_t, char, IC)
 DO_OUT(wchar_t, char, IC)
 DO_UNSHIFT(wchar_t, char, IC)
@@ -77,3 +86,4 @@ DO_MAX_LENGTH(wchar_t, char, IC)
 
 }
 
+#undef IC
