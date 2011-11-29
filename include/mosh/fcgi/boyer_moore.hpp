@@ -47,7 +47,7 @@ public:
 	}
 
 	/*! @brief Create a Boyer-moore string searcher from a string
-	 * @precondition (@c str != 0 || @c len == 0)
+	 * @pre (@c str != 0 || @c len == 0)
 	 * @param[in] str pointer to search string
 	 * @param[in] len length of search string
 	 */
@@ -79,7 +79,7 @@ public:
 	}
 
 	/*! @brief Search a string for the search string.
-	 * @precondition haystack is null-terminated
+	 * @pre haystack is null-terminated
 	 * @param[in] haystack string to search
 	 * @return pointer to first match or 0 if search string was not found
 	 */
@@ -98,7 +98,7 @@ public:
 		return haystack + res;
 	}
 	/*! @brief Search a string for the search string.
-	 * @precondition haystack is null-terminated
+	 * @pre haystack is null-terminated
 	 * @param[in] haystack string to search
 	 * @param[out] res pointer to first match
 	 * @retval @c true if match was found
@@ -140,7 +140,7 @@ protected:
 	ssize_t _search(const char* haystack, size_t haystack_len) const;
 private:
 	/*! @brief Initialize the shift arrays.
-	 * @precondition (@c str != 0 || @c len == 0)
+	 * @pre (@c str != 0 || @c len == 0)
 	 * @param[in] str pointer to search string
 	 * @param[in] len length of search string
 	 */

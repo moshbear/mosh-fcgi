@@ -1,4 +1,4 @@
-//! @file http/
+//! @file mosh/fcgi/http/misc.hpp Non-templated miscellany for http::Form
 /*!*************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *

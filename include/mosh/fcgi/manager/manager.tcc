@@ -1,4 +1,4 @@
-//! \file manager.hpp Defines the Fcgi::Manager class
+//! @file mosh/fcgi/manager/manager.tcc Template implementation of fcgi::Manager
 /***************************************************************************
 * Copyright (C) 2007 Eddie                                                 *
 *                                                                          *

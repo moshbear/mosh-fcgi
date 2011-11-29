@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/http.hpp - Include http/*
+//! @file mosh/fcgi/http.hpp Include http/*
 /***************************************************************************
 * Copyright (C) 2011 m0shbear						   *
 *									   *

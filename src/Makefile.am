@@ -18,7 +18,6 @@ lib_LTLIBRARIES = libmosh_fcgi.la
 libmosh_fcgi_la_LDFLAGS = -version-info 0:4:0
 
 libmosh_fcgi_la_SOURCES = $(HEADER_LIST) \
-	_dummy.cpp \
 	base64.cpp \
 	boyer_moore.cpp \
 	codecvt_ic.cpp \

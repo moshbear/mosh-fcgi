@@ -1,4 +1,4 @@
-//! \file boyer-moore - Boyer-moore string searcher
+//! @file boyer-moore.cpp - Boyer-moore string searcher
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *

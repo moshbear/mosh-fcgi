@@ -1,3 +1,2 @@
 Todo:
-*	Change the regex code to boost::xpressive in order to remove dependency to libboost_regex.so,
-		and because xpressive is slightly faster for short string searches
+*	Precompiled header support.

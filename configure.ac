@@ -1,4 +1,4 @@
-AC_INIT([mosh_fcgi], [0.5], [m0shbear <andrey@moshbear.net>], [mosh_fcgi])
+AC_INIT([mosh_fcgi], [0.5.1], [m0shbear <andrey@moshbear.net>], [mosh_fcgi])
 AC_CONFIG_AUX_DIR(m4)
 AC_CONFIG_FILES(mosh_fcgi.pc)
 AC_CONFIG_HEADERS([include/mosh/fcgi/bits/config.h])
@@ -13,11 +13,11 @@ AC_PROG_LIBTOOL
 BOOST_BIND
 BOOST_DATE_TIME
 BOOST_FUNCTION
-BOOST_REGEX
 BOOST_SMART_PTR
 BOOST_THREADS
 BOOST_TOKENIZER
 BOOST_SYSTEM
+BOOST_XPRESSIVE
 
 PKG_CHECK_MODULES([NSS], [nss], [have_nss=yes],
 	[AC_SEARCH_LIBS([HASH_Create], [nss nss3],
@@ -62,7 +62,7 @@ AC_TYPE_UINT16_T
 AC_TYPE_UINT32_T
 AC_TYPE_UINT64_T
 
-pkgConfigLibs="-lmosh_fcgi $BOOST_THREAD_LIBS $BOOST_REGEX_LIBS $BOOST_DATE_TIME_LIBS $NSS_LIBS"
+pkgConfigLibs="-lmosh_fcgi $BOOST_THREAD_LIBS $BOOST_DATE_TIME_LIBS $NSS_LIBS"
 
 AC_SUBST(pkgConfigLibs)
 

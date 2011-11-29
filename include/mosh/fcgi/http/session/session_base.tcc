@@ -30,7 +30,7 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <boost/regex.hpp>
+#include <boost/xpressive/xpressive.hpp>
 #include <mosh/fcgi/boyer_moore.hpp>
 #include <mosh/fcgi/protocol/funcs.hpp>
 #include <mosh/fcgi/http/conv/converter.hpp>
@@ -46,11 +46,12 @@ MOSH_FCGI_BEGIN
 
 namespace http {
 
+namespace xpr = boost::xpressive;
 template <typename ct>
 struct Session_base<ct>::regex_cache {
-	boost::regex boundary;
+	xpr::sregex boundary;
 	regex_cache() :
-		boundary("boundary=\"?([^\";,]+)\"?")
+		boundary("boundary=" >> !xpr::as_xpr('"') >> (xpr::s1 = +(~(xpr::set = '"', ';', ','))) >> !xpr::as_xpr('"'))
 	{ }
 };
 
@@ -127,10 +128,9 @@ void Session_base<char_type>::fill(const char* data, size_t size) {
 					if (!this->init_ue())
 						throw std::runtime_error("session_base->init_ue");
 				} else if (!v.compare(0, mpT.size(), mpT)) {
-					boost::smatch m;
-					if (boost::regex_match(v, m, rc().boundary)) {
-						std::string s(m[1].first, m[1].second);
-						if(!this->init_mp("--" + s))
+					boost::xpressive::smatch m;
+					if (boost::xpressive::regex_search(v, m, rc().boundary)) {
+						if(!this->init_mp("--" + m.str(1)))
 							throw std::runtime_error("session_base->init_mp");
 					}
 				} else {

@@ -176,28 +176,6 @@ private:
 	std::string msg;
 };
 
-//! %Exception for iconv() errors
-class Iconv : public Exception {
-public:
-	/*! @brief Sole constructor
-	 * @param[in] erno Associated errno
-	 */
-	Iconv(int erno);
-	~Iconv() throw() {}
-	virtual const char* what() const throw() {
-		return msg.c_str();
-	}
-	int get_erno() const throw() {
-		return erno;
-	}
-private:
-	//! Associated errno
-	int erno;
-	//! Error message associated with the exception
-	std::string msg;
-};
-	
-
 //! %Exception for partial content
 class Partial: public Exception {
 public:

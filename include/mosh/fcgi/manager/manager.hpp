@@ -1,4 +1,4 @@
-//! \file manager.hpp Defines the Fcgi::Manager class
+//! @file mosh/fcgi/manager/manager.hpp Defines the fcgi::Manager class
 /***************************************************************************
 * Copyright (C) 2007 Eddie                                                 *
 *                                                                          *
@@ -148,7 +148,7 @@ private:
 	 * This is merely a derivation of a std::map<protocol::Full_id, boost::shared_ptr<T> > and a
 	 * boost::shared_mutex that gives data locking abilities to the STL container.
 	 */
-	class Requests : public std::map<protocol::Full_id, boost::shared_ptr<T> >, public boost::shared_mutex {};
+	class Requests : public std::map<protocol::Full_id, boost::shared_ptr<T>>, public boost::shared_mutex {};
 	//! Associative container type for active requests
 	/*!
 	 * This container associated the protocol::Full_id of each active request with a pointer

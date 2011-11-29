@@ -29,6 +29,7 @@
 #include <string>
 #include <vector>
 #include <boost/regex.hpp>
+#include <boost/xpressive/xpressive.hpp>
 #include <mosh/fcgi/boyer_moore.hpp>
 #include <mosh/fcgi/http/conv/converter.hpp>
 #include <mosh/fcgi/bits/singleton.hpp>
@@ -41,6 +42,8 @@ MOSH_FCGI_BEGIN
 
 namespace http {
 
+namespace xpr = boost::xpressive;
+
 // This macro is a workaround for Boost containters which don't have move semantics implemented
 // It works by making a temp and then calling .swap()
 // Args:
@@ -50,11 +53,9 @@ namespace http {
 
 template <typename ct, typename pt>
 struct Session<ct, pt>::Ue_regex_cache {
-	boost::regex escaped_hex;
+	xpr::sregex escaped_hex;
 	Ue_regex_cache() {
-		// boost::basic_regex<T> has no move constructor, so .swap() is used instead
-		auto _p_o = boost::regex::perl | boost::regex::optimize;
-		_mosh_fcgi__move_construct(escaped_hex, ("%([[:xdigit:][:xdigit:]])", _p_o));
+		escaped_hex = '%' >> (xpr::s1 = xpr::xdigit >> xpr::xdigit);
 	}
 	virtual ~Ue_regex_cache() { }
 };
@@ -62,33 +63,37 @@ struct Session<ct, pt>::Ue_regex_cache {
 template <typename ct, typename pt>
 struct Session<ct, pt>::Mp_regex_cache {
 	// header long line join
-	boost::regex rfc822_cont;
+	xpr::sregex rfc822_cont;
 	// header K: V tokenizer regex
-	boost::regex rfc822_token;
+	xpr::sregex rfc822_hdr;
 	// for Content-Disposition
-	boost::regex cd_name; // name="...
-	boost::regex cd_fname; // filename="...
-	boost::regex w1; // \b(\w)
+	xpr::sregex cd_name; // name="...
+	xpr::sregex cd_fname; // filename="...
+	xpr::sregex w1; // \b(\w)
 	// for Content-Type
-	boost::regex ct_cs; // charset="...
+	xpr::sregex ct_cs; // charset="...
 	Boyer_moore_searcher mp_mixed; // multipart/mixed
-	boost::regex cte; // valid Content-Transfer-Encoding strings
-	boost::regex cte_ign; // ignored Content-Transfer-Encodings
+	xpr::sregex cte; // valid Content-Transfer-Encoding strings
+	xpr::sregex cte_ign; // ignored Content-Transfer-Encodings
 	Mp_regex_cache() : mp_mixed("multipart/mixed")
 	{
-		auto _i = boost::regex::icase;
-		auto _n_m = boost::regex::no_mod_m;
-		auto _p_o = boost::regex::perl | boost::regex::optimize;
-		auto _x = boost::regex::mod_x;
-		// boost::basic_regex<T> has no move constructor, so .swap() is used instead
-		_mosh_fcgi__move_construct(rfc822_cont, ("\r\n\\s+", _p_o | _n_m));
-		_mosh_fcgi__move_construct(rfc822_token, ("([-\\w!#$%&\\'*+.^_\\`|{}~]+):\\s+([^\r\n]*)", _p_o | _x));
-		_mosh_fcgi__move_construct(cd_name, ("[\\s;]name=\"([^\"]*)\"", _p_o));
-		_mosh_fcgi__move_construct(cd_fname, (" filename=((\"[^\"]*\")|([a-z\\d!#'*+,.^_`{}|~]*))", _p_o | _i));
-		_mosh_fcgi__move_construct(w1, ("\\b(\\w)", _p_o));
-		_mosh_fcgi__move_construct(ct_cs, (" charset=((\"[^\"]*\")|([a-z\\d!#'*+,.^_`{}|~]*))", _p_o | _i)); 
-		_mosh_fcgi__move_construct(cte, ("(quoted-printable|base64|8bit|binary)", _p_o | _i));
-		_mosh_fcgi__move_construct(cte_ign, ("(8bit|binary)", _p_o));
+		#define MIME_NOQUOTE _w|'!'|'#'|'\''|'*'|'+'|','|'.'|'^'|'`'|'{'|'}'|'|'|'~'
+		using namespace xpr;
+		
+		rfc822_hdr = (s1 = +(set[MIME_NOQUOTE|'-'])) >> ':' >> *_s >> (s2 = *(~_ln));
+		rfc822_cont = _ln >> +_s;
+		
+		cd_name = (_s | ';') >> icase("name=\"") >> (s1 = *(~(set = '"'))) >> '"';
+		cd_fname = (_s | ';') >> icase("filename=") >> ( s1 = ( '"' >> *(~(set = '"')) >> '"')
+							     | (*set[MIME_NOQUOTE]));
+		w1 = _b >> (s1 = _w);
+
+		ct_cs = (_s | ';') >> icase("charset=") >> !as_xpr('"') >> (s1 = set[_w|'('|')'|'+'|'-'|'.'|':'|'_']) >> !as_xpr('"');
+		
+		cte = (s1 = icase(as_xpr("quoted-printable")|"base64"|"8bit"|"binary"));
+		cte_ign = icase(as_xpr("8bit")|"binary");
+
+		#undef MIME_NOQUOTE
 	}
 
 	virtual ~Mp_regex_cache() { }
@@ -201,10 +206,10 @@ void Session<ct, pt>::fill_ue(const char* data, size_t size) {
 			data = _eoh + 1;
 			size_t _pct = this->xbuf.rfind('%');
 			if (_pct != std::string::npos) {
-				boost::smatch m;
+				xpr::smatch m;
 				// check for incomplete buffer
 				if (!(
-					boost::regex_match(this->xbuf.substr(_pct, _pct + 3), m, this->ue_vars->rc().escaped_hex)
+					xpr::regex_search(this->xbuf.substr(_pct, _pct + 3), m, this->ue_vars->rc().escaped_hex)
 					|| (_pct + 3 <= this->xbuf.size())
 				))
 					return;
@@ -242,14 +247,15 @@ template <typename ct, typename pt>
 std::map<std::string, std::string> Session<ct, pt>::mp_read_header(const std::string& buf) const {
 
 	// Inspire by Perl's CGI.pm
+	using namespace xpr;
 
 	std::map<std::string, std::string> m;
-	std::string s = boost::regex_replace(buf, this->mp_vars->rc().rfc822_cont, " ", boost::format_perl);
-	boost::sregex_iterator m1(s.begin(), s.end(), this->mp_vars->rc().rfc822_token);
-	boost::sregex_iterator m2;
+	std::string s = regex_replace(buf, this->mp_vars->rc().rfc822_cont, " ");
+	sregex_iterator m1(s.begin(), s.end(), this->mp_vars->rc().rfc822_hdr);
+	sregex_iterator m2;
 	for (; m1 != m2; ++m1) {
-		std::string canon__1(boost::regex_replace((*m1)[1].str(), this->mp_vars->rc().w1, "\\u($1)"));
-		m[canon__1] = (*m1)[2].str();
+		std::string canon__1(regex_replace(m1->str(1), this->mp_vars->rc().w1, "\\u($1)", regex_constants::format_perl));
+		m[canon__1] = m1->str(2);
 	}
 	return m;
 }
@@ -275,36 +281,40 @@ void Session<ct, pt>::fill_mp(const char* data, size_t size) {
 			// Parse the headers
 			MP_entry cur_entry;
 			{ /* Content-Disposition */
-				boost::smatch m;
+				using namespace xpr;
+				smatch m;
 				auto& r_cd = header["Content-Disposition"];
-				if (boost::regex_match(r_cd, m, this->mp_vars->rc().cd_name)) {
-					this->ubuf = std::string(m[1].first, m[1].second);
+				if (regex_match(r_cd, m, this->mp_vars->rc().cd_name)) {
+					this->ubuf = m.str(1);
 					cur_entry.name = this->to_unicode();
 				}
-				if (boost::regex_match(r_cd, m, this->mp_vars->rc().cd_fname)) {
-					this->ubuf = std::string(m[1].first, m[1].second);
+				if (regex_match(r_cd, m, this->mp_vars->rc().cd_fname)) {
+					this->ubuf = m.str(1);
 					cur_entry.filename = this->to_unicode();
 				}
 			} /* Content-Disposition */
 			{ /* Content-Type */
+				using namespace xpr;
 				// Check Value
 				auto& r_ct = header["Content-Type"];
 				const char* _dummy; // dummy
 				this->mp_vars->mixed = (this->mp_vars->rc().mp_mixed.search(r_ct.data(), r_ct.size(), _dummy));
 				this->mp_vars->mm_vars.stop_parsing = false;
 				// Check Attribute charset
-				boost::smatch m;
-				if (boost::regex_match(r_ct, m, this->mp_vars->rc().ct_cs)) {
-					cur_entry.charset = std::string(m[1].first, m[1].second);
+				smatch m;
+				if (regex_match(r_ct, m, this->mp_vars->rc().ct_cs)) {
+					cur_entry.charset = m.str(1);
 				}
 			} /* Content-Type */
 			{ /* Content-Transfer-Encoding */
-				boost::smatch m;
-				if (boost::regex_match(header["Content-Transfer-Encoding"], m, this->mp_vars->rc().cte)) {
-					std::string s(m[1].first, m[1].second);
-					boost::smatch _m0; // dummy
-					if (!boost::regex_match(s, _m0, this->mp_vars->rc().cte_ign)) {
-						cur_entry.ct_encoding = std::string(m[1].first, m[1].second);	
+				using namespace xpr;
+				smatch m;
+				if (regex_match(header["Content-Transfer-Encoding"], m, this->mp_vars->rc().cte)) {
+					std::string s = m.str(1);
+					smatch _m0; // dummy
+					if (!regex_match(s, _m0, this->mp_vars->rc().cte_ign)) {
+						cur_entry.ct_encoding = m.str(1);	
+						// Convert to lower case
 						std::for_each(cur_entry.ct_encoding.begin(), cur_entry.ct_encoding.end(),
 								[&] (char& ch) {
 									if ('A' <= ch && ch <= 'Z')
@@ -324,16 +334,16 @@ void Session<ct, pt>::fill_mp(const char* data, size_t size) {
 				}
 			}
 			if (this->mp_vars->mixed) {
+				using namespace xpr;
 				// prepare the cur_entry
 				MP_mixed_entry cur_mm(std::move(cur_entry));
-				boost::smatch m;
-				if (boost::regex_match(header["Content-Type"], m, this->rc().boundary)) {
-					std::string s(m[1].first, m[1].second);
-					cur_mm.set_boundary("--" + s);
+				smatch m;
+				if (regex_match(header["Content-Type"], m, this->rc().boundary)) {
+					cur_mm.set_boundary("--" + m.str(1));
 				}
 				// prepare pointers for fill_mm
 				this->mm_posts[cur_mm.name] << std::move(cur_mm);
-				this->mp_vars->mm_vars.cur_entry = &(this->mm_posts[cur_mm.name].last_value());
+				this->mp_vars->mm_vars.cur_entry = &(this->mm_posts[cur_mm.name].last_value()); 
 				this->mp_vars->mm_vars.stop_parsing = false;
 			} else {
 				// Prepare pointers for state::data mode
@@ -423,27 +433,30 @@ void Session<ct, pt>::fill_mm(const char* data, size_t size) {
 			// Parse the headers
 			MP_entry cur_mp;
 			{ /* Content-Disposition */
-				boost::smatch m;
-				if (boost::regex_match(header["Content-Disposition"], m, this->mp_vars->rc().cd_fname)) {
-					this->ubuf = std::string(m[1].first, m[1].second);
+				using namespace xpr;
+				smatch m;
+				if (regex_match(header["Content-Disposition"], m, this->mp_vars->rc().cd_fname)) {
+					this->ubuf = m.str(1);
 					cur_mp.filename = this->to_unicode();
 				}
 			} /* Content-Disposition */
 			{ /* Content-Type */
-				auto& r_ct = header["Content-Type"];
+				using namespace xpr;
 				// Check Attribute charset
-				boost::smatch m;
-				if (boost::regex_match(r_ct, m, this->mp_vars->rc().ct_cs)) {
-					cur_mp.charset = std::string(m[1].first, m[1].second);
+				smatch m;
+				if (regex_match(header["Content-Type"], m, this->mp_vars->rc().ct_cs)) {
+					cur_mp.charset = m.str(1);
 				}
 			} /* Content-Type */
 			{ /* Content-Transfer-Encoding */
-				boost::smatch m;
+				using namespace xpr;
+
+				smatch m;
 				if (regex_match(header["Content-Transfer-Encoding"], m, this->mp_vars->rc().cte)) {
-					std::string s(m[1].first, m[1].second);
-					boost::smatch _m0; // dummy
+					std::string s = m.str(1);
+					smatch _m0; // dummy
 					if (!regex_match(s, _m0, this->mp_vars->rc().cte_ign)) {
-						cur_mp.ct_encoding = std::string(m[1].first, m[1].second);
+						cur_mp.ct_encoding = std::move(s);
 					}
 				}
 			}
