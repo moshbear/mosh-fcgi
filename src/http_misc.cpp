@@ -19,6 +19,7 @@
 ****************************************************************************/
 
 #include <algorithm>
+#include <limits>
 #include <locale>
 #include <sstream>
 #include <string>
@@ -29,7 +30,7 @@
 #include <boost/date_time/gregorian/gregorian.hpp>
 
 extern "C" {
-	#include <unistd.h>
+#include <unistd.h>
 }
 
 #include <mosh/fcgi/http/misc.hpp>
@@ -39,12 +40,17 @@ MOSH_FCGI_BEGIN
 
 namespace http {
 
-std::string time_to_string(const std::string& fmt) {
+std::string time_to_string(const std::string& fmt, unsigned long add_seconds) {
 	using namespace boost::posix_time;
 	namespace dt = boost::date_time;
 	using namespace boost::gregorian;
 	ptime now(microsec_clock::universal_time());
-	std::locale loc(std::locale::classic(), new dt::time_facet<ptime, char>(fmt.c_str())); 
+	if (add_seconds > std::numeric_limits<long>::max()) {
+		now += seconds(std::numeric_limits<long>::max());
+		add_seconds -= std::numeric_limits<long>::max();
+	}
+	now += seconds(static_cast<long>(add_seconds));
+	std::locale loc(std::locale::classic(), new dt::time_facet<ptime, char>(fmt.c_str()));
 	std::stringstream ss;
 	ss.imbue(loc);
 	ss << now;

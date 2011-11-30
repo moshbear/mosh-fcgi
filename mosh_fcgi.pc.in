@@ -5,7 +5,7 @@ includedir=@includedir@
 
 Name: mosh_fcgi
 Description: C++ library for the FastCGI protocol
-URL: http://www.nongnu.org/fastcgipp
+URL: http://moshbear.net/proj.pl?a=fcgi
 Version: @VERSION@
 Requires: 
 Libs: -L${libdir} @pkgConfigLibs@

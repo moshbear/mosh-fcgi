@@ -30,7 +30,7 @@ MOSH_FCGI_BEGIN
 namespace http {
 
 //! Prints the current UTC time, in microsecond resolution to a string, with format fmt
-std::string time_to_string(const std::string& fmt);
+std::string time_to_string(const std::string& fmt, unsigned long add_seconds = 0);
 
 std::string hostname();
 
