@@ -389,7 +389,7 @@ private:
 	typedef MP_entry<char_type, value_type> this_type;
 	typedef Data<char_type> base_type;
 	typedef std::basic_string<char_type> string_type;
-#ifdef HAVE_CXX11_FSTREAM
+#ifdef HAVE_CXX11_IOSTREAM
 	typedef std::fstream file_type;
 #else
 	typedef std::unique_ptr<std::fstream> file_type;
@@ -501,7 +501,7 @@ public:
 			if (actual_filename.empty()) {
 				using namespace std;
 				actual_filename = make_filename();
-#ifdef HAVE_CXX11_FSTREAM
+#ifdef HAVE_CXX11_IOSTREAM
 				file.exceptions(std::ios_base::failbit | std::ios_base::badbit);
 				file.open(actual_filename, std::ios_base::in | std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
 #else
@@ -510,7 +510,7 @@ public:
 				file->open(actual_filename, std::ios_base::in | std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
 #endif
 			}
-#ifdef HAVE_CXX11_FSTREAM
+#ifdef HAVE_CXX11_IOSTREAM
 			file.write(s, e - s);
 #else
 			file->write(s, e - s);
@@ -524,7 +524,7 @@ public:
 
 		require_file_mode();
 		if (!actual_filename.empty())
-#ifdef HAVE_CXX11_FSTREAM
+#ifdef HAVE_CXX11_IOSTREAM
 			return file.tellp();
 #else
 			return file->tellp();
@@ -547,7 +547,7 @@ public:
 	
 	std::ifstream& get_file() {
 		require_file_mode();
-#if HAVE_CXX11_FSTREAM
+#if HAVE_CXX11_IOSTREAM
 		file.sync();
 		return file;
 #else

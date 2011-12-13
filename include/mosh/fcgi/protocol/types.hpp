@@ -1,6 +1,7 @@
 //! \file protocol/types.hpp Type declarations for protocol
 /***************************************************************************
 * Copyright (C) 2007 Eddie                                                 *
+*               2011 m0shbear                                              *
 *                                                                          *
 * This file is part of fastcgi++.                                          *
 *                                                                          *
