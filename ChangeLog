@@ -1,37 +1,57 @@
+0.5.2 [2011-12-13]: **LAST VERSION BEFORE MERGE **
+*	singleton changed from boost to std
+
+0.5.1 [2011-11-29]:
+*	doxygen fixups
+*	http: regex is now boost::xpressive (was boost::regex)
+*	http: general cleanup of regex code for higher readability
+*	fixups of doxygen tags
++	iconv codecvt specialization (_StateT = IC_state* instead of std::mbstate_t)
 
 0.5.0 [2011-11-28]:
-+	nss
-+	iconv codecvt
-+	Content-Transfer-Encoding
-+	Converter
-+	refactored Session
++	http::form: nss for hashing (was crypto++)
++	fcgistream, http: iconv codecvt
++	http: Content-Transfer-Encoding
++	http: Converter
++	http: refactored Session
++	http: UTF-8/ASCII default charsetd
 +	refactored to C++11
-+	ntohl/ntohs for endian conversion
++	protocol: ntohl/ntohs for endian conversion
+*	autotools: updated c++11 smart pointer check
+-	utf8_cvt
+=>	native_utf split from fcgistream to own header
+
+0.4.2 [2011-11-22]:
+*	http::form: moved template-invariant code to http_misc
+*	autotools: updated c++ compiler detection and testing
+=>	fcgistream: full templating
++	http::form: shared_ptr fallback if c++11 iostreams test fails during configure
++	transciever: dummy variables to fix silly unused return value warning
 
 0.4r3 [2011-11-02]:
 +	autotools
 
 0.4r2 [2011-10-31]:
-*	replaced UTF-8 codecvt
+*	fcgistream, http: replaced UTF-8 codecvt
 
 0.4r1 [2011-10-29]:
-+	multipart/mixed coded
-*	formurl-encoded refactored to bring in line with other POSTDATA parsers
++	http: multipart/mixed coded
+*	http: formurl-encoded refactored to bring in line with other POSTDATA parsers
 *	updated examples
 *	updated Makefile
-+	made Fastcgipp_m0sh::Http::Form::*::operator ([<>!=]=)|[<>]) fully functional
-*	other refactoring in http/http.(hpp|tcc)
++	http: Form::*: comparison operators
+*	http: other refactoring in http/http.(hpp|tcc)
 
 0.4 [2011-10-24]:
-+	multipart/form-data complete
-*	multipart makes heavy use of regex
++	http: multipart/form-data complete
+*	http: multipart makes heavy use of regex
 ->	(note: just the regex is copied from CGI.pm)
-+	Singleton regexes to emulate Perl's /o
++	http: regexes are now stored as singletons
 
 0.3r1 [2011-10-14]:
 +	Boyer-moore string search in multipart parser
-+	Continuation-based urlencoded parser
-+	Atomic counters
++	http: Continuation-based urlencoded parser
++	http: Atomic counters
 
 0.3 [2011-06-13]:
 ->	Name change; this is now an official fork
