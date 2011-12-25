@@ -1,9 +1,40 @@
+// TODO: nt locking (lock at VC11 <mutex> for hints)
+//! @file mosh/fcgi/bits/rwlock.hpp Readers-writer lock
+/***************************************************************************
+* Copyright (C) 2011 m0shbear                                              *
+*                                                                          *
+* This file is part of fastcgi++.                                          *
+*                                                                          *
+* fastcgi++ is free software: you can redistribute it and/or modify it     *
+* under the terms of the GNU Lesser General Public License as  published   *
+* by the Free Software Foundation, either version 3 of the License, or (at *
+* your option) any later version.                                          *
+*                                                                          *
+* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
+* ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
+* FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
+* License for more details.                                                *
+*                                                                          *
+* You should have received a copy of the GNU Lesser General Public License *
+* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
+****************************************************************************/
+
+#ifndef MOSH_FCGI_RWLOCK_HPP
+#define MOSH_FCGI_RWLOCK_HPP
+
 #include <cstddef>
 #include <system_error>
 #include <mutex>
 extern "C" {
 #include <pthread.h>
 }
+#include <mosh/fcgi/bits/namespace.hpp>
+
+#ifndef PTHREAD_MUTEX_NORMAL
+#error "Non-pthreads implementation does not exist"
+#endif
+
+MOSH_FCGI_BEGIN
 
 /*! @brief A reader-writer lock
  *  This class encapsulates %pthread_rwlock_* with C++ semantics.
@@ -95,4 +126,6 @@ private:
 	std::mutex up_lock;
 };
 
+MOSH_FCGI_END
 
+#endif
