@@ -20,9 +20,7 @@
 
 #include <functional>
 #include <vector>
-
-#include <boost/function.hpp>
-#include <boost/shared_array.hpp>
+#include <limits>
 
 extern "C" {
 #include <unistd.h>
@@ -35,6 +33,7 @@ extern "C" {
 
 #include <mosh/fcgi/exceptions.hpp>
 #include <mosh/fcgi/bits/block.hpp>
+#include <mosh/fcgi/bits/types.hpp>
 #include <mosh/fcgi/protocol/types.hpp>
 #include <mosh/fcgi/protocol/full_id.hpp>
 #include <mosh/fcgi/protocol/header.hpp>
@@ -51,30 +50,25 @@ struct equals_fd : public std::unary_function<pollfd, bool> {
 	};
 };
 
-//! Predicate for testing if the revents in a pollfd is non-zero
-inline bool revents_zero(const pollfd& x)
-{
-	return x.revents;
-}
-
 MOSH_FCGI_BEGIN
 
 int Transceiver::transmit() {
-	while (1) {
-	Buffer::Send_block send_block(buffer.request_read());
-	if (send_block.size) {
-		ssize_t sent = write(send_block.fd, send_block.data, send_block.size);
-		if (sent < 0) {
-			if (errno == EPIPE) {
-				poll_fds.erase(std::find_if(poll_fds.begin(), poll_fds.end(), equals_fd(send_block.fd)));
-				fd_buffers.erase(send_block.fd);
-				sent = send_block.size;
-			} else if (errno != EAGAIN)
-				throw exceptions::Socket_write(send_block.fd, errno);
-		}
-		buffer.free_read(sent);
-		if (sent != send_block.size)
-			break;
+	for(;;) {
+		Buffer::Send_block send_block(buffer.request_read());
+		if (send_block.size) {
+			ssize_t sent = write(send_block.fd, send_block.data, send_block.size);
+			if (sent < 0) {
+				if (errno == EPIPE) {
+					poll_fds.erase(std::find_if(poll_fds.begin(), poll_fds.end(), equals_fd(send_block.fd)));
+					fd_buffers.erase(send_block.fd);
+					sent = send_block.size;
+				} else if (errno != EAGAIN)
+					throw exceptions::Socket_write(send_block.fd, errno);
+			}
+			buffer.free_read(sent);
+			assert (send_block.size <= std::numeric_limits<ssize_t>::max()); 
+			if (sent != send_block.size)
+				break;
 		} else
 			break;
 	}
@@ -103,7 +97,8 @@ bool Transceiver::handler() {
 	if (ret_val < 0)
 		throw exceptions::Poll(errno);
 
-	vector<pollfd>::iterator poll_fd = find_if(poll_fds.begin(), poll_fds.end(), revents_zero);
+	vector<pollfd>::iterator poll_fd = find_if(poll_fds.begin(), poll_fds.end(),
+							[](const pollfd& x) { return !!(x.revents); });
 
 	if (poll_fd->revents & POLLHUP) {
 		fd_buffers.erase(poll_fd->fd);
@@ -139,7 +134,8 @@ bool Transceiver::handler() {
 	// Are we in the process of recieving some part of a frame?
 	if (!message_buffer.data) {
 		// Are we recieving a partial header or new?
-		actual = read(fd, reinterpret_cast<char*>(&header_buffer) + message_buffer.size, sizeof(Header) - message_buffer.size);
+		actual = read(fd, reinterpret_cast<char*>(&header_buffer) + message_buffer.size,
+					sizeof(Header) - message_buffer.size);
 		if (actual < 0 && errno != EAGAIN)
 			throw exceptions::Socket_read(fd, errno);
 		if (actual > 0)
@@ -148,12 +144,16 @@ bool Transceiver::handler() {
 			return (transmit_empty);
 		}
 
-		message_buffer.data.reset(new char[sizeof(Header)+header_buffer.get_content_length()+header_buffer.get_padding_length()]);
+		message_buffer.data.reset(new char[sizeof(Header)
+						   + header_buffer.content_length()
+						   + header_buffer.padding_length()
+						  ]);
+		// we can't make assumptions about message_buffer.data's alignment, so memcpy() is used to safely copy the POD
 		memcpy(static_cast<void*>(message_buffer.data.get()), static_cast<const void*>(&header_buffer), sizeof(Header));
 	}
-
-	const Header& header = *reinterpret_cast<const Header*>(message_buffer.data.get());
-	size_t needed = header.get_content_length() + header.get_padding_length() + sizeof(Header) - message_buffer.size;
+	aligned<8, Header> header(static_cast<void*>(message_buffer.data.get()));
+	size_t needed = header.content_length() + header.padding_length() + sizeof(Header) - message_buffer.size;
+	assert(needed <= std::numeric_limits<ssize_t>::max()); // Send a bug report if this assertion fails
 	actual = read(fd, static_cast<char*>(message_buffer.data.get()) + message_buffer.size, needed);
 	if (actual < 0 && errno != EAGAIN)
 		throw exceptions::Socket_read(fd, errno);
@@ -162,7 +162,7 @@ bool Transceiver::handler() {
 
 	// Did we recieve a full frame?
 	if (actual == needed) {
-		send_message(Full_id(header_buffer.get_request_id(), fd), message_buffer);
+		send_message(Full_id(header_buffer.request_id(), fd), message_buffer);
 		message_buffer.size = 0;
 		message_buffer.data.reset();
 		return false;
@@ -196,7 +196,7 @@ void Transceiver::Buffer::free_read(size_t size) {
 
 }
 
-Transceiver::Transceiver(int fd_, boost::function<void(protocol::Full_id, protocol::Message)> send_message_)
+Transceiver::Transceiver(int fd_, std::function<void(protocol::Full_id, protocol::Message)> send_message_)
 	: buffer(poll_fds, fd_buffers), send_message(send_message_), poll_fds(2), socket(fd_)  {
 	// Let's setup an in/out socket for waking up poll()
 	int soc_pair[2];

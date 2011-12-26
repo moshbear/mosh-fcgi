@@ -2,20 +2,20 @@
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *
-* This file is part of fastcgi++.                                          *
+* This file is part of mosh-fcgi.                                          *
 *                                                                          *
-* fastcgi++ is free software: you can redistribute it and/or modify it     *
+* mosh-fcgi is free software: you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as  published   *
 * by the Free Software Foundation, either version 3 of the License, or (at *
 * your option) any later version.                                          *
 *                                                                          *
-* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
+* mosh-fcgi is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
 * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
 * License for more details.                                                *
 *                                                                          *
 * You should have received a copy of the GNU Lesser General Public License *
-* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
+* along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 // Copy-pasted from wikipedia.
 
@@ -25,6 +25,7 @@
 #include <cstring>
 #include <stdexcept>
 #include <vector>
+#include <cassert>
 
 #include <mosh/fcgi/boyer_moore.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
@@ -77,6 +78,7 @@ std::vector<int> prepare_goodsuffix_heuristic(const std::vector<char>& normal) {
                 size_t test = 0;
 		size_t j = i;
                 for (; j < normal.size() - 1; j++) {                  
+			assert(prefix_reversed[j] >= 0); // If this fails, send a bug report
                         if (prefix_reversed[j] == i) {
                                 test = 1;
                                 if (prefix_reversed[j + 1] == 0) {
