@@ -1,5 +1,5 @@
 File: README
-V: 0.5,2, 2011-12-13 m0shbear
+V: 0.6.0, 2011-12-25 m0shbear
 ==
 http://moshbear.net/proj.pl?a=fcgi
 
@@ -15,7 +15,8 @@ Features added:
 * support for FCGI_ROLE_AUTHORIZER
 * support for FCGI_ROLE_FILTER
 * Http::Session: support for multipart/mixed, application/x-www-formurl-encoded
-
+* HTML and HTTP code from mosh-cgi
+* Alignment support (via memcpy() of structs into statically-allocated aligned arrays)
 
 Features removed:
 * non-essentials from Http::Session. This involves environment variables stored
