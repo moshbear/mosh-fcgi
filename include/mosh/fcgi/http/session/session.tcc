@@ -28,7 +28,6 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <boost/regex.hpp>
 #include <boost/xpressive/xpressive.hpp>
 #include <mosh/fcgi/boyer_moore.hpp>
 #include <mosh/fcgi/http/conv/converter.hpp>
@@ -145,7 +144,7 @@ struct Session<ct, pt>::Mp_type {
 	Boyer_moore_searcher s_bound;
 	//! Pointer to last entry
 	MP_entry* cur_entry;
-		//! @c true if data's Content-type is multipart/mixed (i.e. pass data to fill_mp_mixed)
+	//! @c true if data's Content-type is multipart/mixed (i.e. pass data to fill_mp_mixed)
 	bool mixed;
 
 	Mp_type() : state(State::header) { }
@@ -178,7 +177,7 @@ bool Session<ct, pt>::init_mp(const std::string& bound) {
 	this->multipart = true;
 	this->mp_vars.reset(new Mp_type);
 	this->mp_vars->boundary = bound;
-	_mosh_fcgi__move_construct(this->mp_vars->s_bound, (bound));
+	this->mp_vars->s_bound = Boyer_moore_searcher(bound);
 	return true;
 }
 

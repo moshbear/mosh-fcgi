@@ -18,7 +18,6 @@
 * along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.	   *
 ****************************************************************************/
 
-
 #ifndef MOSH_FCGI_HTTP_SESSION_SESSION_HPP
 #define MOSH_FCGI_HTTP_SESSION_SESSION_HPP
 
@@ -59,15 +58,21 @@ private:
 	//! @c true if envs["CONTENT_TYPE"] contains multipart/form-data
 	bool multipart;
 
-	//! Application/x-www-formurl-encoded specifics
+	/*! @name Application/x-www-formurl-encoded specifics
+	 */
+	//@{
 	struct Ue_type;
 	struct Ue_regex_cache;
 	std::unique_ptr<Ue_type> ue_vars;
+	//@}
 	
-	//! Multipart/form-data specifics
+	/*! @name Multipart/form-data specifics
+	 */
+	//@{
 	struct Mp_type;
 	struct Mp_regex_cache;
 	std::unique_ptr<Mp_type> mp_vars;
+	//@}
 	
 public:
 	//! Default constructor	
@@ -82,16 +87,27 @@ public:
 	void fill_post(const char* data, size_t size);
 
 protected:
+	//! Prepare this % Session for @c application/x-www-formurl-encoded POSTDATA
 	bool init_ue();
+	/*! @brief Prepare this % Session for @c multipart/form-data POSTDATA
+	 *  @param[in] mp_bound The value of attribute boundary in env[CONTENT_TYPE]
+	 */
 	bool init_mp(const std::string& mp_bound);
 private:
+	/*! @name POSTDATA fill helpers
+	 */
+	//@{
+	/*! @brief Fill an @c application/x-www-formurl-encoded entry
+	 * @param[in] data pointer to data
+	 * @param size length of data
+	 */
 	void fill_ue(const char* data, size_t size);
-	/*! @brief Parse a packet of multipart/form-data data.
+	/*! @brief Parse a packet of @c multipart/form-data data.
 	 * @param[in] data pointer to data
 	 * @param size length of data
 	 */
 	void fill_mp(const char* data, size_t size);
-	
+
 	/*! @brief Fill a multipart/mixed entry
 	 * @remark This function is marked private because it relies on preconditions which
 	 * 	 are only guaranteed if called from fill_mp(const char*, size_t).
@@ -99,9 +115,10 @@ private:
 	 * @param size length of data
 	 */
 	void fill_mm(const char* data, size_t size);
+	//@}
 
-	/*! @brief Convert a MIME header into a std::map
-	 * This reads the MIME header in a buffer and returns the result in std::map form.
+	/*! @brief Convert a RFC 822 header into a std::map
+	 * This reads the RFC 822 header in a buffer and returns the result in std::map form.
 	 * Words (in the key portion) are capitalized across headers.
 	 * @param[in] buf the buffer
 	 * @returns the contents of the buffer in a std::map format

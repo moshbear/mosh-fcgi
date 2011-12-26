@@ -31,10 +31,6 @@
 #include <utility>
 #include <vector>
 
-
-#include <boost/lexical_cast.hpp>
-#include <boost/utility.hpp>
-
 extern "C" {
 	#include <sys/types.h>
 	#include <sys/stat.h>
@@ -384,7 +380,7 @@ private:
  * @tparam buffer_type type of value buffer (used for file data)
  */
 template <class char_type, class value_type = std::basic_string<char_type>>
-class MP_entry : public Data<char_type>, private boost::noncopyable {
+class MP_entry : public Data<char_type> {
 private:
 	typedef MP_entry<char_type, value_type> this_type;
 	typedef Data<char_type> base_type;
@@ -418,8 +414,9 @@ public:
 		}
 	}
 
+private:
 	MP_entry(const this_type&) = delete;
-
+public:
 	//! Move constructor
 	MP_entry(this_type&& mpe)
 	: base_type(Type::mp_entry, std::move(mpe)), filename(std::move(mpe.filename)),
@@ -449,7 +446,7 @@ public:
 	/*! @brief Add a header
 	 * @param[in] k key
 	 * @param[in] v value
-	 */
+	 -*/
 	void add_header(const std::string& k, const std::basic_string<char_type>& v) {
 		headers.insert(std::make_pair(k, v));
 	}
@@ -561,8 +558,9 @@ public:
 		f_persist = true;
 	}
 
+private:
 	this_type& operator = (const this_type&) = delete;
-
+public:
 	this_type& operator = (this_type&& mpe) {
 		if (this != &mpe) {
 			base_type::operator = (std::move(mpe));
@@ -664,7 +662,9 @@ private:
 		// Get pid
 		{
 			// Get the PID as a string
-			file += boost::lexical_cast<std::string>(getpid());
+			std::stringstream s;
+			s << getpid();
+			file += s.str();
 		}
 		
 		file += "-";
@@ -719,7 +719,7 @@ private:
  * 			and hybid_vector.
  */
 template <class char_type, class value_type = std::basic_string<char_type>>
-class MP_mixed_entry : public Data<char_type>, private boost::noncopyable {
+class MP_mixed_entry : public Data<char_type> {
 private:
 	typedef MP_mixed_entry<char_type, value_type> this_type;
 	typedef MP_entry<char_type, value_type> entry_type;
@@ -736,20 +736,23 @@ public:
 	{
 		s_bound = Boyer_moore_searcher(bound);
 	}
-	
+
+private:
+	MP_mixed_entry(const this_type&) = delete;
+public:
 	MP_mixed_entry(this_type&& mme)	
-	: base_type(Type::mixed_entry, mme), headers(std::move(mme.headers)),
+		: base_type(Type::mixed_entry, mme), headers(std::move(mme.headers)),
 		values(std::move(mme.values)), bound(mme.bound), s_bound(std::move(mme.s_bound))
 	{ }
 #if 0	
 	//! @brief Create a new MP_mixed_entry from an existing MP_entry
 	MP_mixed_entry(const entry_type& mpe)
-	: base_type(Type::mixed_entry, mpe.name), headers(mpe.headers) 
+		: base_type(Type::mixed_entry, mpe.name), headers(mpe.headers) 
 	{ }
 #endif
 	//! @brief Create a new MP_mixed_entry from an existing MP_entry
 	MP_mixed_entry(entry_type&& mpe)
-	: base_type(Type::mixed_entry, std::move(mpe.name)), headers(std::move(mpe.headers))
+		: base_type(Type::mixed_entry, std::move(mpe.name)), headers(std::move(mpe.headers))
 	{ }
 
 	virtual ~MP_mixed_entry()
@@ -779,7 +782,7 @@ public:
 	 */
 	void add_value(const entry_type& value) {
 		if ((!uniqueness_mode)
-		|| (std::find(values.begin(), values.end(), value) == values.end()))
+				|| (std::find(values.begin(), values.end(), value) == values.end()))
 			values.push_back(value);
 	}
 #endif	
@@ -791,10 +794,10 @@ public:
 	 */
 	void add_value(entry_type&& value) {
 		if ((!uniqueness_mode)
-		|| (std::find(values.begin(), values.end(), value) == values.end()))
+				|| (std::find(values.begin(), values.end(), value) == values.end()))
 			values.push_back(std::move(value));
 	}
-	
+
 	/*! @brief sets the boundary
 	 * Sets the boundary string and (re-)initializes the searcher
 	 * @param[in] s the new boundary string
@@ -805,7 +808,7 @@ public:
 		s_bound = Boyer_moore_searcher(bound);
 		return *this;
 	}
-	
+
 	/*! @brief sets the boundary
 	 * Sets the boundary string and (re-)initializes the searcher
 	 * @param[in] s the new boundary string
@@ -816,7 +819,7 @@ public:
 		s_bound = Boyer_moore_searcher(bound);
 		return *this;
 	}
-	
+
 	const std::string& boundary() const {
 		return bound;
 	}
@@ -834,7 +837,7 @@ public:
 	void disable_unique_mode() {
 		uniqueness_mode = 0;
 	}
-	
+
 	/*! @brief Get the last value
 	 * @throws std::runtime_error if the vector is empty
 	 */
@@ -843,7 +846,7 @@ public:
 			throw std::runtime_error("undefined operation");
 		return values.back();
 	}
-	
+
 	/*! @brief Get the last value
 	 * @throws std::runtime_error if the vector is empty
 	 */
@@ -852,7 +855,7 @@ public:
 			throw std::runtime_error("undefined operation");
 		return values.back();
 	}
-	
+
 	/*! @brief Get the value
 	 * @throws std::runtime_error if the vector has multiple elements (use values() instead)
 	 * @returns the first (and only) value or value_type's default value if the vec is empty
@@ -878,8 +881,9 @@ public:
 		return (values.size() <= 1); // strictly speaking, an empty value is a scalar value
 	}
 
+private:
 	this_type& operator = (const this_type&) = delete;
-
+public:
 	this_type& operator = (this_type&& mme) {
 		if (this != &mme) {
 			base_type::operator = (std::move(mme));
