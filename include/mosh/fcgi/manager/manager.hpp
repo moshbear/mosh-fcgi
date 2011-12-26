@@ -26,12 +26,8 @@
 #include <string>
 #include <queue>
 #include <algorithm>
+#include <functional>
 #include <cstring>
-
-#include <boost/bind.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread.hpp>
-#include <boost/thread/shared_mutex.hpp>
 
 #include <signal.h>
 #include <pthread.h>
@@ -40,6 +36,7 @@
 #include <mosh/fcgi/protocol/full_id.hpp>
 #include <mosh/fcgi/protocol/message.hpp>
 #include <mosh/fcgi/transceiver.hpp>
+#include <mosh/fcgi/bits/rwlock.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -69,8 +66,8 @@ public:
 	 * @param [in] fd File descriptor to listen on.
 	 */
 	Manager(int fd = 0)
-		: transceiver(fd, boost::bind(&Manager::push, boost::ref(*this), _1, _2)),
-		  asleep(false), stop_bool(false), terminate_bool(false) {
+		: transceiver(fd, std::bind(&Manager::push, std::ref(*this), _1, _2)),
+		  asleep(false), do_stop(false), do_terminate(false) {
 		setup_signals();
 		instance = this;
 	}
@@ -131,30 +128,22 @@ public:
 private:
 	//! Handles low level communication with the other side
 	Transceiver transceiver;
-
-	//! Queue type for pending tasks
-	/*!
-	 * This is merely a derivation of a std::queue<protocol::Full_id> and a
-	 * boost::mutex that gives data locking abilities to the STL container.
-	 */
-	class Tasks: public std::queue<protocol::Full_id>, public boost::mutex {};
+	//@{
 	//! Queue for pending tasks
-	/*!
-	 * This contains a queue of protocol::Full_id that need their handlers called.
-	 */
-	Tasks tasks;
-	//! Associative container type for active requests
-	/*!
-	 * This is merely a derivation of a std::map<protocol::Full_id, boost::shared_ptr<T> > and a
-	 * boost::shared_mutex that gives data locking abilities to the STL container.
-	 */
-	class Requests : public std::map<protocol::Full_id, boost::shared_ptr<T>>, public boost::shared_mutex {};
-	//! Associative container type for active requests
-	/*!
+	std::queue<protocol::Full_id> tasks;
+	//! Lock for pending tasks
+	std::mutex tasks_lock;
+	//@}
+	//@{
+	/*! @brief Associative container for active requests
+	 *
 	 * This container associated the protocol::Full_id of each active request with a pointer
 	 * to the actual Request object.
 	 */
-	Requests requests;
+	std::map<protocol::Full_id, std::shared_ptr<T>> requests;
+	//! Rw lock for active requests
+	Rw_lock requests_lock;
+	//@}
 
 	//! A queue of messages for the manager itself
 	std::queue<protocol::Message> messages;
@@ -169,32 +158,37 @@ private:
 	 * @param[in] id Full_id associated with the messsage.
 	 */
 	inline void local_handler(protocol::Full_id id);
-
+	//@{
 	//! Indicated whether or not the manager is currently in sleep mode
 	bool asleep;
 	//! Mutex to make accessing asleep thread safe
-	boost::mutex sleep_mutex;
-	//! The pthread id of the thread the handler() function is operating in.
-	/*!
+	std::mutex sleep_lock;
+	//@}
+
+	/*! @brief The pthread id of the thread the handler() function is operating in.
+	 *
 	 * Although this library is intended to be used with boost::thread and not pthread, the underlying
 	 * pthread id of the %handler() function is needed to call pthreadkill() when sleep is to be interrupted.
 	 */
 	pthread_t thread_id;
-
+	//@{
 	//! Boolean value indicating that handler() should halt
 	/*!
 	 * @sa stop()
 	 */
-	bool stop_bool;
-	//! Mutex to make stop_bool thread safe
-	boost::mutex stop_mutex;
+	bool do_stop;
+	//! Mutex to make do_stop thread safe
+	std::mutex stop_lock;
+	//@}
+	//@{
 	//! Boolean value indication that handler() should terminate
 	/*!
 	 * @sa terminate()
 	 */
-	bool terminate_bool;
-	//! Mutex to make terminate_mutex thread safe
-	boost::mutex terminate_mutex;
+	bool do_terminate;
+	//! Mutex to make do_terminate thread safe
+	std::mutex terminate_lock;
+	//@}
 
 	//! General function to handler POSIX signals
 	static void signal_handler(int signum);

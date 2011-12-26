@@ -26,9 +26,11 @@
 #include <queue>
 #include <algorithm>
 #include <cstring>
+#include <mutex>
+#include <memory>
+#include <utility>
 
 #include <boost/bind.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/shared_mutex.hpp>
 
@@ -58,14 +60,14 @@ template<class T> Manager<T>* Manager<T>::instance = 0;
 
 template<class T>
 void Manager<T>::terminate() {
-	boost::lock_guard<boost::mutex> lock(terminate_mutex);
-	terminate_bool = true;
+	std::lock_guard<std::mutex> lock(terminate_mutex);
+	do_terminate = true;
 }
 
 template<class T>
 void Manager<T>::stop() {
-	boost::lock_guard<boost::mutex> lock(stop_mutex);
-	stop_bool = true;
+	std::lock_guard<std::mutex> lock(stop_mutex);
+	do_stop = true;
 }
 
 template<class T>
@@ -97,7 +99,6 @@ template<class T>
 void Manager<T>::push(protocol::Full_id id, protocol::Message message) {
 	using namespace std;
 	using namespace protocol;
-	using namespace boost;
 
 	if (id.fcgi_id) {
 		upgrade_lock<shared_mutex> req_lock(requests);
@@ -112,10 +113,10 @@ void Manager<T>::push(protocol::Full_id id, protocol::Message message) {
 			if (header.get_type() == Record_type::begin_request) {
 				Begin_request& body = *(Begin_request*)(message.data.get() + sizeof(Header));
 				upgrade_to_unique_lock<shared_mutex> lock(req_lock);
-				boost::shared_ptr<T>& request = requests[id];
+				std::shared_ptr<T>& request = requests[id];
 				request.reset(new T);
 				request->set(id, transceiver, body.get_role(), !body.get_keep_conn(),
-				             bind(&Manager::push, boost::ref(*this), id, _1));
+				             std::bind(&Manager::push, std::ref(*this), id, _1));
 			} else
 				return;
 		}
@@ -131,66 +132,63 @@ void Manager<T>::push(protocol::Full_id id, protocol::Message message) {
 
 template<class T>
 void Manager<T>::handler() {
-	using namespace std;
-	using namespace boost;
-
 	thread_id = pthread_self();
 
-	while (1) {{
-			{
-				lock_guard<mutex> stop_lock(stop_mutex);
-				if (stop_bool) {
-					stop_bool = false;
+	for (;;) {
+		{
+			std::lock_guard<mutex> stop_guard(stop_lock);
+			if (do_stop) {
+				do_stop = false;
+				return;
+			}
+		}
+
+		bool sleep = transceiver.handler();
+
+		{
+			lock_guard<mutex> terminate_lock(terminate_mutex);
+			if (do_terminate) {
+				shared_lock<shared_mutex> requests_lock(requests);
+				if (requests.empty() && sleep) {
+					do_terminate = false;
 					return;
 				}
 			}
+		}
+		
+		tasks_lock.lock();
+		sleep_lock.lock();
 
-			bool sleep = transceiver.handler();
-
-			{
-				lock_guard<mutex> terminate_lock(terminate_mutex);
-				if (terminate_bool) {
-					shared_lock<shared_mutex> requests_lock(requests);
-					if (requests.empty() && sleep) {
-						terminate_bool = false;
-						return;
-					}
-				}
-			}
-
-			unique_lock<mutex> tasks_lock(tasks);
-			unique_lock<mutex> sleep_lock(sleep_mutex);
-
-			if (tasks.empty()) {
-				tasks_lock.unlock();
-
-				asleep = true;
-				sleep_lock.unlock();
-
-				if (sleep) transceiver.sleep();
-
-				sleep_lock.lock();
-				asleep = false;
-				sleep_lock.unlock();
-
-				continue;
-			}
-
-			sleep_lock.unlock();
-
-			protocol::Full_id id = tasks.front();
-			tasks.pop();
+		if (tasks.empty()) {
 			tasks_lock.unlock();
+			asleep = true;
+			sleep_lock.unlock();
+			if (sleep)
+				transceiver.sleep();
+			sleep_lock.lock();
+			asleep = false;
+			sleep_lock.unlock();
+			continue;
+		}
 
-			if (id.fcgi_id == 0)
-				local_handler(id);
-			else {
-				upgrade_lock<shared_mutex> req_read_lock(requests);
-				typename map<protocol::Full_id, boost::shared_ptr<T> >::iterator it(requests.find(id));
-				if (it != requests.end() && it->second->handler()) {
-					upgrade_to_unique_lock<shared_mutex> req_write_lock(req_read_lock);
-					requests.erase(it);
-				}
+		sleep_lock.unlock();
+
+		protocol::Full_id id = tasks.front();
+		tasks.pop();
+		tasks_lock.unlock();
+		if (id.fcgi_id == 0)
+			local_handler(id);
+		else {
+			requests_lock.read_lock();
+			auto it = requests.find(id);
+			if (it != requests.end() && it->second->handler()) {
+				requests_lock.upgrade_lock();
+				requests.erase(it);
+				requests_lock.unlock(); // release write lock
+							// (read lock released in
+							// 	upgrade_lock())
+			} else {
+				requests_lock.unlock(); // release read lock
 			}
 		}
 	}
