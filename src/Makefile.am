@@ -9,23 +9,34 @@ include $(top_srcdir)/include/headerlist
 
 INCLUDES = -I$(top_srcdir)/include
 AM_CPPFLAGS = $(BOOST_CPPFLAGS)
-LD_HTTP = $(BOOST_REGEX_LIBS) $(BOOST_DATE_TIME_LIBS) -lnss3
+LD_HTTP = -lnss3
 LD_CORE = $(BOOST_THREAD_LIBS) 
 LDADD = $(LD_CORE) $(LD_HTTP)
 
+FCGI_FILES = 	boyer_moore.cpp \
+		codecvt_ic.cpp \
+		exceptions.cpp \
+		protocol.cpp \
+		transceiver.cpp
+
+FCGI_HTTP_FILES = 	http/misc.cpp \
+			http/converter.cpp \
+			http/base64.cpp \
+			http/qp.cpp \
+			http/url.cpp
+
+FCGI_HTTP_FILES_2 = 	http/cookie.cpp \
+			http/header_helper/content_type.cpp \
+			http/header_helper/redirect.cpp \
+			http/header_helper/response.cpp \
+			http/header_helper/status.cpp \
+			http/header_helper/status_helper.cpp
+
+FCGI_HTML_FILES =	html/html_doctype.cpp
+
 lib_LTLIBRARIES = libmosh_fcgi.la
 
-libmosh_fcgi_la_LDFLAGS = -version-info 0:4:0
+libmosh_fcgi_la_LDFLAGS = -version-info 0:6:0
 
-libmosh_fcgi_la_SOURCES = $(HEADER_LIST) \
-	base64.cpp \
-	boyer_moore.cpp \
-	codecvt_ic.cpp \
-	converter.cpp \
-	exceptions.cpp \
-	http_misc.cpp \
-	protocol.cpp \
-	qp.cpp \
-	transceiver.cpp \
-	url.cpp
-
+libmosh_fcgi_la_SOURCES = $(HEADER_LIST) $(FCGI_FILES) $(FCGI_HTTP_FILES) $(FCGI_HTTP_FILES_2) $(FCGI_HTML_FILES)
+				
