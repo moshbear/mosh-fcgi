@@ -2,25 +2,28 @@
 * Copyright (C) 2011 m0shbear                                              *
 *		2007 Eddie                                                 *
 *                                                                          *
-* This file is part of fastcgi++.                                          *
+* This file is part of mosh-fcgi.                                          *
 *                                                                          *
-* fastcgi++ is free software: you can redistribute it and/or modify it     *
+* mosh-fcgi is free software: you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as  published   *
 * by the Free Software Foundation, either version 3 of the License, or (at *
 * your option) any later version.                                          *
 *                                                                          *
-* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
+* mosh-fcgi is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
 * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
 * License for more details.                                                *
 *                                                                          *
 * You should have received a copy of the GNU Lesser General Public License *
-* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
+* along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
 #include <fstream>
 #include <algorithm>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/lexical_cast.hpp>
+#include <string>
+#include <sstream>
 
 extern "C" {
 #include <sys/types.h>
@@ -31,8 +34,14 @@ extern "C" {
 #include <mosh/fcgi/http/form.hpp>
 #include <mosh/fcgi/request.hpp>
 #include <mosh/fcgi/manager.hpp>
+#include <mosh/fcgi/http/header.hpp>
+#include <mosh/fcgi/html/element.hpp>
+#include <mosh/fcgi/html/element/ws.hpp>
+#include <mosh/fcgi/html/element/s.hpp>
 
 #include <mosh/fcgi/bits/namespace.hpp>
+
+using namespace MOSH_FCGI;
 
 // I like to have an independent error log file to keep track of exceptions while debugging.
 // You might want a different filename. I just picked this because everything has access there.
@@ -67,157 +76,158 @@ void error_log(const char* msg)
 // should be wchar_t. Keep in mind that this suddendly makes
 // everything wide character and utf compatible. Including HTTP header data (cookies, urls, yada-yada).
 
-class Echo: public MOSH_FCGI::Request<wchar_t>
+class Echo: public Request<wchar_t>
 {
-	void dump_mp(MOSH_FCGI::http::form::MP_entry<wchar_t> const& f) {
-		out << "<ul>";
-		if (f.is_file())
-			out << "<li><b>filename</b>: " << f.filename << "</li>\r\n";
-		if (!f.content_type.empty())
-			out << "<li><b>content-type</b>: " << f.content_type.c_str() << "</li>\r\n";
+	static std::wstring dump_mp(http::form::MP_entry<wchar_t> const& f) {
+		ws::Element ul = ws::ul();
+		if (f.is_file()) {
+			ul += ws::li(ws::b(L"filename")) + L": " + f.filename;
+			ul += L"\r\n";
+		}
+		if (!f.content_type.empty()) {
+			ul += MOSH_FCGI::wide_string<wchar_t>(s::li(s::b("content-type")) + ": " + f.content_type);
+			ul += L"\r\n";
+		}
 		if (!f.headers.empty()) {
-			out << "<li><b>headers:</b>: <ul>";
+			ws::Element ul2 = ws::ul();
 			for (auto& h : f.headers) {
-				out << "<li><b>" << h.first.c_str() << "</b>: "
-				    << h.second << "</li>\r\n";
+				ul2 += ws::li(MOSH_FCGI::wide_string<wchar_t>((s::b(h.first)) + ": ") + h.second;
+				ul2 += L"\r\n";
 			}
-			out << "</ul></li>\r\n";
+			ul += ws::li(ws::b(L"headers: ")) + ul2;
+			ul += L"\r\n";
 		}
 		if (f.is_file()) {
 			f.make_file_persistent();
 			const std::string& s = f.get_disk_filename();
-			out << "<li><b>file location</b>: " << s.c_str() << "<br />\r\n";
 			struct stat sb;
 			stat(s.c_str(), &sb);
-			out << "<b>size</b>: " << sb.st_size << "</li>\r\n";
-		} else {		
-			out << "<li><b>data</b>: ";
+			ul += ws::li(ws::b(L"file location: ")) + s + ws::br + L"\r\n"
+				+ (ws::b(L"size: ")) + boost::lexical_cast<std::wstring>(sb.st_size);
+			ul += L"\r\n";
+		} else {
+			std::wstringstream wss;
 			for (auto& g : f.get_data())
-				out << g;
-			out << "</li>\r\n";
+				wss << g;
+			ul += ws::li(ws::b(L"data: ")) + wss.str();
+			ul += L"\r\n";
 		}
-		out << "</ul>\r\n";
+		return ul;
 	}
 
-	void dump_mm(MOSH_FCGI::http::form::MP_mixed_entry<wchar_t>& m) {
-		out << "<ul>";
+	static std::wstring dump_mm(http::form::MP_mixed_entry<wchar_t>& m) {
+		ws::Element ul = ws::ul();
 		if (!m.headers.empty()) {
-			out << "<li><b>headers</b>: <ul>";
+			ws::Element ul2 = ws::ul();
 			for (auto& h : m.headers) {
-				out << "<li><b>" << h.first.c_str() << "</b>: "
-				    << h.second << "</li>\r\n";
+				ul2 += ws::li(MOSH_FCGI::wide_string<wchar_t>((s::b(h.first)) + ": ") + h.second;
+				ul2 += L"\r\n";
 			}
-			out << "</ul></li>\r\n";
+			ul += ws::li(ws::b(L"headers: ")) + ul2;
+			ul += L"\r\n";
 		}
 		auto& v = m.values;
 		if (v.size() > 0) {
-			out << "<li><b>files</b>: ";
 			if (!m.is_scalar_value()) {
-				size_t i_sz = v.size();
-				for (size_t i = 0; i < i_sz; ++i) {
-					if (i == 0)
-						out << "<ul>";
-					out << "<li>";
-					dump_mp(v[i]);
-					out << "</li>\r\n";
-					if (i == i_sz - 1)
-						out << "</ul><br />\r\n";
+				ws::Element ul2 = ws::ul();
+				for (const auto& a : v) {
+					ul2 += ws::li(dump_mp(a));
+					ul2 += L"\r\n";
 				}
-			} else if (v.size() == 1)
-				dump_mp(v[0]);
-			out << "</ul>\r\n";
+				ul += ws::li(ws::b(L"files: ")) + ul2;
+			} else if (v.size() == 1) 
+				ul += ws::li(ws::b(L"files: ")) + dump_mp(v[0]);
+			ul += L"\r\n";
 		}
-		out << "</ul>\r\n";
+		return ul;
 	}
 		
 	bool response()
 	{
-		wchar_t langString[] = L"русский";
+		using namespace html::element;
+		// Print a header with a set cookie
+		// Note: Cookie data must be ASCII. Q-encoding or url-encoding can be used, but results
+		// 	are implementation definded.
+		out.dump(http::header::content_type("text/html", "utf-8") + http::Cookie({"lang", "ru"}));
 
-		// Let's make our header, note the charset=utf-8. Remember that HTTP headers
-		// must be terminated with \r\n\r\n. NOT just \n\n.
-		// Let's set a cookie just for fun too, in UTF-8.
-		out << "Set-Cookie: lang=" << langString << '\n';
-		out << "Content-Type: text/html; charset=utf-8\r\n\r\n";
-
-		// Now it's all stuff you should be familiar with
-		out << "<html><head><meta http-equiv='Content-Type' content='text/html; charset=utf-8' />";
-		out << "<title>fastcgi++-m0sh: Echo in UTF-8</title></head><body>";
-
-		out << "<h1>Session Parameters</h1>";
-		out << "<p><ul>";
-		for (auto& e : session.envs) {
-			out << "<li><b>" << e.first.c_str() << "</b>: "
-				<< e.second.c_str() << "</li>\r\n";
+		out << ws::html_begin();
+		out << ws::head({
+				ws::meta({
+					ws::P("http-equiv", L"Content-Type"),
+					ws::P("content", L"text/html"),
+					ws::P("charset", L"utf-8")
+				}),
+				ws::title(L"mosh-fcgi: Hello World in UTF-8")
+			});
+		out << ws::body_begin();
+		out << ws::h1(L"Session Parameters");
+	
+		// Print env vars
+		{
+			s::Element ul = ss::ul();
+			for (auto& e : session.envs) {
+				ul += s::li(s::b(e.first)) + ": " + e.second;
+				ul += "\r\n";
+			}
+			// To avoid the overhead of converting to unicode, then back to UTF-8, we
+			// just dump the ascii data as-is
+			out.dump(s::p(ul));
 		}
-		out << "</ul></p>";
+	
+		// Print GETs (i.e. parsed QUERY_STRING)
 		if (!session.gets.empty()) {
-			out << "<h1>GETs</h1><br />\r\n<ul>";
+			out.dump(s::h1("GETs (decoded QUERY_STRING)").to_string() + s::br.to_string() + "\r\n");
+			ws::Element ul = ws::ul();
 			for (auto& g : session.gets) {
-				out << "<li><b>" << g.first << "</b>: ";
 				if (!g.second.is_scalar_value()) {
-					size_t i_sz = g.second.values.size();
-					for (size_t i = 0; i < i_sz; ++i) {
-						if (i == 0)
-							out << "<ul>";
-						out << "<li>" << g.second.values[i] << "</li>\r\n";
-						if (i == i_sz - 1)
-							out << "</ul>\r\n";
+					ws::Element ul2 = ws::ul();
+					for (const auto& a : g.second.values) {
+						ul2 += ws::li(a);
+						ul2 += L"\r\n";
 					}
-				} else
-					out << g.second.value();
-				out << "</li>";
-					
+					ul += ws::li(ws::b(g.first)) + L": " + ul2.to_string();
+				} else {
+					out << ws::li(ws::b(g.first)) + L": " + g.second.value();
+				}	
 			}
-			out << "</ul><br />\r\n";
+			out << ul << ws::br << L"\r\n";
 		}
+		// Print POSTDATA
 		if (!session.posts.empty()) {
-			out << "<h1>POSTs</h1><br />\r\n<ul>";
+			out.dump(s::h1("POSTs").to_string() + s::br.to_string() + "\r\n");
+			ws::Element ul = ws::ul();
 			for (auto& p : session.posts) {
-				out << "<li><b>" << p.first << "</b>: ";
 				if (!p.second.is_scalar_value()) {
-					size_t i_sz = p.second.values.size();
-					for (size_t i = 0; i < i_sz; ++i) {
-						if (i == 0)
-							out << "<ul>";
-						out << "<li>";
-						dump_mp(p.second.values[i]);
-						out << "</li>\r\n";
-						if (i == i_sz - 1)
-							out << "</ul><br />\r\n";
+					ws::Element ul2 = ws::ul();
+					for (const auto& v : p.second.values) {
+						ul2 += ws::li(dump_mp(v));
+						ul2 += L"\r\n";
 					}
+					ul += ws::li(ws::b(p.first)) + ul2;
 				} else 
-					dump_mp(p.second.value());
-				out << "</li>\r\n";
-
+					ul += ws::li(ws::b(p.first)) + dump_mp(p.second.value());
 			}
+			out << ul << ws::br << L"\r\n";
 		}
-		
 		if (!session.mm_posts.empty()) {
-			out << "<h1>POST files</h1> (multipart/mixed)<br />\r\n<ul>";
+			out.dump(s::h1("POST files (multipart/mixed)").to_string() + s::br.to_string() + "\r\n");
+			ws::Element ul = ws::ul();
 			for (auto& mm : session.mm_posts) {
-				out << "<li><b>" << mm.first << "</b>: ";
 				if (!mm.second.is_scalar_value()) {
-					size_t i_sz = mm.second.values.size();
-					for (size_t i = 0; i < i_sz; ++i) {
-						if (i == 0)
-							out << "<ul>";
-						out << "<li>";
-						dump_mm(mm.second.values[i]);
-						out << "</li>\r\n";
-						if (i == i_sz - 1)
-							out << "</ul><br />\r\n";
+					ws::Element ul2 = ws::ul();
+					for (const auto& v : m.second.values) {
+						ul2 += ws::li(dump_mm(v);
+						ul2 += L"\r\n";
 					}
-					out << "</li>\r\n";
-				} else if (mm.second.values.size() == 0)
-					dump_mm(mm.second.values[0]);
-				out << "</li>\r\n";
+					ul += ws::li(ws::b(p.first)) + ul2;
+				} else 
+					ul += ws::li(ws::b(p.first)) + dump_mp(p.second.value());
 			}
-			out << "</ul>\r\n";
+			out << ul << ws::br << L"\r\n";
 		}
-		out << "</body></html>";
+		out << ws::body_end() << ws::html_end();
 
-		// Always return true if you are done. This will let apache know we are done
+		// Always return true if you are done. This will let http know we are done
 		// and the manager will destroy the request and free it's resources.
 		// Return false if you are not finished but want to relinquish control and
 		// allow other requests to operate. You might do this after an SQL query

@@ -1,20 +1,21 @@
 /***************************************************************************
-* Copyright (C) 2007 Eddie Carle [eddie@erctech.org]                       *
+* Copyright (C) 2011 m0shbear <andrey at moshbear dot net>                 *
+*               2007 Eddie Carle [eddie@erctech.org]                       *
 *                                                                          *
-* This file is part of fastcgi++.                                          *
+* This file is part of mosh-fcgi.                                          *
 *                                                                          *
-* fastcgi++ is free software: you can redistribute it and/or modify it     *
+* mosh-fcgi is free software: you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as  published   *
 * by the Free Software Foundation, either version 3 of the License, or (at *
 * your option) any later version.                                          *
 *                                                                          *
-* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
+* mosh-fcgi is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
 * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
 * License for more details.                                                *
 *                                                                          *
 * You should have received a copy of the GNU Lesser General Public License *
-* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
+* along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
 
@@ -23,6 +24,9 @@
 
 #include <mosh/fcgi/request.hpp>
 #include <mosh/fcgi/manager.hpp>
+#include <mosh/fcgi/http/header.hpp>
+#include <mosh/fcgi/html/element.hpp>
+#include <mosh/fcgi/html/element/s.hpp>
 
 // I like to have an independent error log file to keep track of exceptions while debugging.
 // You might want a different filename. I just picked this because everything has access there.
@@ -41,32 +45,35 @@ void error_log(const char* msg)
 }
 
 // Let's make our request handling class. It must do the following:
-// 1) Be derived from Fastcgipp::Request
-// 2) Define the virtual response() member function from Fastcgipp::Request()
+// 1) Be derived from MOSH_FCGI::Request
+// 2) Define the virtual response() member function from MOSH_FCGI::Request()
 
 // First things first let's decide on what kind of character set we will use. Let's just
-// use good old ISO-8859-1 this time. No wide characters
+// use good old ASCII this time. No high-bit or wide characters
 
-class Upload: public m0sh::fcgi::Request<char>
-{
+class Upload: public MOSH_FCGI::Request<char> {
 public:
 	Upload(): doneHeader(false), totalBytesReceived(0) {}
 private:
 	// We need to define a state variable so we know where we are when response() is called a second time.
 	bool doneHeader;
 
-	void doHeader()
-	{
+	void doHeader() {
+		using namespace html::element;
+		
 		// We obviously only want to do our header once.
-		if(!doneHeader)
-		{
-			// Let's make our header, note the charset=ISO-8859-1. Remember that HTTP headers
-			// must be terminated with \r\n\r\n. NOT just \n\n.
-			out << "Content-Type: text/html; charset=ISO-8859-1\r\n\r\n";
-
-			// Here it's all stuff you should be familiar with
-			out << "<html><head><meta http-equiv='Content-Type' content='text/html; charset=ISO-8859-1' />";
-			out << "<title>fastcgi++: Upload Progress Meter</title></head><body>";
+		if(!doneHeader) {
+			out << http::header::content_type("text/html", "US-ASCII");
+			
+			out << s::html_begin()
+			    << s::head({
+					s::meta({
+						s::P("http-equiv", "Content-Type"),
+						s::P("content", "text/html; charset=US-ASCII")
+					}),
+					s::title("mosh-fcgi: upload progress meter")
+				})
+			    << s::body_begin();
 
 			doneHeader=true;				
 		}
@@ -77,7 +84,8 @@ private:
 		// In case there was no uploaded data, we need to make our header.
 		doHeader();
 		
-		out << "Upload Finished!";
+		out << "upload finished";
+		out << html::element::s::body_end() << html::element::s::html_end();
 		out << "</body></html>";
 
 		// Always return true if you are done. This will let apache know we are done
@@ -87,30 +95,24 @@ private:
 		return true;
 	}
 
-	int totalBytesReceived;
-	void inHandler(int bytesReceived)
-	{
+	ssize_t totalBytesReceived;
+	void in_handler(int bytesReceived) {
 		doHeader();
-
-		out << (totalBytesReceived+=bytesReceived) << '/' << session.envs["CONTENT_LENGTH"] << "<br />";
+		out << (totalBytesReceived+=bytesReceived) << '/' << session.envs["CONTENT_LENGTH"] << html::element::s::br();
 		out.flush();    // Make sure to flush the buffer so it is actually sent.
 	}
 };
 
 // The main function is easy to set up
-int main()
-{
-	try
-	{
+int main() {
+	try {
 		// First we make a Fastcgipp::Manager object, with our request handling class
 		// as a template parameter.
-		m0sh::fcgi::Manager<Upload> fcgi;
+		MOSH_FCGI::Manager<Upload> fcgi;
 		// Now just call the object handler function. It will sleep quietly when there
 		// are no requests and efficiently manage them when there are many.
 		fcgi.handler();
-	}
-	catch(std::exception& e)
-	{
+	} catch(std::exception& e) {
 		error_log(e.what());
 	}
 }

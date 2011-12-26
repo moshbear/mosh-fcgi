@@ -22,6 +22,9 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <mosh/fcgi/request.hpp>
+#include <mosh/fcgi/http/header.hpp>
+#include <mosh/fcgi/html/element.hpp>
+#include <mosh/fcgi/html/element/s.hpp>
 #include <mosh/fcgi/manager.hpp>
 
 // In this example we are going to use boost::asio to handle our timers and callback.
@@ -56,10 +59,9 @@ void error_log(const char* msg)
 // 2) Define the virtual response() member function from MOSH_FCGI::Request()
 
 // First things first let's decide on what kind of character set we will use. Let's just
-// use good old ISO-8859-1 this time. No wide characters
+// use good old ascii this time. No wide or high-bit characters
 
-class Timer: public MOSH_FCGI::Request<char>
-{
+class Timer: public MOSH_FCGI::Request<char> {
 public:
 	Timer(): state(START) {}
 private:
@@ -68,22 +70,24 @@ private:
 
 	boost::scoped_ptr<boost::asio::deadline_timer> t;
 
-	bool response()
-	{
-		switch(state)
-		{
-			case START:
-			{
-				// Let's make our header, note the charset=ISO-8859-1. Remember that HTTP headers
-				// must be terminated with \r\n\r\n. NOT just \n\n.
-				out << "Content-Type: text/html; charset=ISO-8859-1\r\n\r\n";
+	bool response() {
+		using namespace html::element;
+		switch(state) {
+			case START: {
+				out << http::header::Header(http::header::content_type("text/html", "US-ASCII"));
 
-				// Here it's all stuff you should be familiar with
-				out << "<html><head><meta http-equiv='Content-Type' content='text/html; charset=ISO-8859-1' />";
-				out << "<title>fastcgi++: Threaded Timer</title></head><body>";
-				
+				out << s::html_begin()
+				    << s::head({
+						s::meta({
+							s::P("http-equiv", "Content-Type"),
+							s::P("content", "text/html; charset=US-ASCII")
+						}),
+						s::title("mosh-fcgi: threaded timer")
+					})
+				    << s::body_begin();
+			
 				// Output a message saying we are starting the timer
-				out << "Starting Timer...<br />";
+				out << "starting timer..." << s::br();
 
 				// Let's flush the buffer just to get it out there.
 				out.flush();
@@ -122,15 +126,16 @@ private:
 				// We must return false if the request is not yet complete.
 				return false;
 			}
+			
 			case FINISH:
 			{
 				// Although we don't need the message we were sent, it is stored in the Request class as member data named
 				// "message".
-				out << "Timer Finished! Our message data was \"" << message.data.get() << "\"";
-				out << "</body></html>";
+				out << "timer finished! message data: \"" << message.data.get() << "\"";
+				out << s::body_end() << s::html_end();
 
-				// Always return true if you are done. This will let apache know we are done
-				// and the manager will destroy the request and free it's resources.
+				// Always return true if you are done. This will let httpd know we are done
+				// and the manager will destroy the request and free its resources.
 				// Return false if you are not finished but want to relinquish control and
 				// allow other requests to operate.
 				return true;

@@ -31,6 +31,9 @@
 
 #include <mosh/fcgi/request.hpp>
 #include <mosh/fcgi/manager.hpp>
+#include <mosh/fcgi/http/header.hpp>
+#include <mosh/fcgi/html/element.hpp>
+#include <mosh/fcgi/html/element/s.hpp>
 
 // I like to have an independent error log file to keep track of exceptions while debugging.
 // You might want a different filename. I just picked this because everything has access there.
@@ -73,7 +76,7 @@ class ShowGnu: public MOSH_FCGI::Request<char>
 
 
 		{
-			// Using the linux stat function (man 2 stat) to get the modification time and filesize beforehand.
+			// Using the stat function (man 2 stat) to get the modification time and filesize beforehand.
 			struct stat fileStat;
 			stat("gnu.png", &fileStat);
 			fileSize = fileStat.st_size;
@@ -92,7 +95,7 @@ class ShowGnu: public MOSH_FCGI::Request<char>
 		// we don't need to send the image to them.
 		int s_etag;
 		try { s_etag = lexical_cast<int>(session.envs["HTTP_IF_NONE_MATCH"]); }
-		catch(bad_lexical_cast &) { s_etag = 0; }
+		catch(bad_lexical_cast&) { s_etag = 0; }
 		posix_time::ptime s_ifmodsince;
 		{
 			stringstream dateStream;
@@ -101,33 +104,39 @@ class ShowGnu: public MOSH_FCGI::Request<char>
 			dateStream.imbue(locale(locale::classic(), new posix_time::time_input_facet("%a, %d %b %Y %H:%M:%S GMT")));
 			dateStream >> s_ifmodsince;
 		}
-
+	
 		if(!s_ifmodsince.is_not_a_date_time() && etag==s_etag && modTime<=s_ifmodsince)
 		{
-			out << "Status: 304 Not Modified\r\n\r\n";
+			out << http::Header::status(304);
 			return true;
+		}
+
+		{
+			http::header::Header h;
+			// Now we transmit our HTTP header to the client
+			h += {
+				// First the modification time of the file
+				http::header::P("Last-Modified", boost::lexical_cast<std::string>(modTime)),
+				// Then a Etag. Note that the session.etag is an integer value. NOT an std::string.
+				http::header::P("Etag", boost::lexical_cast<std::string>(etag),
+				// Next the size
+				http::header::P("Content-Length", boost::lexical_cast<std::string>(fileSize)),
+				// Then content type
+				http::header::P("Content-Type", "image/png")
+			};
+			out << h;
 		}
 
 		// Setup an fstream for our file.
 		std::ifstream image("gnu.png");
-
-		// Now we transmit our HTTP header to the client
-		// First we send the modification time of the file
-		out << "Last-Modified: " << modTime << '\n';
-		// Then a Etag. Note that the session.etag is an integer value. NOT an std::string.
-		out << "Etag: " << etag << '\n';
-		// Next the size
-		out << "Content-Length: " << fileSize << '\n';
-		// Then content type. Remember an HTTP header is supposed to be
-		// terminated with \r\n\r\n NOT just \n\n
-		out << "Content-Type: image/png\r\n\r\n";
-
+		
 		// Now that the header is sent, we can transmit the actual image.
 		// To send raw binary data to the client, the streams have a
 		// dump function that bypasses the streambuffer and it's code
 		// conversion. The function is overloaded to either:
-		// out.dump(basic_istream<char>& stream); or
-		// out.dump(char* data, size_t size);
+		// out.dump(basic_istream<char>& stream);
+		// out.dump(std::string const& str); or
+		// out.dump(const char* data, size_t size);
 		//
 		// Remember that if we are using wide characters internally, the stream
 		// converts anything sent into the stream to UTF-8 before transmitting
@@ -135,7 +144,7 @@ class ShowGnu: public MOSH_FCGI::Request<char>
 		// any code conversion so that is why this function exists.
 		out.dump(image);
 		
-		// Always return true if you are done. This will let apache know we are done
+		// Always return true if you are done. This will let httpd know we are done
 		// and the manager will destroy the request and free it's resources.
 		// Return false if you are not finished but want to relinquish control and
 		// allow other requests to operate. You might do this after an SQL query

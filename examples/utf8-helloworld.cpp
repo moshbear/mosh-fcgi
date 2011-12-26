@@ -1,20 +1,21 @@
 /***************************************************************************
-* Copyright (C) 2007 Eddie                                                 *
+* Copyright (C) 2011 m0shbear                                              *
+*               2007 Eddie                                                 *
 *                                                                          *
-* This file is part of fastcgi++.                                          *
+* This file is part of mosh-fcgi.                                          *
 *                                                                          *
-* fastcgi++ is free software: you can redistribute it and/or modify it     *
+* mosh-fcgi is free software: you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as  published   *
 * by the Free Software Foundation, either version 3 of the License, or (at *
 * your option) any later version.                                          *
 *                                                                          *
-* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
+* mosh-fcgi is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
 * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
 * License for more details.                                                *
 *                                                                          *
 * You should have received a copy of the GNU Lesser General Public License *
-* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
+* along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -22,6 +23,9 @@
 
 #include <mosh/fcgi/request.hpp>
 #include <mosh/fcgi/manager.hpp>
+#include <mosh/fcgi/http/header.hpp>
+#include <mosh/fcgi/html/element.hpp>
+#include <mosh/fcgi/html/element/ws.hpp>
 
 // I like to have an independent error log file to keep track of exceptions while debugging.
 // You might want a different filename. I just picked this because everything has access there.
@@ -61,33 +65,39 @@ class HelloWorld: public MOSH_FCGI::Request<wchar_t>
 {
 	bool response()
 	{
-		// Let's define our hello worlds. Unfortunately C++ doesn't yet support unicode string literals, but it is
-		// just around the corner. Obviously we could have read this data in from a UTF-8 file, but in this example
-		// I found it easier to just use these arrays.
-		wchar_t russian[] = L"Привет мир";
-		wchar_t chinese[] = L"世界您好";
-		wchar_t greek[] = L"Γεια σας κόσμο";
-		wchar_t japanese[] = L"今日は世界";
-		wchar_t runic[] = L"ᚺᛖᛚᛟ ᚹᛟᛉᛚᛞ";
+		using namespace MOSH_FCGI::http;
+		using namespace MOSH_FCGI::html::element;
 
-		// Let's make our header, note the charset=utf-8. Remember that HTTP headers
-		// must be terminated with \r\n\r\n. NOT just \n\n.
-		out << "Content-Type: text/html; charset=utf-8\r\n\r\n";
+		// Print the header. Note use of Fcgistream<charT>::dump(std::string const&) to
+		// dump ASCII data directly to the stream.
+		// Note: header::operator string() automatically does proper encoding wrt
+		// 	line endings, including \r\n\r\n termination
+		out.dump(header::content_type("text/html", "utf-8"));
 
-		// Now it's all stuff you should be familiar with
-		out << "<html><head><meta http-equiv='Content-Type' content='text/html; charset=utf-8' />";
-		out << "<title>fastcgi++: Hello World in UTF-8</title></head><body>";
-		out << "English: Hello World<br>";
-		out << "Russian: " << russian << "<br>";
-		out << "Greek: " << greek << "<br>";
-		out << "Chinese: " << chinese << "<br>";
-		out << "Japanese: " << japanese << "<br>";
-		out << "Runic English?: " << runic << "<br>";
-		out << "</body></html>";
 
+		// Here we use the html renderer imported from my fork of mosh-cgi
+		out << ws::html_begin();
+		out << ws::head({
+				ws::meta({
+					ws::P("http-equiv", L"Content-Type"),
+					ws::P("content", L"text/html"),
+					ws::P("charset", L"utf-8")
+				}),
+				ws::title(L"mosh-fcgi: Hello World in UTF-8")
+			});
+		out << ws::body({
+			L"English: Hello World", ws::br,
+			L"Russian: Привет мир", ws::br,
+			L"Greek: Γεια σας κόσμο", ws::br,
+			L"Chinese: 世界您好", ws::br,
+			L"Japanese: 今日は世界", ws::br,
+			L"Runic English?: ᚺᛖᛚᛟ ᚹᛟᛉᛚᛞ", ws::br
+		});
+		out << ws::html_end();
+		
 		// There is also a stream setup for error output. Anything sent here will go
-		// to your apache error log. We'll send something there for fun.
-		err << "Hello apache error log";
+		// to your server's error log. We'll send something there for fun.
+		err << L"Hello, error.log from utf8-test";
 
 		// Always return true if you are done. This will let apache know we are done
 		// and the manager will destroy the request and free it's resources.
