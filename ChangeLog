@@ -1,3 +1,14 @@
+For those not a fan of git log:
+
+0.6.0 [2011-12-19]:
+*	aligned and packed data types
+*	replaced boost rwlock with pthread rwlock
++	examples: filter
++	examples: koi8r
++	html/* (imported from mosh-cgi)
++	http/header (imported from mosh-cgi)
++	http/cookie (imported from mosh-cgi)
+
 0.5.2 [2011-12-13]: **LAST VERSION BEFORE MERGE **
 *	singleton changed from boost to std
 
