@@ -5,12 +5,12 @@
 * This file is part of fastcgi++.                                          *
 *                                                                          *
 * fastcgi++ is free software: you can redistribute it and/or modify it     *
-* under the terms of the Gn_u Lesser General Public License as  published   *
+* under the terms of the GNU Lesser General Public License as  published   *
 * by the Free Software Foundation, either version 3 of the License, or (at *
 * your option) any later version.                                          *
 *                                                                          *
 * fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
-* ANY Wa_rRANTY; without even the implied warranty of MERCHANTABILITY or    *
+* ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
 * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
 * License for more details.                                                *
 *                                                                          *
@@ -57,7 +57,9 @@ public:
 	void set(protocol::Full_id id, Transceiver& transceiver, protocol::Record_type type) {
 		buffer.set(id, transceiver, type);
 	}
-
+	/*! @name Dumpers
+	 */
+	//@{
 	/*! @brief Dumps raw data directly into the FastCGI protocol
 	 * This function exists as a mechanism to dump raw data out the stream bypassing
 	 * the stream buffer or any code conversion mechanisms. If the user has any binary
@@ -66,8 +68,19 @@ public:
 	 * @param[in] data Pointer to first byte of data to send
 	 * @param[in] size Size in bytes of data to be sent
 	 */
-	void dump(char* data, size_t size) {
+	void dump(const char* data, size_t size) {
 		buffer.dump(data, size);
+	}
+	/*! @brief Dumps a byte string directy into the FastCGI protocol
+	 * This function exists as a mechanism to dump raw data, in the form of a
+	 * % strinf out the stream bypassing the stream buffer or any code conversion mechanisms.
+	 * If the user has any binary data to send, this is the function to do it with.
+	 * Typically, this is used for HTTP headers, which must be encoded in ASCII.
+	 * 
+	 * @param[in] str Const-reference to string to print
+	 */
+	void dump(std::string const& str) {
+		buffer.dump(str.data(), str.size());
 	}
 	/*! @brief Dumps an input stream directly into the FastCGI protocol
 	 * This function exists as a mechanism to dump a raw input stream out this stream bypassing
@@ -77,7 +90,7 @@ public:
 	 * @param[in] stream Reference to input stream that should be transmitted.
 	 */
 	void dump(std::basic_istream<char>& stream);
-	
+	//@}
 	/*! @brief Sets the output character set.
 	 * @throws std::invalid_argument if native encoding cannot be converted to argument type
 	 * @param[in] s Output charset
@@ -132,7 +145,7 @@ private:
 		 * @param[in] data Pointer to first byte of data to send
 		 * @param[in] size Size in bytes of data to be sent
 		 */
-		void dump(char* data, size_t size) {
+		void dump(const char* data, size_t size) {
 			dump_ptr = data;
 			dump_size = size;
 			sync();
@@ -159,7 +172,7 @@ private:
 		std::streamsize xsputn(const _char_type *s, std::streamsize n);
 
 		//! Pointer to the data that needs to be transmitted upon flush
-		char* dump_ptr;
+		const char* dump_ptr;
 		//! Size of the data pointed to be dump_ptr
 		size_t dump_size;
 
