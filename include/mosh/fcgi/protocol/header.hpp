@@ -1,33 +1,31 @@
-//! \file protocol.hpp Defines FasTCGI protocol
+//! @file protocol/header.hpp FastCGI header
 /***************************************************************************
-* Copyright (C) 2007 Eddie                                                 *
+* Copyright (C) 2011 m0shbear                                              *
+*               2007 Eddie                                                 *
 *                                                                          *
-* This file is part of fastcgi++.                                          *
+* This file is part of mosh-fcgi.                                          *
 *                                                                          *
-* fastcgi++ is free software: you can redistribute it and/or modify it     *
+* mosh-fcgi is free software: you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as  published   *
 * by the Free Software Foundation, either version 3 of the License, or (at *
 * your option) any later version.                                          *
 *                                                                          *
-* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
+* mosh-fcgi is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
 * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
 * License for more details.                                                *
 *                                                                          *
 * You should have received a copy of the GNU Lesser General Public License *
-* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
+* along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
 
 #ifndef MOSH_FCGI_PROTOCOL_HEADER_HPP
 #define MOSH_FCGI_PROTOCOL_HEADER_HPP
 
-extern "C" {            //
-#include <netinet/in.h> // for ntohs, ntohl
-#include <arpa/inet.h>  //
-}                       //
 #include <cstdint>
 #include <mosh/fcgi/protocol/types.hpp>
+#include <mosh/fcgi/protocol/gs.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -47,78 +45,57 @@ namespace protocol {
 	 * endianess and order of data is kept correct through the accessor member functions.
 	 */
 	class Header {
-	public:
-		/*! @brief Set the version field of the record header!
-		 * @param[in] version FastCgI protocol version number
-		 */
-		void set_version(uint8_t version) { this->version = version; }
-		/*! @brief Get the version field of the record header!
-		 * @return version FastCgI protocol version number
-		 */
-		int get_version() const { return version; }
-
-		/*! @brief Set the record type in the header!
-		 * @param[in] type Record type
-		 */
-		void set_type(Record_type type) {
-			this->type = static_cast<uint8_t>(type);
+	public:	
+		Header(uint8_t _version_, Record_type _type_, uint16_t _reqid_, uint16_t _clen_, uint8_t _padlen_) {
+			version() = _version_;
+			type() = _type_;
+			request_id() = _reqid_;
+			content_length() = _clen_;
+			padding_length() = _padlen_;
 		}
 
-		/*! @brief Get the record type in the header!
-		 * @return Record type
+		/*! @name Getter-setters for version field of record header
 		 */
-		Record_type get_type() const {
-			return static_cast<Record_type>(type);
-		}
-		/*! @brief Set the request ID field in the record header!
-		 * @param[in] request_id The records request ID
+		//@{
+		_gs_u8 version() { return _gs_u8(_version); }
+		_g_u8 version() const { return _g_u8(_version); }
+		//@}
+		/*! @name Getter-setters for record type in header
+		*/
+		//@{
+		_gs_type type() { return _gs_type(_type); }
+		_g_type type() const { return _g_type(_type); }
+		//@}
+		/*! @name Getter-setters for request ID field in record header
 		 */
-		void set_request_id(Request_id request_id) {
-			this->request_id.value = ntohs(request_id);
-		}
-		/*! @brief Get the request ID field in the record header!
-		 * @return The records request ID
+		//@{
+		_gs_u16 request_id() { return _gs_u16(_request_id); }
+		_g_u16 request_id() const { return _g_u16(_request_id); }
+		//@}
+		/*! @name Getter-setters for content length field in record header
 		 */
-
-		Request_id get_request_id() const {
-			return ntohs(request_id.value);
-		}
-
-		/*! @brief Set the content length field in the record header!
-		 * @param[in] content_length The records content length
+		//@{
+		_gs_u16 content_length() { return _gs_u16(_content_length); }
+		_g_u16 content_length() const { return _g_u16(_content_length); }
+		//@}
+		/*! @name Getter-setters for padding length in record header
 		 */
-		void set_content_length(uint16_t content_length) {
-			this->content_length.value = ntohs(content_length);
-		}
-		/*! @brief Get the content length field in the record header!
-		 * @return The records content length
-		 */
-		uint16_t get_content_length() const {
-			return ntohs(content_length.value);
-		}
-		/*! @brief Set the padding length field in the record header!
-		 * @param[in] padding_length The records padding length
-		 */
-		void set_padding_length(uint8_t padding_length) {
-			this->padding_length = padding_length;
-		}
-		/*! @brief Get the padding length field in the record header!
-		 * @return The records padding length
-		 */
-		uint8_t get_padding_length() const {
-			return padding_length;
-		}
+		//@{
+		_gs_u8 padding_length() { return _gs_u8(_padding_length); }
+		
+		_g_u8 padding_length() const { return _g_u8(_padding_length); }
+		//@}
 	private:
 		//! FastCGI version number
-		uint8_t version;
+		uint8_t _version;
 		//! Record type
-		uint8_t type;
-		u16_t request_id;
-		u16_t content_length;
+		uint8_t _type;
+		u16_t _request_id;
+		u16_t _content_length;
 		//! Length of record padding
-		uint8_t padding_length;
+		uint8_t _padding_length;
 		//! Reseved for future use and header padding
-		uint8_t reserved;
+		uint8_t _reserved;
 	};
 #pragma pack(pop)
 

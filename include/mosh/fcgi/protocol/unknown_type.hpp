@@ -1,21 +1,22 @@
-//! \file protocol.hpp Defines FasTCGI protocol
+//! @file protocol/unknown_type.hpp FastCGI UNKNOWN_TYPE record
 /***************************************************************************
-* Copyright (C) 2007 Eddie                                                 *
+* Copyright (C) 2011 m0shbear                                              *
+*               2007 Eddie                                                 *
 *                                                                          *
-* This file is part of fastcgi++.                                          *
+* This file is part of mosh-fcgi.                                          *
 *                                                                          *
-* fastcgi++ is free software: you can redistribute it and/or modify it     *
+* mosh-fcgi is free software: you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as  published   *
 * by the Free Software Foundation, either version 3 of the License, or (at *
 * your option) any later version.                                          *
 *                                                                          *
-* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
+* mosh-fcgi is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
 * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
 * License for more details.                                                *
 *                                                                          *
 * You should have received a copy of the GNU Lesser General Public License *
-* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
+* along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
 
@@ -26,6 +27,7 @@
 #include <string>
 #include <cstdint>
 #include <mosh/fcgi/protocol/types.hpp>
+#include <mosh/fcgi/protocol/gs.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -40,22 +42,21 @@ namespace protocol {
 
 #pragma pack(push, 1)
 
-	/*! @brief Data structure used as the body for FastCgI records with a RecordType of UNKNOwNTYpE!
-	 * This structure defines the body used in FastCgI UNKNOwNTYpE records. It can be casted 
-	 * to raw 8 byte blocks of data and transmitted as is. An UNKNOwNTYpE record is sent as
+	/*! @brief Data structure used as the body for FastCGI records with a Record_type of unknown_type
+	 *
+	 * This structure defines the body used in FastCGI unknown_type records. It can be casted 
+	 * to raw 8 byte blocks of data and transmitted as is. An unknown_type record is sent as
 	 * a reply to record types that are not recognized.
 	 */
 	class Unknown_type {
 	public:
-		/*! @brief Set the record type that is unknown!
-		 * @param[in] type The unknown record type
-		 */
-		void set_type(Record_type type) { this->type = static_cast<uint8_t>(type); }
+		//! Get a setter for the unknown record type
+		_s_type type() { return _s_type(_type); }
 	private:
 		//! Unknown record type
-		uint8_t type;
+		uint8_t _type;
 		//! Reseved for future use and body padding
-		uint8_t reserved[7];
+		uint8_t _reserved[7];
 	};
 
 #pragma pack(pop)

@@ -26,9 +26,8 @@
 #include <queue>
 #include <map>
 #include <string>
-
-#include <boost/thread.hpp>
-#include <boost/function.hpp>
+#include <mutex>
+#include <functional>
 
 #include <mosh/fcgi/protocol/types.hpp>
 #include <mosh/fcgi/protocol/vars.hpp>
@@ -173,16 +172,14 @@ protected:
 	 *	The sole parameter is a Message that contains both a type value for processing by response()
 	 *	and the raw castable data.
 	 */
-	boost::function<void(protocol::Message)> callback;
+	std::function<void(protocol::Message)> callback;
 private:
-	//! Queue type for pending messages
-	/*!
-	 * This is merely a derivation of a std::queue<Message> and a
-	 * boost::mutex that gives data locking abilities to the STL container.
-	 */
-	class Messages: public std::queue<protocol::Message>, public boost::mutex {};
-	//! A queue of messages to be handler by the request
-	Messages messages;
+	//@{
+	//! A queue of messages to be handled by the request
+	std::queue<protocol::Message> messages;
+	//! Mutex for messages
+	std::mutex messages_lock;
+	//@}
 
 	//! Request Handler
 	/*!
@@ -198,22 +195,22 @@ private:
 
 		try {
 			{
-				boost::lock_guard<boost::mutex> lock(messages);
-				message = messages.front();
-				messages.pop();
+				std::lock_guard<std::mutex> lock(messages_lock);
+				message = messages.pop_front();
 			}
 			if (!message.type) {
-				const Header& header = *reinterpret_cast<Header*>(message.data.get());
+				aligned<sizeof(Header), Header> _header(static_cast<const void*>(message.data.get()));
+				Header& header = _header;
 				const char* body = message.data.get() + sizeof(Header);
-				switch (header.get_type()) {
+				switch (header.type()) {
 				case Record_type::params: {
 					if (state != Record_type::params)
 						throw exceptions::Record_out_of_order(id, state, Record_type::params);
-					if (header.get_content_length() == 0) {
+					if (header.content_length() == 0) {
 						if (role == Role::authorizer) {
 							state = Record_type::out;
 							if (response()) {
-								complete();
+								complete(0);
 								return true;
 							}
 							break;
@@ -221,51 +218,50 @@ private:
 						state = Record_type::in;
 						break;
 					}
-					session.fill(body, header.get_content_length());
+					session.fill(body, header.content_length());
 				} break;
 				case Record_type::in: {
 					if (state != Record_type::in)
 						throw exceptions::Record_out_of_order(id, state, Record_type::in);
-					if (header.get_content_length() == 0) {
+					if (header.content_length() == 0) {
 						if (role == Role::filter) {
 							state = Record_type::data;
 							break;
 						}
 						state = Record_type::out;
 						if (response()) {
-							complete();
+							complete(0);
 							return true;
 						}
 						break;
 					}
-					session.fill_post(body, header.get_content_length());
-					in_handler(header.get_content_length());
+					session.fill_post(body, header.content_length());
+					in_handler(header.content_length());
 				} break;
 				case Record_type::data: {
 					if (state != Record_type::data)
 						throw exceptions::Record_out_of_order(id, state, Record_type::data);
-					if (header.get_content_length() == 0) {
+					if (header.content_length() == 0) {
 						state = Record_type::out;
 						if (response()) {
-							complete();
+							complete(0);
 							return true;
 						}
 					}
-					session.fill_data(body, header.get_content_length());
-					data_handler(header.get_content_length());
+					session.fill_data(body, header.content_length());
+					data_handler(header.content_length());
 				} break;
 				case Record_type::abort_request:
 					return true;
 				default:;
 				}
 			} else if (response()) {
-				complete();
+				complete(0);
 				return true;
 			}
 		} catch (std::exception& e) {
-			err << e.what();
-			err.flush();
-			complete();
+			err << e.what() << std::endl;
+			complete(1);
 			return true;
 		}
 		return false;
@@ -283,23 +279,18 @@ private:
 	//! What the request is current doing
 	protocol::Record_type state;
 	//! Generates an ENDREQUEST FastCGI record
-	void complete() {
+	void complete(int app_status) {
 		using namespace protocol;
 		out.flush();
 		err.flush();
 
+		Header hdr(version, Record_type::end_request, id.fcgi_id, sizeof(End_request), 0);
+		End_request ereq(app_status, Protocol_status::request_complete);
+
 		Block buffer(transceiver->request_write(sizeof(Header) + sizeof(End_request)));
 
-		Header& header = *reinterpret_cast<Header*>(buffer.data);
-		header.set_version(version);
-		header.set_type(Record_type::end_request);
-		header.set_request_id(id.fcgi_id);
-		header.set_content_length(sizeof(End_request));
-		header.set_padding_length(0);
-
-		End_request& body = *reinterpret_cast<End_request*>(buffer.data + sizeof(Header));
-		body.set_app_status(0);
-		body.set_protocol_status(Protocol_status::request_complete);
+		memcpy(buffer.data, &hdr, sizeof(Header));
+		memcpy(buffer.data + sizeof(Header), &ereq, sizeof(End_request));
 
 		transceiver->secure_write(sizeof(Header) + sizeof(End_request), id, kill_con);
 	}
@@ -313,8 +304,9 @@ private:
 	 * @param[in] kill_con Boolean value indicating whether or not the file descriptor should be closed upon completion
 	 * @param[in] callback Callback function capable of passing messages to the request
 	 */
-	void set(protocol::Full_id id, Transceiver& transceiver, protocol::Role role,
-	         bool kill_con, boost::function<void(protocol::Message)> callback) {
+	void set(protocol::Full_id id, Transceiver& transceiver, protocol::Role role, bool kill_con,
+			std::function<void(protocol::Message)> callback)
+	{
 		this->kill_con = kill_con;
 		this->id = id;
 		this->transceiver = &transceiver;
@@ -327,5 +319,6 @@ private:
 };
 
 MOSH_FCGI_END
+
 
 #endif

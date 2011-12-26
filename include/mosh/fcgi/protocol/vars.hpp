@@ -1,21 +1,22 @@
-//! \file protocol.hpp Defines FasTCGI protocol
+//! @file protocol/vars.hpp Protocol constants and pseudo-constants
 /***************************************************************************
-* Copyright (C) 2007 Eddie                                                 *
+* Copyright (C) 2011 m0shbear                                              *
+*               2007 Eddie                                                 *
 *                                                                          *
-* This file is part of fastcgi++.                                          *
+* This file is part of mosh-fcgi.                                          *
 *                                                                          *
-* fastcgi++ is free software: you can redistribute it and/or modify it     *
+* mosh-fcgi is free software: you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as  published   *
 * by the Free Software Foundation, either version 3 of the License, or (at *
 * your option) any later version.                                          *
 *                                                                          *
-* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
+* mosh-fcgi is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
 * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
 * License for more details.                                                *
 *                                                                          *
 * You should have received a copy of the GNU Lesser General Public License *
-* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
+* along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
 
@@ -24,10 +25,7 @@
 
 #include <map>
 #include <string>
-extern "C" {            //
-#include <netinet/in.h> // for ntohs, ntohl
-#include <arpa/inet.h>  //
-}                       //
+#include <cstdint>
 #include <mosh/fcgi/protocol/types.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
@@ -45,9 +43,9 @@ namespace protocol {
 	extern const char* record_type_labels[];
 	
 	//! The version of the FastCGI protocol that this adheres to
-	const int version = 1;
+	const uint8_t version = 1;
 	//! All FastCGI records will be a multiple of this many bytes
-	const int chunk_size = 8;
+	const size_t chunk_size = 8;
 
 	//! Reply record that will be sent when asked the maximum allowed file descriptors open at a time
 	extern Management_reply<14, 2, 8> max_conns_reply;

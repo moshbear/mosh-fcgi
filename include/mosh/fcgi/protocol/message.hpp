@@ -1,21 +1,22 @@
-//! \file protocol.hpp Defines FasTCGI protocol
+//! @file protocol/message.hpp mosh-fcgi message
 /***************************************************************************
-* Copyright (C) 2007 Eddie                                                 *
+* Copyright (C) 2011 m0shbear                                              *
+*               2007 Eddie                                                 *
 *                                                                          *
-* This file is part of fastcgi++.                                          *
+* This file is part of mosh-fcgi.                                          *
 *                                                                          *
-* fastcgi++ is free software: you can redistribute it and/or modify it     *
+* mosh-fcgi is free software: you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as  published   *
 * by the Free Software Foundation, either version 3 of the License, or (at *
 * your option) any later version.                                          *
 *                                                                          *
-* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
+* mosh-fcgi is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
 * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
 * License for more details.                                                *
 *                                                                          *
 * You should have received a copy of the GNU Lesser General Public License *
-* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
+* along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
 
@@ -37,8 +38,8 @@ MOSH_FCGI_BEGIN
  */
 namespace protocol {
 
-	//! Data structure used to pass messages within the fastcgi++ task management system
-	/*!
+	/* @brief Data structure used to pass messages within the mosh-fcgi task management system
+	 *
 	 * This data structure is crucial to all operation in the FastCGI library as all
 	 * data passed to requests must be encapsulated in this data structure. A type value
 	 * of 0 means that the message is a FastCGI record and will be processed at a low
@@ -47,8 +48,7 @@ namespace protocol {
 	 * a raw character array. The size obviously represents the exact size of the data
 	 * section.
 	 */
-	struct Message
-	{
+	struct Message {
 		//! Type of message. A 0 means FastCGI record. Anything else is open.
 		int type;
 		//! Size of the data section.

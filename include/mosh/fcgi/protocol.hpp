@@ -43,5 +43,7 @@
 #include <mosh/fcgi/protocol/management_reply.hpp>
 // protocol::Message
 #include <mosh/fcgi/protocol/message.hpp>
+// protocol::_(gs?|s)_*
+#include <mosh/fcgi/protocol/gs.hpp>
 
 #endif

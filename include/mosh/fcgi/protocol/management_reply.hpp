@@ -1,21 +1,22 @@
-//! \file protocol.hpp Defines FasTCGI protocol
+//! @file protocol/management_reply.hpp FastCGI GET_VALUES_RESULT record
 /***************************************************************************
-* Copyright (C) 2007 Eddie                                                 *
+* Copyright (C) 2011 m0shbear                                              *
+*               2007 Eddie                                                 *
 *                                                                          *
-* This file is part of fastcgi++.                                          *
+* This file is part of mosh-fcgi.                                          *
 *                                                                          *
-* fastcgi++ is free software: you can redistribute it and/or modify it     *
+* mosh-fcgi is free software: you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as  published   *
 * by the Free Software Foundation, either version 3 of the License, or (at *
 * your option) any later version.                                          *
 *                                                                          *
-* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
+* mosh-fcgi is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
 * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
 * License for more details.                                                *
 *                                                                          *
 * You should have received a copy of the GNU Lesser General Public License *
-* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
+* along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
 
@@ -40,7 +41,7 @@ namespace protocol {
 
 #pragma pack(push, 1)
 
-	/*! @brief Used for the reply of FastCGI management records of type get_values!
+	/*! @brief Used for the reply of FastCGI management records of type get_values
 	 * 
 	 * This class template is an efficient tool for replying to get_values management
 	 * records. The structure represents a complete record (body+header) of a name-value pair to be
@@ -54,7 +55,7 @@ namespace protocol {
 	 * @tparam _padding_length Length of padding at the end of the record. This is needed to keep
 	 * the record size a multiple of chunkSize.
 	 */
-	template<int _name_length, int _value_length, int _padding_length>
+	template<uint8_t _name_length, uint8_t _value_length, uint8_t _padding_length>
 	struct Management_reply {
 	private:
 		//! Management records header
@@ -70,7 +71,8 @@ namespace protocol {
 		//! Padding data
 		uint8_t padding[_padding_length];
 	public:
-		/*! @brief  Construct the record based on the name data and value data!
+		/*! @brief  Construct the record based on the name data and value data
+		 *
 		 * A full record is constructed from the name-value data. After
 		 * construction the structure can be casted to raw data and transmitted
 		 * as is. The size of the data arrays pointed to by name and value are

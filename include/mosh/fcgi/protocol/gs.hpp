@@ -1,4 +1,4 @@
-//! @file protocol/end_request.hpp FastCGI END_REQUEST record
+//! @file protocol/gs.hpp Getter-setters for FastCGI record fields
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *               2007 Eddie                                                 *
@@ -20,13 +20,15 @@
 ****************************************************************************/
 
 
-#ifndef MOSH_FCGI_END_REQUEST_HPP
-#define MOSH_FCGI_END_REQUEST_HPP
+#ifndef MOSH_FCGI_PROTOCOL_GS_HPP
+#define MOSH_FCGI_PROTOCOL_GS_HPP
 
+extern "C" {
+#include <netinet/in.h> // for ntohs, ntohl
+#include <arpa/inet.h>  //
+}
 #include <cstdint>
-#include <mosh/fcgi/bits/types.hpp>
 #include <mosh/fcgi/protocol/types.hpp>
-#include <mosh/fcgi/protocol/gs.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -38,41 +40,64 @@ MOSH_FCGI_BEGIN
  * http://www.fastcgi.com/devkit/doc/fcgi-spec.html
  */
 namespace protocol {
+	
+#define MOSH_FCGI_GETSET_T(EX_T, IN_T, GET, SET, ALIAS) \
+	/* Getter-setter */ \
+	class _gs_##EX_T { \
+		IN_T* _x; \
+		_gs_##EX_T () = delete; \
+	public: \
+		_gs_##EX_T (IN_T& x) : _x(&x) { } \
+		/* Getter */ \
+		operator EX_T () const { \
+			return GET(*_x); \
+		} \
+		/* Setter */ \
+		void operator = (EX_T x) { \
+			*_x = SET(x); \
+		} \
+	}; \
+	typedef _gs_##EX_T _gs_##ALIAS; \
+	\
+	/* Getter */ \
+	class _g_##EX_T { \
+		IN_T const* _x; \
+		_g_##EX_T () = delete; \
+		void operator = (EX_T) = delete; \
+	public: \
+		_g_##EX_T (IN_T const& x) : _x(&x) { } \
+		/* Getter */ \
+		operator EX_T () const { \
+			return GET(*_x); \
+		} \
+	}; \
+	typedef _g_##EX_T _g_##ALIAS; \
+	\
+	/* Setter */ \
+	class _s_##EX_T { \
+		IN_T* _x; \
+		_s_##EX_T () = delete; \
+		operator EX_T () const = delete; \
+	public: \
+		_s_##EX_T (IN_T& x) : _x(&x) { } \
+		/* Setter */ \
+		void operator = (EX_T x) { \
+			*_x = SET(x); \
+		} \
+	}; \
+	typedef _s_##EX_T _s_##ALIAS
 
-#pragma pack(push, 1)
+MOSH_FCGI_GETSET_T(uint8_t, uint8_t, /* GET */, /* SET */, u8);
+MOSH_FCGI_GETSET_T(uint16_t, uint16_t, ntohs, htons, u16);
+MOSH_FCGI_GETSET_T(uint32_t, uint32_t, ntohl, htonl, u32);
+MOSH_FCGI_GETSET_T(Record_type, uint8_t, static_cast<Record_type>, static_cast<uint8_t>, type);
+MOSH_FCGI_GETSET_T(Role, uint16_t, static_cast<Role>, static_cast<uint16_t, role);
+MOSH_FCGI_GETSET_T(Protocol_status, uint8_t, static_cast<Protocol_status>, static_cast<uint8_t>, status);
 
-		//! Requests Status
-
-	/*! @brief Data structure used as the body for FastCGI records with a RecordType of end_request
-	 * This structure defines the body used in FastCGI end_request records. It can be casted 
-	 * to raw 8 byte blocks of data and transmitted as is. An end_request record is sent when
-	 * this side wishes to terminate a request. This can be simply because it is complete or
-	 * because of a problem.
-	 */
-	class End_request {
-	public:
-		End_request() { }
-		End_request(uint32_t _app_status_, Protocol_status _proto_status_) {
-			app_status() = _app_status_;
-			protocol_status() = _proto_status_;
-		}
-		virtual ~End_request() { }
-
-		//! Get a setter for the request's return value
-		_s_u32 app_status() { return _s_u32(_app_status); }
-		//! Get a setter for the reason for termination
-		_s_status protocol_status() { return _s_status(_protocol_status); }
-	private:
-		//! Request's exit status
-		u32_t _app_status;
-		//! Protocol's termination status
-		uint8_t _protocol_status;
-		//! Reseved for future use and body padding
-		uint8_t reserved[3];
-	};
 }
 
-#pragma pack(pop)
 MOSH_FCGI_END
 
 #endif
+
+

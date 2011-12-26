@@ -1,22 +1,22 @@
-//! \file protocol/types.hpp Type declarations for protocol
+//! @file protocol/types.hpp Types used for FastCGI protocol
 /***************************************************************************
 * Copyright (C) 2007 Eddie                                                 *
 *               2011 m0shbear                                              *
 *                                                                          *
-* This file is part of fastcgi++.                                          *
+* This file is part of mosh-fcgi.                                          *
 *                                                                          *
-* fastcgi++ is free software: you can redistribute it and/or modify it     *
+* mosh-fcgi is free software: you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as  published   *
 * by the Free Software Foundation, either version 3 of the License, or (at *
 * your option) any later version.                                          *
 *                                                                          *
-* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
+* mosh-fcgi is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
 * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
 * License for more details.                                                *
 *                                                                          *
 * You should have received a copy of the GNU Lesser General Public License *
-* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
+* along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
 
@@ -80,6 +80,7 @@ namespace protocol {
 	class Header;
 
 	/*! @brief Data structure used as the body for FastCGI records with a RecordType of begin_request
+	 * 
 	 * This structure defines the body used in FastCGI begin_request records. It can be casted 
 	 * from raw 8 byte blocks of data and received as is. A begin_request record is received
 	 * when the other side wished to make a new request.
@@ -87,6 +88,7 @@ namespace protocol {
 	class Begin_request;
 
 	/*! @brief Data structure used as the body for FastCGI records with a Record_type of unknown_type
+	 * 
 	 * This structure defines the body used in FastCGI unknown_type records. It can be casted 
 	 * to raw 8 byte blocks of data and transmitted as is. An unknown_type record is sent as
 	 * a reply to record types that are not recognized.
@@ -94,6 +96,7 @@ namespace protocol {
 	class Unknown_type;
 		
 	/*! @brief Data structure used as the body for FastCGI records with a Record_type of end_request
+	 * 
 	 * This structure defines the body used in FastCGI end_request records. It can be casted 
 	 * to raw 8 byte blocks of data and transmitted as is. An end_request record is sent when
 	 * this side wishes to terminate a request. This can be simply because it is complete or
@@ -102,6 +105,7 @@ namespace protocol {
 	class End_request;
 
 	/*! @brief Used for the reply of FastCGI management records of type get_values
+	 * 
 	 * This class template is an efficient tool for replying to get_values management
 	 * records. The structure represents a complete record (body+header) of a name-value pair to be
 	 * sent as a reply to a management value query. The templating allows the structure
@@ -117,8 +121,8 @@ namespace protocol {
 	template <int name_len, int value_len, int padding_len>
 	struct Management_reply;
 
-	//! Data structure used to pass messages within the fastcgi++ task management system
-	/*!
+	/*! @brief Data structure used to pass messages within the mosh-fcgi task management system
+	 *
 	 * This data structure is crucial to all operation in the FastCGI library as all
 	 * data passed to requests must be encapsulated in this data structure. A type value
 	 * of 0 means that the message is a FastCGI record and will be processed at a low
@@ -128,6 +132,54 @@ namespace protocol {
 	 * section.
 	 */
 	struct Message;
+
+	/*! @name Getter-setters for uint8_t
+	 */
+	//@{
+	class _gs_u8;
+	class _g_u8;
+	class _s_u8;
+	//@}
+
+	/*! @name Getter-setters for uint16_t
+	 */
+	//@{
+	class _gs_u16;
+	class _g_u16;
+	class _s_u16;
+	//@}
+
+	/*! @name Getter-setters for uint32_t
+	 */
+	//@{
+	class _gs_u32;
+	class _g_u32;
+	class _s_u32;
+	//@}
+
+	/*! @name Getter-setters for Record_type
+	 */
+	//@{
+	class _gs_type;
+	class _g_type;
+	class _s_type;
+	//@}
+
+	/*! @name Getter-setters for Role
+	 */
+	//@{
+	class _gs_role;
+	class _g_role;
+	class _s_role;
+	//@}
+
+	/*! @name Getter-setters for Protocol_status
+	 */
+	//@{
+	class _gs_status;
+	class _g_status;
+	class _s_status;
+	//@}
 }
 
 MOSH_FCGI_END

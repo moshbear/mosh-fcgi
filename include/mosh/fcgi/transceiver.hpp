@@ -28,9 +28,7 @@
 #include <algorithm>
 #include <map>
 #include <vector>
-
-#include <boost/function.hpp>
-#include <boost/shared_array.hpp>
+#include <memory>
 
 extern "C" {
 #include <unistd.h>
@@ -38,13 +36,13 @@ extern "C" {
 #include <sys/socket.h>
 }
 
+#include <mosh/fcgi/bits/array_deleter.hpp>
 #include <mosh/fcgi/bits/block.hpp>
 #include <mosh/fcgi/protocol/header.hpp>
 #include <mosh/fcgi/protocol/message.hpp>
 #include <mosh/fcgi/exceptions.hpp>
 
 MOSH_FCGI_BEGIN
-
 
 //! Handles low level communication with "the other side"
 /*!
@@ -81,7 +79,7 @@ public:
 	 * @param[in] fd File descriptor to listen for connections on
 	 * @param[in] send_message Function to call to pass messages to requests
 	 */
-	Transceiver(int fd, boost::function<void(protocol::Full_id, protocol::Message)> send_message);
+	Transceiver(int fd, std::function<void(protocol::Full_id, protocol::Message)> send_message);
 	//! Blocks until there is data to receive or a call to wake() is made
 	void sleep() {
 		poll(&poll_fds.front(), poll_fds.size(), -1);
@@ -95,7 +93,7 @@ public:
 	}
 
 private:
-	//! %Buffer type for receiving FastCgI records
+	//! %Buffer type for receiving FastCGI records
 	struct Fd_buffer {
 		//! Buffer for header information
 		protocol::Header header_buffer;
@@ -136,7 +134,7 @@ private:
 		};
 		//! Queue of frames waiting to be transmitted
 		std::queue<Frame> frames;
-		//! Minimum Block size value that can be returned from requestWrite()
+		//! Minimum Block size value that can be returned from request_write()
 		const static unsigned int min_block_size = 256;
 		//! A reference to Transceiver::poll_fds for removing file descriptors when they are closed
 		std::vector<pollfd>& poll_fds;
@@ -147,7 +145,7 @@ private:
 			//! Size of data section of the chunk
 			const static unsigned int size = 131072;
 			//! Pointer to the first byte in the chunk data
-			boost::shared_array<char> data;
+			std::shared_ptr<char, Array_deleter<char>> data;
 			//! Pointer to the first write byte in the chunk or 1+ the last read byte
 			char* end;
 			//! Creates a new data chunk
@@ -235,12 +233,11 @@ private:
 	//! %Buffer for transmitting data
 	Buffer buffer;
 	//! Function to call to pass messages to requests
-	boost::function<void(protocol::Full_id, protocol::Message)> send_message;
+	std::function<void(protocol::Full_id, protocol::Message)> send_message;
 
 	//! poll() file descriptors container
 	std::vector<pollfd> poll_fds;
 	//! Socket to listen for connections on
-	//
 	int socket;
 	//! Input file descriptor to the wakeup socket pair
 	int wakeup_fd_in;

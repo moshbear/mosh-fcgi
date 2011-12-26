@@ -1,21 +1,22 @@
-//! \file protocol.hpp Defines FasTCGI protocol
+//! @file protocol/full_id.hpp Full id (request id + request fd)
 /***************************************************************************
-* Copyright (C) 2007 Eddie                                                 *
+* Copyright (C) 2011 m0shbear                                              *
+*               2007 Eddie                                                 *
 *                                                                          *
-* This file is part of fastcgi++.                                          *
+* This file is part of mosh-fcgi.                                          *
 *                                                                          *
-* fastcgi++ is free software: you can redistribute it and/or modify it     *
+* mosh-fcgi is free software: you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as  published   *
 * by the Free Software Foundation, either version 3 of the License, or (at *
 * your option) any later version.                                          *
 *                                                                          *
-* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
+* mosh-fcgi is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
 * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
 * License for more details.                                                *
 *                                                                          *
 * You should have received a copy of the GNU Lesser General Public License *
-* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
+* along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
 
@@ -35,11 +36,11 @@ MOSH_FCGI_BEGIN
  * http://www.fastcgi.com/devkit/doc/fcgi-spec.html
  */
 namespace protocol {
-	/*! @brief  A full ID value for a FasTCGI request
+	/*! @brief  A full ID value for a FastCGI request
 	 * Because each FastCGI request has a RequestID and a file descriptor
 	 * associated with it, this class defines an ID value that encompasses
-	 * both. The file descriptor is stored internally as a 16 bit unsigned
-	 * integer in order to keep the data structures size at 32 bits for
+	 * both. The file descriptor is stored internally as a 32 bit unsigned
+	 * integer in order to keep the data structures size at 64 bits for
 	 * optimized indexing.
 	 */
 	struct Full_id {
@@ -64,9 +65,9 @@ namespace protocol {
 				//! FastCGI Request ID
 				Request_id fcgi_id;
 				//! Associated File Descriptor
-				uint16_t fd;
+				int fd;
 			};
-			uint32_t full;
+			uint64_t full;
 		};
 		//!Compare between two Full_id variables
 		bool operator > (const Full_id& x) const {
