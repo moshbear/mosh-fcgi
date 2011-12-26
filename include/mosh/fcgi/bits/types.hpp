@@ -271,7 +271,7 @@ MOSH_FCGI_ALIGNEDAS(uint16_t,
 			uint8_t b1;
 		};
 		uint16_t value;
-		char b[2];
+		unsigned char b[2];
 	}
 );
 
@@ -284,7 +284,7 @@ MOSH_FCGI_ALIGNEDAS(uint32_t,
 			uint8_t b3;
 		};
 		uint32_t value;
-		char b[4];
+		unsigned char b[4];
 	}
 )
 #pragma pack(pop)
