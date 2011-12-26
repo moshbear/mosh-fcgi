@@ -25,12 +25,8 @@
 
 #include <map>
 #include <string>
-extern "C" {            //
-#include <netinet/in.h> // for ntohs, ntohl
-#include <arpa/inet.h>  //
-}                       //
-#include <boost/shared_array.hpp>
 #include <cstdint>
+#include <mosh/fcgi/bits/types.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -43,9 +39,12 @@ MOSH_FCGI_BEGIN
  */
 namespace protocol {
 
-	//! The request ID of a FasTCGI request
+	//! The request ID of a FastCGI request
 	typedef uint16_t Request_id;
-	
+
+	//! Typedef for aligned header bitstream
+	typedef char MOSH_FCGI_ALIGNEDAS_N(8, Header_data[8]);
+
 	/*! @brief  A full ID value for a FasTCGI request!
 	 * Because each FastCGI request has a RequestID and a file descriptor
 	 * associated with it, this class defines an ID value that encompasses
@@ -57,14 +56,17 @@ namespace protocol {
 	
 	//! Defines the types of records within the FastCGI protocol
 	enum class Record_type : uint8_t
-		{ begin_request = 1, abort_request, end_request,
+		{ invalid = 0,
+		  begin_request = 1, abort_request, end_request,
 		  params, in, out, err, data,
 		  get_values, get_values_result, unknown_type 
 		};
 	
 	//! Defines the possible roles a FastCGI application may play
 	enum class Role : uint16_t
-		{ responder = 1, authorizer, filter };
+		{ invalid = 0,
+		  responder = 1, authorizer, filter
+		};
 
 	//! Possible statuses a request may declare when complete
 	enum class Protocol_status : uint8_t

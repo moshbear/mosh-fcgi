@@ -35,7 +35,7 @@ MOSH_FCGI_BEGIN
  * http://www.fastcgi.com/devkit/doc/fcgi-spec.html
  */
 namespace protocol {
-	/*! @brief  A full ID value for a FasTCGI request!
+	/*! @brief  A full ID value for a FasTCGI request
 	 * Because each FastCGI request has a RequestID and a file descriptor
 	 * associated with it, this class defines an ID value that encompasses
 	 * both. The file descriptor is stored internally as a 16 bit unsigned
@@ -43,7 +43,7 @@ namespace protocol {
 	 * optimized indexing.
 	 */
 	struct Full_id {
-		/*! @brief  Construct from a FastCGI RequestID and a file descriptor!
+		/*! @brief  Construct from a FastCGI RequestID and a file descriptor
 		 * The constructor builds upon a RequestID and the file descriptor
 		 * it is communicating through.
 		 *
@@ -52,7 +52,7 @@ namespace protocol {
 		 */
 		Full_id(Request_id fcgi_id, int fd)
 		: fcgi_id(fcgi_id), fd(fd)
-		{ } 
+		{ }
 
 		Full_id(uint32_t f)
 		: full(f)

@@ -69,13 +69,7 @@ namespace protocol {
 	private:
 		//! Flag bit representing the keep alive value
 		static const int keep_conn_bit = 1;
-		union {
-			struct {
-				uint8_t msb;
-				uint8_t lsb;
-			};
-			uint16_t value;
-		} role;
+		u16_t role;
 		//! Flag value
 		uint8_t flags;
 		//! Reseved for future use and body padding

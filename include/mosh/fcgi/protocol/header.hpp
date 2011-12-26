@@ -110,21 +110,15 @@ namespace protocol {
 		}
 	private:
 		//! FastCGI version number
-			uint8_t version;
-			//! Record type
-			uint8_t type;
-			union {
-				struct {
-					uint8_t msb;
-					uint8_t lsb;
-				};
-				uint16_t value;
-			} request_id, content_length;
-
-			//! Length of record padding
-			uint8_t padding_length;
-			//! Reseved for future use and header padding
-			uint8_t reserved;
+		uint8_t version;
+		//! Record type
+		uint8_t type;
+		u16_t request_id;
+		u16_t content_length;
+		//! Length of record padding
+		uint8_t padding_length;
+		//! Reseved for future use and header padding
+		uint8_t reserved;
 	};
 #pragma pack(pop)
 

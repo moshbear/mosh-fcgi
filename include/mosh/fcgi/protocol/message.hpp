@@ -23,7 +23,8 @@
 #define MOSH_FCGI_PROTOCOL_MESSAGE_HPP
 
 #include <cstddef>
-#include <boost/shared_array.hpp>
+#include <memory>
+#include <mosh/fcgi/bits/array_deleter.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -53,7 +54,7 @@ namespace protocol {
 		//! Size of the data section.
 		size_t size;
 		//! Pointer to the raw data being passed along with the message.
-		boost::shared_array<char> data;
+		std::shared_ptr<char, Array_deleter<char>> data;
 	};
 }
 
