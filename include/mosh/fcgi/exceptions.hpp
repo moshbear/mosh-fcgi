@@ -166,7 +166,7 @@ public:
 	virtual const char* what() const throw() {
 		return msg.c_str();
 	}
-	int get_erno() const throw() {
+	int get_errno() const throw() {
 		return erno;
 	}
 private:
