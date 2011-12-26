@@ -24,11 +24,12 @@ extern "C" {
 }
 
 #include <cstdint>
+#include <cstring>
 #include <mosh/fcgi/protocol/types.hpp>
 #include <mosh/fcgi/protocol/funcs.hpp>
 #include <mosh/fcgi/protocol/vars.hpp>
 #include <mosh/fcgi/protocol/management_reply.hpp>
-
+#include <mosh/fcgi/bits/types.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -39,16 +40,16 @@ bool process_param_header(const char* data, size_t data_size,
         const char*& value, size_t& value_size)
 {
 	if (*data & 0x80) {
-		name_size = ntohl(*reinterpret_cast<const uint32_t*>(data)) & 0x7FFFFFFF;
+		name_size = ntohl(aligned<4, uint32_t>(static_cast<void*>(data))) & 0x7FFFFFFF;
 		data += sizeof(uint32_t);
 	} else
-		name_size = *data++;
+		name_size = zerofill_aligned_as<size_t, size_t, char>(*data++);
 
 	if (*data & 0x80) {
-		value_size = ntohl(*reinterpret_cast<const uint32_t*>(data)) & 0x7FFFFFFF;
+		value_size = ntohl(aligned<4, uint32_t>(static_cast<void*>(data))) & 0x7FFFFFFF;
 		data += sizeof(uint32_t);
 	} else
-		value_size = *data++;
+		value_size = zerofill_aligned_as<size_t, size_t, char>(*data++);
 
 	name = data;
 	value = name + name_size;
