@@ -1,4 +1,4 @@
-AC_INIT([mosh_fcgi], [0.5.1], [m0shbear <andrey@moshbear.net>], [mosh_fcgi])
+AC_INIT([mosh_fcgi], [0.6.0], [m0shbear <andrey@moshbear.net>], [mosh_fcgi])
 AC_CONFIG_AUX_DIR(m4)
 AC_CONFIG_FILES(mosh_fcgi.pc)
 AC_CONFIG_HEADERS([include/mosh/fcgi/bits/config.h])
@@ -11,11 +11,7 @@ AC_PROG_INSTALL
 AC_PROG_LIBTOOL
 
 BOOST_BIND
-BOOST_DATE_TIME
-BOOST_FUNCTION
-BOOST_SMART_PTR
 BOOST_THREADS
-BOOST_TOKENIZER
 BOOST_SYSTEM
 BOOST_XPRESSIVE
 
@@ -37,6 +33,7 @@ AC_COMPILE_CHECK([c++11 angle brackets], [ template <typename T> class Q { }; ] 
 AC_COMPILE_CHECK([c++11 auto], , [ int foo; auto bar = foo; ], [AC_MSG_NOTICE([working])], [AC_MSG_ERROR([no auto support])])
 AC_COMPILE_CHECK([c++11 rvalue reference], [int p() { return 0; } ] , [ int&& q = p(); ], [AC_MSG_NOTICE([working])], [AC_MSG_ERROR([no rvalue reference support])])
 AC_COMPILE_CHECK([c++11 lambda], , [ auto&& foo = [] (int x) { return x; }; ], [AC_MSG_NOTICE([working])], [AC_MSG_ERROR([no lambda support])])
+AC_COMPILE_CHECK([c++11 array], [#include <array> ], [std::array<int, 1> x; ], [AC_MSG_NOTICE([working])],  [AC_MSG_ERROR([no c++11 array])])
 AC_COMPILE_CHECK([c++11 nullptr], , [ void *x = nullptr; ], [AC_MSG_NOTICE([working])], [AC_MSG_ERROR([no nullptr support])]) 
 AC_COMPILE_CHECK([c++11 strongly-typed enum], [ enum class foo : char { v0 = 0, v1 = 1}; ], [ foo f; ], [AC_MSG_NOTICE([working])],  [AC_MSG_ERROR([no strongly-typed enum support])])
 dnl todo: rb-for workaround where applicable
@@ -44,6 +41,7 @@ AC_COMPILE_CHECK([c++11 range-based for], , [ int foo[2] = {0, 1}; for (auto& ba
 AC_MSG_NOTICE([checking for library features])
 AC_COMPILE_CHECK([<cstdint>], [#include <cstdint>], , [AC_MSG_NOTICE([yes])], [AC_MSG_ERROR([no <cstdint>])])
 AC_COMPILE_CHECK([c++11 smart pointer], [#include <memory>], [ std::unique_ptr<void> p; std::shared_ptr<void> q; ], [AC_MSG_NOTICE([working])],[AC_MSG_ERROR([no unique_ptr])])
+AC_COMPILE_CHECK([c++11 <mutex>::call_once], [#include <mutex>], [ std::once_flag o; ], [AC_MSG_NOTICE([working])], [AC_MSG_ERROR([no <mutex>])])
 AC_COMPILE_CHECK([c++11 iostream], [#include <iostream>
 					#include <fstream>
 					#include <utility>],
@@ -62,7 +60,7 @@ AC_TYPE_UINT16_T
 AC_TYPE_UINT32_T
 AC_TYPE_UINT64_T
 
-pkgConfigLibs="-lmosh_fcgi $BOOST_THREAD_LIBS $BOOST_DATE_TIME_LIBS $NSS_LIBS"
+pkgConfigLibs="-lmosh_fcgi $NSS_LIBS"
 
 AC_SUBST(pkgConfigLibs)
 
