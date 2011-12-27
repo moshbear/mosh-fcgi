@@ -41,6 +41,7 @@
 
 MOSH_FCGI_BEGIN
 
+namespace stdph = std::placeholders;
 //! General task and protocol management class
 /*!
  * Handles all task and protocol management, creation/destruction
@@ -66,7 +67,7 @@ public:
 	 * @param [in] fd File descriptor to listen on.
 	 */
 	Manager(int fd = 0)
-		: transceiver(fd, std::bind(&Manager::push, std::ref(*this), _1, _2)),
+		: transceiver(fd, std::bind(&Manager::push, std::ref(*this), stdph::_1, stdph::_2)),
 		  asleep(false), do_stop(false), do_terminate(false) {
 		setup_signals();
 		instance = this;
@@ -147,6 +148,7 @@ private:
 
 	//! A queue of messages for the manager itself
 	std::queue<protocol::Message> messages;
+	std::mutex messages_lock;
 
 	//! Handles management messages
 	/*!

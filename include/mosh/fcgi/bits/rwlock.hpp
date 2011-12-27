@@ -30,7 +30,7 @@ extern "C" {
 }
 #include <mosh/fcgi/bits/namespace.hpp>
 
-#ifndef PTHREAD_MUTEX_NORMAL
+#ifndef PTHREAD_ONCE_INIT
 #error "Non-pthreads implementation does not exist"
 #endif
 
@@ -49,7 +49,7 @@ public:
 	Rw_lock() {
 		// Initialize rw lock
 		{
-			int ret = pthread_rwlock_init(&lock, NULL);
+			int ret = pthread_rwlock_init(&lck, NULL);
 			if (ret != 0)
 				throw_system_error(ret);
 		}
@@ -57,7 +57,7 @@ public:
 	//! Destroy an existing reader-writer lock
 	virtual ~Rw_lock() {
 		// Ignore error code because destructors shouldn't throw
-		pthread_rwlock_destroy(&lock);
+		pthread_rwlock_destroy(&lck);
 	}
 
 	/*! @name Read locks
@@ -67,17 +67,19 @@ public:
 	 * @throws std::system_error if @c pthread_rwlock_rdlock's return value is non-zero
 	 */
 	void read_lock() {
-		int ret = pthread_rwlock_rdlock(&lock);
+		int ret = pthread_rwlock_rdlock(&lck);
 		if (ret != 0)
 			throw_system_error(ret);
 	}
+	void lock() { read_lock(); } // Lockable
 	/* @brief Try to acquire a read lock
 	 * @retval @c true if @c pthread_rwlock_tryrdlock's return value is zero
 	 * @retval @c false otherwise
 	 */
 	bool try_read_lock() noexcept {
-		return !pthread_rwlock_tryrdlock(&lock);
+		return !pthread_rwlock_tryrdlock(&lck);
 	}
+	bool try_lock() noexcept { return try_read_lock(); } // Lockable
 	//@}
 
 	/*! @name Write locks
@@ -87,7 +89,7 @@ public:
 	 * @throws std::system_error if @c pthread_rwlock_wrlock's return value is non-zero
 	 */
 	void write_lock() {
-		int ret = pthread_rwlock_wrlock(&lock);
+		int ret = pthread_rwlock_wrlock(&lck);
 		if (ret != 0)
 			throw_system_error(ret);
 	}
@@ -96,13 +98,13 @@ public:
 	 * @retval @c false otherwise
 	 */
 	bool try_write_lock() noexcept {
-		return !pthread_rwlock_trywrlock(&lock);
+		return !pthread_rwlock_trywrlock(&lck);
 	}
 	//@}
 	
 	//! Release a read or write lock
 	void unlock() noexcept {
-		pthread_rwlock_unlock(&lock);
+		pthread_rwlock_unlock(&lck);
 	}
 
 	/* @brief Upgrade a read lock to a write lock
@@ -117,11 +119,11 @@ public:
 	
 	//! Get the native handle (i.e. a pointer to the internal pthread_rwlock)
 	auto native_handle() noexcept -> pthread_rwlock_t* {
-		return &lock;
+		return &lck;
 	}
 private:
 	//! Reader-writer lock
-	pthread_rwlock_t lock;
+	pthread_rwlock_t lck;
 	//! Upgrade lock
 	std::mutex up_lock;
 };

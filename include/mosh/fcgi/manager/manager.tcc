@@ -30,10 +30,6 @@
 #include <memory>
 #include <utility>
 
-#include <boost/bind.hpp>
-#include <boost/thread.hpp>
-#include <boost/thread/shared_mutex.hpp>
-
 extern "C" {
 #include <signal.h>
 #include <pthread.h>
@@ -60,13 +56,13 @@ template<class T> Manager<T>* Manager<T>::instance = 0;
 
 template<class T>
 void Manager<T>::terminate() {
-	std::lock_guard<std::mutex> lock(terminate_mutex);
+	std::lock_guard<std::mutex> lock(terminate_lock);
 	do_terminate = true;
 }
 
 template<class T>
 void Manager<T>::stop() {
-	std::lock_guard<std::mutex> lock(stop_mutex);
+	std::lock_guard<std::mutex> lock(stop_lock);
 	do_stop = true;
 }
 
@@ -101,31 +97,34 @@ void Manager<T>::push(protocol::Full_id id, protocol::Message message) {
 	using namespace protocol;
 
 	if (id.fcgi_id) {
-		upgrade_lock<shared_mutex> req_lock(requests);
-		typename Requests::iterator it(requests.find(id));
+		std::lock_guard<Rw_lock> read_lock(requests_lock);
+		auto it = requests.find(id);
 		if (it != requests.end()) {
-			lock_guard<mutex> mes_lock(it->second->messages);
+			lock_guard<mutex> mes_lock(it->second->messages_lock);
 			it->second->messages.push(message);
-			lock_guard<mutex> tasks_lock(tasks);
+			lock_guard<mutex> tasks_guard(tasks_lock);
 			tasks.push(id);
 		} else if (!message.type) {
-			Header& header = *(Header*)message.data.get();
-			if (header.get_type() == Record_type::begin_request) {
-				Begin_request& body = *(Begin_request*)(message.data.get() + sizeof(Header));
-				upgrade_to_unique_lock<shared_mutex> lock(req_lock);
+			aligned<8, Header> _header(static_cast<const void *>(message.data.get()));
+			Header& header = _header;
+			if (header.type() == Record_type::begin_request) {
+				aligned<8, Begin_request> _body(static_cast<const void *>(message.data.get() + sizeof(Header)));
+				Begin_request& body = _body;
+				requests_lock.upgrade_lock();
 				std::shared_ptr<T>& request = requests[id];
 				request.reset(new T);
-				request->set(id, transceiver, body.get_role(), !body.get_keep_conn(),
-				             std::bind(&Manager::push, std::ref(*this), id, _1));
-			} else
+				request->set(id, transceiver, body.role(), !body.keep_conn(),
+				             std::bind(&Manager::push, std::ref(*this), id, stdph::_1));
+			} else {
 				return;
+			}
 		}
 	} else {
 		messages.push(message);
 		tasks.push(id);
 	}
 
-	lock_guard<mutex> sleep_lock(sleep_mutex);
+	lock_guard<mutex> sleep_guard(sleep_lock);
 	if (asleep)
 		transceiver.wake();
 }
@@ -136,7 +135,7 @@ void Manager<T>::handler() {
 
 	for (;;) {
 		{
-			std::lock_guard<mutex> stop_guard(stop_lock);
+			std::lock_guard<std::mutex> stop_guard(stop_lock);
 			if (do_stop) {
 				do_stop = false;
 				return;
@@ -146,10 +145,11 @@ void Manager<T>::handler() {
 		bool sleep = transceiver.handler();
 
 		{
-			lock_guard<mutex> terminate_lock(terminate_mutex);
+			std::lock_guard<std::mutex> terminate_guard(terminate_lock);
 			if (do_terminate) {
-				shared_lock<shared_mutex> requests_lock(requests);
-				if (requests.empty() && sleep) {
+				std::lock_guard<Rw_lock> read_lock(requests_lock);
+				bool req_empty = requests.empty();
+				if (req_empty && sleep) {
 					do_terminate = false;
 					return;
 				}
@@ -179,16 +179,11 @@ void Manager<T>::handler() {
 		if (id.fcgi_id == 0)
 			local_handler(id);
 		else {
-			requests_lock.read_lock();
+			std::lock_guard<Rw_lock> read_lock(requests_lock);
 			auto it = requests.find(id);
 			if (it != requests.end() && it->second->handler()) {
 				requests_lock.upgrade_lock();
 				requests.erase(it);
-				requests_lock.unlock(); // release write lock
-							// (read lock released in
-							// 	upgrade_lock())
-			} else {
-				requests_lock.unlock(); // release read lock
 			}
 		}
 	}
@@ -202,14 +197,15 @@ void Manager<T>::local_handler(protocol::Full_id id) {
 	messages.pop();
 
 	if (!message.type) {
-		const Header& header = *(Header*)message.data.get();
-		switch (header.get_type()) {
+		aligned<8, Header> _header(static_cast<const void *>(message.data.get()));
+		Header& header = _header;
+		switch (header.type()) {
 		case Record_type::get_values: {
 			size_t name_size;
 			size_t value_size;
 			const char* name;
 			const char* value;
-			process_param_header(message.data.get() + sizeof(Header), header.get_content_length(),
+			process_param_header(message.data.get() + sizeof(Header), header.content_length(),
 			                   name, name_size, value, value_size);
 			if (name_size == 14 && !memcmp(name, "FCGI_MAX_CONNS", 14)) {
 				Block buffer(transceiver.request_write(sizeof(max_conns_reply)));
@@ -230,16 +226,13 @@ void Manager<T>::local_handler(protocol::Full_id id) {
 
 		default: {
 			Block buffer(transceiver.request_write(sizeof(Header) + sizeof(Unknown_type)));
+			
+			Header send_header(version, Record_type::unknown_type, 0, sizeof(Unknown_type), 0);
+			Unknown_type send_body;
+			send_body.type() = header.type();
 
-			Header& send_header = *(Header*)buffer.data;
-			send_header.set_version(version);
-			send_header.set_type(Record_type::unknown_type);
-			send_header.set_request_id(0);
-			send_header.set_content_length(sizeof(Unknown_type));
-			send_header.set_padding_length(0);
-
-			Unknown_type& send_body = *(Unknown_type*)(buffer.data + sizeof(Header));
-			send_body.set_type(header.get_type());
+			memcpy(buffer.data, &send_header, sizeof(Header));
+			memcpy(buffer.data + sizeof(Header), &send_body, sizeof(Unknown_type));
 
 			transceiver.secure_write(sizeof(Header) + sizeof(Unknown_type), id, false);
 
