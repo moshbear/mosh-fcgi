@@ -83,12 +83,12 @@ int Fcgistream<char_type, traits>::Fcgibuf::empty_buffer() {
 		uint16_t content_length = to_next - data_block.data + dumped_size - sizeof(Header);
 		uint8_t content_remainder = content_length % chunk_size;
 		Header& header = *(Header*)data_block.data;
-		header.set_version(version);
-		header.set_type(type);
-		header.set_request_id(id.fcgi_id);
-		header.set_content_length(content_length);
-		header.set_padding_length(content_remainder ? (chunk_size - content_remainder) : content_remainder);
-			transceiver->secure_write(sizeof(Header) + content_length + header.get_padding_length(), id, false);
+		header.version() = version;
+		header.type() = type;
+		header.request_id() = id.fcgi_id;
+		header.content_length() = content_length;
+		header.padding_length() = content_remainder ? (chunk_size - content_remainder) : content_remainder;
+		transceiver->secure_write(sizeof(Header) + content_length + header.padding_length(), id, false);
 	}
 	pbump(-(this->pptr() - this->pbase()));
 	return 0;
