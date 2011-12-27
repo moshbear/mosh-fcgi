@@ -25,6 +25,7 @@
 
 MOSH_FCGI_BEGIN
 
+//! A %Deleter for T[]
 template <typename T>
 struct Array_deleter {
 	void operator () (T* t) const {
