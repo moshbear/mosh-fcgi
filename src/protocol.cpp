@@ -35,21 +35,22 @@ extern "C" {
 MOSH_FCGI_BEGIN
 
 namespace protocol {
+
 bool process_param_header(const char* data, size_t data_size,
         const char*& name, size_t& name_size,
         const char*& value, size_t& value_size)
 {
 	if (*data & 0x80) {
-		name_size = ntohl(aligned<4, uint32_t>(static_cast<void*>(data))) & 0x7FFFFFFF;
+		name_size = ntohl((aligned<4, uint32_t>(static_cast<const void*>(data)))) & 0x7FFFFFFF;
 		data += sizeof(uint32_t);
 	} else
-		name_size = zerofill_aligned_as<size_t, size_t, char>(*data++);
+		name_size = zerofill_aligned_as<size_t, size_t, char>(data++);
 
 	if (*data & 0x80) {
-		value_size = ntohl(aligned<4, uint32_t>(static_cast<void*>(data))) & 0x7FFFFFFF;
+		value_size = ntohl((aligned<4, uint32_t>(static_cast<const void*>(data)))) & 0x7FFFFFFF;
 		data += sizeof(uint32_t);
 	} else
-		value_size = zerofill_aligned_as<size_t, size_t, char>(*data++);
+		value_size = zerofill_aligned_as<size_t, size_t, char>(data++);
 
 	name = data;
 	value = name + name_size;

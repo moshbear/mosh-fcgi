@@ -1,4 +1,4 @@
-//! \file transceiver.cpp Defines member functions for Transceiver
+//! @file transceiver.cpp Defines member functions for Transceiver
 /***************************************************************************
 * Copyright (C) 2007 Eddie                                                 *
 *                                                                          *
@@ -29,6 +29,7 @@ extern "C" {
 #include <poll.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <assert.h>
 }
 
 #include <mosh/fcgi/exceptions.hpp>
@@ -151,7 +152,8 @@ bool Transceiver::handler() {
 		// we can't make assumptions about message_buffer.data's alignment, so memcpy() is used to safely copy the POD
 		memcpy(static_cast<void*>(message_buffer.data.get()), static_cast<const void*>(&header_buffer), sizeof(Header));
 	}
-	aligned<8, Header> header(static_cast<void*>(message_buffer.data.get()));
+	aligned<8, Header> _header(static_cast<void*>(message_buffer.data.get()));
+	Header& header = _header;
 	size_t needed = header.content_length() + header.padding_length() + sizeof(Header) - message_buffer.size;
 	assert(needed <= std::numeric_limits<ssize_t>::max()); // Send a bug report if this assertion fails
 	actual = read(fd, static_cast<char*>(message_buffer.data.get()) + message_buffer.size, needed);
