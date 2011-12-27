@@ -103,8 +103,8 @@ struct Session<ct, pt>::Ue_type {
 
 	/*! @brief Get an instance of the urlencoded's regex cache.
 	 * On first invocation, the Ue_regex_cache constructor is called,
-	 * which ensures that we have to comp_ile the regexes only once.
-	 * With the singleton method, we defer regex comp_ilation to when
+	 * which ensures that we have to compile the regexes only once.
+	 * With the singleton method, we defer regex compilation to when
 	 * multipart parsing actually begins instead of in the Http::Session
 	 * constructor.
 	 * @returns an instance of the urlencoded's regex cache
@@ -329,7 +329,7 @@ void Session<ct, pt>::fill_mp(const char* data, size_t size) {
 					cur_entry.content_type = this->ubuf;
 
 				} else {
-					cur_entry.add_header(h.first, this->to_unicode());
+					cur_entry.add_header(h.first, this->ubuf);
 				}
 			}
 			if (this->mp_vars->mixed) {
@@ -464,7 +464,7 @@ void Session<ct, pt>::fill_mm(const char* data, size_t size) {
 				if (!h.first.compare("Content-Type")) {
 					cur_mp.content_type = this->ubuf;
 				} else {
-					cur_mp.add_header(h.first, this->to_unicode());
+					cur_mp.add_header(h.first, this->ubuf);
 				}
 			}
 			this->mp_vars->mm_vars.cur_entry->add_value(std::move(cur_mp));

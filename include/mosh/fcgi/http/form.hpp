@@ -24,7 +24,9 @@
 
 #include <algorithm>
 #include <fstream>
+#include <iomanip>
 #include <map>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <sstream>
@@ -415,6 +417,7 @@ public:
 	}
 
 private:
+	// This class is noncopyable
 	MP_entry(const this_type&) = delete;
 public:
 	//! Move constructor
@@ -424,11 +427,11 @@ public:
 	{
 		if (filename.empty()) {
 			mode = Mode::entry;
-			data = std::move(mpe.data);
+			_data = std::move(mpe._data);
 		} else {
 			mode = Mode::file;
 			actual_filename = std::move(mpe.actual_filename);
-			file = std::move(mpe.file);
+			_file = std::move(mpe._file);
 		}
 	}
 
@@ -447,7 +450,7 @@ public:
 	 * @param[in] k key
 	 * @param[in] v value
 	 -*/
-	void add_header(const std::string& k, const std::basic_string<char_type>& v) {
+	void add_header(const std::string& k, const std::string& v) {
 		headers.insert(std::make_pair(k, v));
 	}
 
@@ -455,7 +458,7 @@ public:
 	 * @param[in] k key
 	 * @param[in] v value
 	 */
-	void add_header(std::string&& k, std::basic_string<char_type>&& v) {
+	void add_header(std::string&& k, std::string& v) {
 		headers.insert(std::make_pair(std::move(k), std::move(v)));
 	}
 
@@ -470,14 +473,8 @@ public:
 	 * @param[in] e end of data
 	 */
 	void append_text(const char_type* s, const char_type* e) {
-		switch (mode) {
-		case Mode::entry:
-			data.insert(data.end(), s, e);
-			break;
-		case Mode::file:
-			throw std::invalid_argument("append_text does not work on files - use append_binary instead");
-			break;
-		}
+		require_entry_mode();
+		_data.insert(_data.end(), s, e);
 	}
 
 	/*! @brief Add bytes
@@ -491,29 +488,24 @@ public:
 	 * @param[in] e end of data
 	 */
 	void append_binary(const char* s, const char* e) {
-		switch (mode) {
-		case Mode::entry:
-			throw std::invalid_argument("append_binary does not work on non-files - use append_text instead");
-		case Mode::file:
-			if (actual_filename.empty()) {
-				using namespace std;
-				actual_filename = make_filename();
+		require_file_mode();
+		if (actual_filename.empty()) {
+			using namespace std;
+			actual_filename = make_filename();
 #ifdef HAVE_CXX11_IOSTREAM
-				file.exceptions(std::ios_base::failbit | std::ios_base::badbit);
-				file.open(actual_filename, std::ios_base::in | std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
+			_file.exceptions(std::ios_base::failbit | std::ios_base::badbit);
+			_file.open(actual_filename, std::ios_base::in | std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
 #else
-				file.reset(new std::fstream);
-				file->exceptions(std::ios_base::failbit | std::ios_base::badbit);
-				file->open(actual_filename, std::ios_base::in | std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
+			_file.reset(new std::fstream);
+			_file->exceptions(std::ios_base::failbit | std::ios_base::badbit);
+			_file->open(actual_filename, std::ios_base::in | std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
 #endif
-			}
+		}
 #ifdef HAVE_CXX11_IOSTREAM
-			file.write(s, e - s);
+		_file.write(s, e - s);
 #else
-			file->write(s, e - s);
+		_file->write(s, e - s);
 #endif
-			break;
-		}	
 	}
 
 	//! Get the file size
@@ -522,9 +514,9 @@ public:
 		require_file_mode();
 		if (!actual_filename.empty())
 #ifdef HAVE_CXX11_IOSTREAM
-			return file.tellp();
+			return _file.tellp();
 #else
-			return file->tellp();
+			return _file->tellp();
 #endif
 		else
 			return 0;
@@ -533,23 +525,23 @@ public:
 	bool is_entry() const { return mode == Mode::entry; }
 	bool is_file() const { return mode == Mode::file; }
 	
-	const std::string& get_disk_filename() const {
+	const std::string& disk_filename() const {
 		require_file_mode();
 		return actual_filename;
 	}
-	const value_type& get_data() const {
+	const value_type& data() const {
 		require_entry_mode();
-		return data;
+		return _data;
 	}
 	
-	std::ifstream& get_file() {
+	std::ifstream& file() {
 		require_file_mode();
 #if HAVE_CXX11_IOSTREAM
-		file.sync();
-		return file;
+		_file.sync();
+		return _file;
 #else
-		file->sync();
-		return *file;
+		_file->sync();
+		return *_file;
 #endif
 	}
 
@@ -559,6 +551,7 @@ public:
 	}
 
 private:
+	// This class is noncopyable
 	this_type& operator = (const this_type&) = delete;
 public:
 	this_type& operator = (this_type&& mpe) {
@@ -570,11 +563,11 @@ public:
 			mode = std::move(mpe.mode);
 			switch (mode) {
 			case Mode::entry:
-				data = std::move(mpe.data);
+				_data = std::move(mpe._data);
 				break;
 			case Mode::file:
 				actual_filename = std::move(mpe.actual_filename);
-				file = std::move(mpe.file);
+				_file = std::move(mpe._file);
 				break;
 			}
 		}
@@ -597,7 +590,7 @@ public:
 	//! Content-Transfer-Encoding (this field is not used internally)
 	std::string ct_encoding;	
 	//! list of all headers
-	std::map<std::string, std::basic_string<char_type>> headers;
+	std::map<std::string, std::string> headers;
 protected:
 	bool am_i_empty() const {
 		return (base_type::am_i_empty()
@@ -624,8 +617,8 @@ protected:
 		return true;
 	}
 private:
-	value_type data;
-	file_type file;
+	value_type _data;
+	file_type _file;
 	std::string actual_filename;
 	Mode mode;
 	// Make file persistent (no unlink in dtor)
@@ -633,7 +626,7 @@ private:
 	
 	// Create a filename in the form of /tmp/mosh-fcgi/$(hostname).$(pid)-$(date.date).$(date.time)-$(sha1(headers))
 	std::string make_filename() const { 
-			std::string dir = "/tmp/mosh-fcgi/";
+		std::string dir = "/tmp/mosh-fcgi/";
 		std::string file;
 	
 		// Check if /tmp/mosh-fcgi exists
@@ -684,9 +677,8 @@ private:
 
 			// Print the values of each byte in h in %02x format
 			std::stringstream ss;
-			ss << std::hex << std::setfill('0') << std::setw(2);
 			for (auto& i : h)
-				ss << static_cast<int>(i);
+				ss << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(i);
 			file += ss.str();
 		}
 		/* Filename components have a maximum length of 255.
@@ -704,7 +696,7 @@ private:
 	
 	inline void require_file_mode() const {
 		if (mode != Mode::file)
-			throw std::runtime_error("MP_entry is not a file");
+			throw std::runtime_error("MP_entry is an entry");
 	}
 };
 
@@ -763,7 +755,7 @@ public:
 	 * @param[in] k key
 	 * @param[in] v value
 	 */
-	void add_header(const std::string& k, const std::basic_string<char_type>& v) {
+	void add_header(const std::string& k, const std::string& v) {
 		headers.insert(std::make_pair(k, v));
 	}
 
@@ -771,7 +763,7 @@ public:
 	 * @param[in] k key
 	 * @param[in] v value
 	 */
-	void add_header(std::string&& k, std::basic_string<char_type>&& v) {
+	void add_header(std::string&& k, std::string&& v) {
 		headers.insert(std::make_pair(std::move(k), std::move(v)));
 	}
 #if 0
@@ -903,7 +895,7 @@ public:
 	inline bool operator > (const this_type& mme) const { return this->cmp(mme, Cmp_test::gt); }
 
 	//! list of headers
-	std::map<std::string, std::basic_string<char_type>> headers;
+	std::map<std::string, std::string> headers;
 	//! list of files
 	std::vector<entry_type> values;
 	//! content-transfer-encoding
