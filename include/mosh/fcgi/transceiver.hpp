@@ -101,10 +101,10 @@ private:
 		protocol::Message message_buffer;
 	};
 
-	//! %Buffer type for transmission of FastCgI records
+	//! %Buffer type for transmission of FastCGI records
 	/*!
 	 * This buffer is implemented as a circle of Chunk objects; the number of which can grow and shrink as needed. Write
-	 * space is requested with requestWrite() which thereby returns a Block which may be smaller
+	 * space is requested with request_write() which thereby returns a Block which may be smaller
 	 * than requested. The write is committed by calling secure_write(). A smaller space can be
 	 * committed than was given to write on.
 	 *
@@ -145,11 +145,11 @@ private:
 			//! Size of data section of the chunk
 			const static unsigned int size = 131072;
 			//! Pointer to the first byte in the chunk data
-			std::shared_ptr<char, Array_deleter<char>> data;
+			std::shared_ptr<char> data;
 			//! Pointer to the first write byte in the chunk or 1+ the last read byte
 			char* end;
 			//! Creates a new data chunk
-			Chunk(): data(new char[size]), end(data.get()) { }
+			Chunk(): data(new char[size], Array_deleter<char>()), end(data.get()) { }
 			~Chunk() { }
 			//! Creates a new object that shares the data of the old one
 			Chunk(const Chunk& chunk): data(chunk.data), end(data.get()) { }
