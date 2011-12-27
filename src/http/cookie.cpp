@@ -66,8 +66,8 @@ Cookie::Cookie(std::initializer_list<std::string> string_args,
 	}
 
 	{
-		const unsigned long* i_arg = int_args.begin();
-		switch (i_args.size()) {
+		const int* i_arg = int_args.begin();
+		switch (int_args.size()) {
 		case 1:
 			max_age = i_arg[0];
 			break;
