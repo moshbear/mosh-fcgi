@@ -1,4 +1,4 @@
-// TODO: nt locking (lock at VC11 <mutex> for hints)
+// TODO: nt locking (look at VC11 <mutex> for hints)
 //! @file mosh/fcgi/bits/rwlock.hpp Readers-writer lock
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
@@ -39,6 +39,10 @@ MOSH_FCGI_BEGIN
 /*! @brief A reader-writer lock
  *  This class encapsulates %pthread_rwlock_* with C++ semantics.
  *  It also adds the ability to upgrade a read lock to a write one.
+ *
+ *  This also implements %Lockable, so it can be placed inside std::lock_guard<T>.
+ *  @note For %Lockable mode, lock() only produces a read lock - write locking
+ *  @note always requires use of upgrade_lock().
  */
 class Rw_lock {
 	static inline void throw_system_error(int e) {
@@ -71,7 +75,12 @@ public:
 		if (ret != 0)
 			throw_system_error(ret);
 	}
-	void lock() { read_lock(); } // Lockable
+	/* @brief Acquire a read lock
+	 * @see read_lock
+	 */
+	void lock() {
+		read_lock();
+	} 
 	/* @brief Try to acquire a read lock
 	 * @retval @c true if @c pthread_rwlock_tryrdlock's return value is zero
 	 * @retval @c false otherwise
@@ -79,7 +88,12 @@ public:
 	bool try_read_lock() noexcept {
 		return !pthread_rwlock_tryrdlock(&lck);
 	}
-	bool try_lock() noexcept { return try_read_lock(); } // Lockable
+	/* @brief Try to acquire a read lock
+	 * @see try_read_lock
+	 */
+	bool try_lock() noexcept {
+		return try_read_lock();
+	}
 	//@}
 
 	/*! @name Write locks
