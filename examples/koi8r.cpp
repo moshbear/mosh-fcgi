@@ -18,11 +18,11 @@
 * along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <fstream>
 
 #include <mosh/fcgi/request.hpp>
 #include <mosh/fcgi/manager.hpp>
+#include <mosh/fcgi/http/misc.hpp>
 #include <mosh/fcgi/http/header.hpp>
 #include <mosh/fcgi/html/element.hpp>
 #include <mosh/fcgi/html/element/ws.hpp>
@@ -32,15 +32,9 @@
 void error_log(const char* msg)
 {
 	using namespace std;
-	using namespace boost;
 	static ofstream error;
-	if(!error.is_open())
-	{
-		error.open("/tmp/errlog", ios_base::out | ios_base::app);
-		error.imbue(locale(error.getloc(), new posix_time::time_facet()));
-	}
-
-	error << '[' << posix_time::second_clock::local_time() << "] " << msg << endl;
+	
+	error << '[' << MOSH_FCGI::http::time_to_string("%Y-%m-%d: %H:%M:%S") << "] " << msg << endl;
 }
 
 // Let's make our request handling class. It must do the following:

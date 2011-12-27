@@ -14,5 +14,8 @@ examples: utf8-helloworld.fcgi echo.fcgi showgnu.fcgi timer.fcgi upload.fcgi koi
 %.fcgi: %.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $^ -I$(top_srcdir)/include -L$(top_srcdir)/src/.libs $(pkgConfigLibs) $(CXXFLAGS) -lnss3 $(NSS_CFLAGS)
 
+timer.fcgi: timer.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $^ -I$(top_srcdir)/include -L$(top_srcdir)/src/.libs $(pkgConfigLibs) $(CXXFLAGS) -lnss3 $(NSS_CFLAGS) -lboost_system-mt -lboost_thread-mt
+
 clean:
 	rm -f *.fcgi

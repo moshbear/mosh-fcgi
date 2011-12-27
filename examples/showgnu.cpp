@@ -27,28 +27,23 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+
 #include <unistd.h>
 
 #include <mosh/fcgi/request.hpp>
 #include <mosh/fcgi/manager.hpp>
+#include <mosh/fcgi/http/misc.hpp>
 #include <mosh/fcgi/http/header.hpp>
 #include <mosh/fcgi/html/element.hpp>
 #include <mosh/fcgi/html/element/s.hpp>
 
 // I like to have an independent error log file to keep track of exceptions while debugging.
 // You might want a different filename. I just picked this because everything has access there.
-void error_log(const char* msg)
-{
+void error_log(const char* msg) {
 	using namespace std;
-	using namespace boost;
 	static ofstream error;
-	if(!error.is_open())
-	{
-		error.open("/tmp/errlog", ios_base::out | ios_base::app);
-		error.imbue(locale(error.getloc(), new posix_time::time_facet()));
-	}
 
-	error << '[' << posix_time::second_clock::local_time() << "] " << msg << endl;
+	error << '[' << MOSH_FCGI::http::time_to_string("%Y-%m-%d: %H:%M:%S") << "] " << msg << endl;
 }
 
 // Let's make our request handling class. It must do the following:
@@ -60,13 +55,12 @@ void error_log(const char* msg)
 // need to use wide characters. We'll keep everything as narrow characters
 // and pass the 'char' type along to the Fastcgipp::Request template.
 
-class ShowGnu: public MOSH_FCGI::Request<char>
-{
+class ShowGnu: public MOSH_FCGI::Request<char> {
 	// Now we define the actual function that sends a response to the client.
-	bool response()
-	{
+	bool response() {
 		using namespace std;
 		using namespace boost;
+		using namespace MOSH_FCGI;
 
 		// We are going to use boost::posix_time::ptime to communicate
 		// the images modification time for cache purposes.
@@ -105,9 +99,8 @@ class ShowGnu: public MOSH_FCGI::Request<char>
 			dateStream >> s_ifmodsince;
 		}
 	
-		if(!s_ifmodsince.is_not_a_date_time() && etag==s_etag && modTime<=s_ifmodsince)
-		{
-			out << http::Header::status(304);
+		if(!s_ifmodsince.is_not_a_date_time() && etag==s_etag && modTime<=s_ifmodsince) {
+			out << http::header::status(304);
 			return true;
 		}
 
@@ -118,7 +111,7 @@ class ShowGnu: public MOSH_FCGI::Request<char>
 				// First the modification time of the file
 				http::header::P("Last-Modified", boost::lexical_cast<std::string>(modTime)),
 				// Then a Etag. Note that the session.etag is an integer value. NOT an std::string.
-				http::header::P("Etag", boost::lexical_cast<std::string>(etag),
+				http::header::P("Etag", boost::lexical_cast<std::string>(etag)),
 				// Next the size
 				http::header::P("Content-Length", boost::lexical_cast<std::string>(fileSize)),
 				// Then content type
@@ -155,19 +148,15 @@ class ShowGnu: public MOSH_FCGI::Request<char>
 };
 
 // The main function is easy to set up
-int main()
-{
-	try
-	{
+int main() {
+	try {
 		// First we make a Fastcgipp::Manager object, with our request handling class
 		// as a template parameter.
 		MOSH_FCGI::Manager<ShowGnu> fcgi;
 		// Now just call the object handler function. It will sleep quietly when there
 		// are no requests and efficiently manage them when there are many.
 		fcgi.handler();
-	}
-	catch(std::exception& e)
-	{
+	} catch(std::exception& e) {
 		error_log(e.what());
 	}
 }

@@ -20,7 +20,6 @@
 
 #include <fstream>
 #include <algorithm>
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/lexical_cast.hpp>
 #include <string>
 #include <sstream>
@@ -31,10 +30,12 @@ extern "C" {
 #include <unistd.h>
 }
 
+#include <mosh/fcgi/bits/t_string.hpp>
 #include <mosh/fcgi/http/form.hpp>
 #include <mosh/fcgi/request.hpp>
 #include <mosh/fcgi/manager.hpp>
 #include <mosh/fcgi/http/header.hpp>
+#include <mosh/fcgi/http/misc.hpp>
 #include <mosh/fcgi/html/element.hpp>
 #include <mosh/fcgi/html/element/ws.hpp>
 #include <mosh/fcgi/html/element/s.hpp>
@@ -42,21 +43,16 @@ extern "C" {
 #include <mosh/fcgi/bits/namespace.hpp>
 
 using namespace MOSH_FCGI;
+using namespace html::element;
 
 // I like to have an independent error log file to keep track of exceptions while debugging.
 // You might want a different filename. I just picked this because everything has access there.
 void error_log(const char* msg)
 {
 	using namespace std;
-	using namespace boost;
 	static ofstream error;
-	if(!error.is_open())
-	{
-		error.open("/tmp/errlog", ios_base::out | ios_base::app);
-		error.imbue(locale(error.getloc(), new posix_time::time_facet()));
-	}
 
-	error << '[' << posix_time::second_clock::local_time() << "] " << msg << endl;
+	error << '[' << MOSH_FCGI::http::time_to_string("%Y-%m-%d: %H:%M:%S") << "] " << msg << endl;
 }
 
 // Let's make our request handling class. It must do the following:
@@ -81,33 +77,33 @@ class Echo: public Request<wchar_t>
 	static std::wstring dump_mp(http::form::MP_entry<wchar_t> const& f) {
 		ws::Element ul = ws::ul();
 		if (f.is_file()) {
-			ul += ws::li(ws::b(L"filename")) + L": " + f.filename;
+			ul += ws::li(ws::b(L"filename")) + S(L": ") + f.filename;
 			ul += L"\r\n";
 		}
 		if (!f.content_type.empty()) {
-			ul += MOSH_FCGI::wide_string<wchar_t>(s::li(s::b("content-type")) + ": " + f.content_type);
+			ul += MOSH_FCGI::wide_string<wchar_t>(s::li(s::b("content-type")) + S(": ") + f.content_type);
 			ul += L"\r\n";
 		}
 		if (!f.headers.empty()) {
 			ws::Element ul2 = ws::ul();
 			for (auto& h : f.headers) {
-				ul2 += ws::li(MOSH_FCGI::wide_string<wchar_t>((s::b(h.first)) + ": ") + h.second;
+				ul2 += MOSH_FCGI::wide_string<wchar_t>(s::li(s::b(h.first).to_string() + S(": ") + h.second));
 				ul2 += L"\r\n";
 			}
-			ul += ws::li(ws::b(L"headers: ")) + ul2;
+			ul += ws::li(ws::b(L"headers: ")) + ul2.to_string();
 			ul += L"\r\n";
 		}
 		if (f.is_file()) {
 			f.make_file_persistent();
-			const std::string& s = f.get_disk_filename();
+			const std::string& s = f.disk_filename();
 			struct stat sb;
 			stat(s.c_str(), &sb);
-			ul += ws::li(ws::b(L"file location: ")) + s + ws::br + L"\r\n"
-				+ (ws::b(L"size: ")) + boost::lexical_cast<std::wstring>(sb.st_size);
+			ul += ws::li(ws::b(L"file location: ").to_string() + MOSH_FCGI::wide_string<wchar_t>(s) + ws::br.to_string() + S(L"\r\n")
+				+ (ws::b(L"size: ")) + boost::lexical_cast<std::wstring>(sb.st_size));
 			ul += L"\r\n";
 		} else {
 			std::wstringstream wss;
-			for (auto& g : f.get_data())
+			for (auto& g : f.data())
 				wss << g;
 			ul += ws::li(ws::b(L"data: ")) + wss.str();
 			ul += L"\r\n";
@@ -115,15 +111,15 @@ class Echo: public Request<wchar_t>
 		return ul;
 	}
 
-	static std::wstring dump_mm(http::form::MP_mixed_entry<wchar_t>& m) {
+	static std::wstring dump_mm(http::form::MP_mixed_entry<wchar_t> const& m) {
 		ws::Element ul = ws::ul();
 		if (!m.headers.empty()) {
 			ws::Element ul2 = ws::ul();
 			for (auto& h : m.headers) {
-				ul2 += ws::li(MOSH_FCGI::wide_string<wchar_t>((s::b(h.first)) + ": ") + h.second;
+				ul2 += MOSH_FCGI::wide_string<wchar_t>(s::li(s::b(h.first).to_string() + S(": ") + h.second));
 				ul2 += L"\r\n";
 			}
-			ul += ws::li(ws::b(L"headers: ")) + ul2;
+			ul += ws::li(ws::b(L"headers: ")) + ul2.to_string();
 			ul += L"\r\n";
 		}
 		auto& v = m.values;
@@ -134,7 +130,7 @@ class Echo: public Request<wchar_t>
 					ul2 += ws::li(dump_mp(a));
 					ul2 += L"\r\n";
 				}
-				ul += ws::li(ws::b(L"files: ")) + ul2;
+				ul += ws::li(ws::b(L"files: ")) + ul2.to_string();
 			} else if (v.size() == 1) 
 				ul += ws::li(ws::b(L"files: ")) + dump_mp(v[0]);
 			ul += L"\r\n";
@@ -164,9 +160,9 @@ class Echo: public Request<wchar_t>
 	
 		// Print env vars
 		{
-			s::Element ul = ss::ul();
+			s::Element ul = s::ul();
 			for (auto& e : session.envs) {
-				ul += s::li(s::b(e.first)) + ": " + e.second;
+				ul += s::li(s::b(e.first)) + S(": ") + e.second;
 				ul += "\r\n";
 			}
 			// To avoid the overhead of converting to unicode, then back to UTF-8, we
@@ -185,9 +181,9 @@ class Echo: public Request<wchar_t>
 						ul2 += ws::li(a);
 						ul2 += L"\r\n";
 					}
-					ul += ws::li(ws::b(g.first)) + L": " + ul2.to_string();
+					ul += ws::li(ws::b(g.first)) + S(L": ") + ul2.to_string();
 				} else {
-					out << ws::li(ws::b(g.first)) + L": " + g.second.value();
+					out << ws::li(ws::b(g.first)) + S(L": ") + g.second.value();
 				}	
 			}
 			out << ul << ws::br << L"\r\n";
@@ -203,7 +199,7 @@ class Echo: public Request<wchar_t>
 						ul2 += ws::li(dump_mp(v));
 						ul2 += L"\r\n";
 					}
-					ul += ws::li(ws::b(p.first)) + ul2;
+					ul += ws::li(ws::b(p.first)) + ul2.to_string();
 				} else 
 					ul += ws::li(ws::b(p.first)) + dump_mp(p.second.value());
 			}
@@ -215,17 +211,17 @@ class Echo: public Request<wchar_t>
 			for (auto& mm : session.mm_posts) {
 				if (!mm.second.is_scalar_value()) {
 					ws::Element ul2 = ws::ul();
-					for (const auto& v : m.second.values) {
-						ul2 += ws::li(dump_mm(v);
+					for (const auto& v : mm.second.values) {
+						ul2 += ws::li(dump_mm(v));
 						ul2 += L"\r\n";
 					}
-					ul += ws::li(ws::b(p.first)) + ul2;
+					ul += ws::li(ws::b(mm.first)) + ul2.to_string();
 				} else 
-					ul += ws::li(ws::b(p.first)) + dump_mp(p.second.value());
+					ul += ws::li(ws::b(mm.first)) + dump_mm(mm.second.value());
 			}
 			out << ul << ws::br << L"\r\n";
 		}
-		out << ws::body_end() << ws::html_end();
+		out << ws::body_end << ws::html_end;
 
 		// Always return true if you are done. This will let http know we are done
 		// and the manager will destroy the request and free it's resources.

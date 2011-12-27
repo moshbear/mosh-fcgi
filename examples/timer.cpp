@@ -19,23 +19,23 @@
 
 
 #include <fstream>
-#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <mosh/fcgi/request.hpp>
+#include <mosh/fcgi/http/misc.hpp>
 #include <mosh/fcgi/http/header.hpp>
 #include <mosh/fcgi/html/element.hpp>
 #include <mosh/fcgi/html/element/s.hpp>
 #include <mosh/fcgi/manager.hpp>
 
 // In this example we are going to use boost::asio to handle our timers and callback.
-// Unfortunately because fastcgi buffers the output before sending it to the client by
-// default, we will only get to see the true effects of the timer if you put the following
-// directive in your apache configuration: FastCgiConfig -flush
 #include <cstring>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
 #include <boost/scoped_ptr.hpp>
+
+using namespace MOSH_FCGI;
+
 boost::asio::io_service io;
 
 // I like to have an independent error log file to keep track of exceptions while debugging.
@@ -43,15 +43,9 @@ boost::asio::io_service io;
 void error_log(const char* msg)
 {
 	using namespace std;
-	using namespace boost;
 	static ofstream error;
-	if(!error.is_open())
-	{
-		error.open("/tmp/errlog", ios_base::out | ios_base::app);
-		error.imbue(locale(error.getloc(), new posix_time::time_facet()));
-	}
 
-	error << '[' << posix_time::second_clock::local_time() << "] " << msg << endl;
+	error << '[' << MOSH_FCGI::http::time_to_string("%Y-%m-%d: %H:%M:%S") << "] " << msg << endl;
 }
 
 // Let's make our request handling class. It must do the following:
@@ -71,7 +65,7 @@ private:
 	boost::scoped_ptr<boost::asio::deadline_timer> t;
 
 	bool response() {
-		using namespace html::element;
+		using namespace MOSH_FCGI::html::element;
 		switch(state) {
 			case START: {
 				out << http::header::Header(http::header::content_type("text/html", "US-ASCII"));

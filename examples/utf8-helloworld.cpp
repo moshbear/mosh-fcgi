@@ -23,6 +23,7 @@
 
 #include <mosh/fcgi/request.hpp>
 #include <mosh/fcgi/manager.hpp>
+#include <mosh/fcgi/http/misc.hpp>
 #include <mosh/fcgi/http/header.hpp>
 #include <mosh/fcgi/html/element.hpp>
 #include <mosh/fcgi/html/element/ws.hpp>
@@ -32,15 +33,9 @@
 void error_log(const char* msg)
 {
 	using namespace std;
-	using namespace boost;
 	static ofstream error;
-	if(!error.is_open())
-	{
-		error.open("/tmp/errlog", ios_base::out | ios_base::app);
-		error.imbue(locale(error.getloc(), new posix_time::time_facet()));
-	}
-
-	error << '[' << posix_time::second_clock::local_time() << "] " << msg << endl;
+	
+	error << '[' << MOSH_FCGI::http::time_to_string("%Y-%m-%d: %H:%M:%S") << "] " << msg << endl;
 }
 
 // Let's make our request handling class. It must do the following:
@@ -93,7 +88,7 @@ class HelloWorld: public MOSH_FCGI::Request<wchar_t>
 			L"Japanese: 今日は世界", ws::br,
 			L"Runic English?: ᚺᛖᛚᛟ ᚹᛟᛉᛚᛞ", ws::br
 		});
-		out << ws::html_end();
+		out << ws::html_end;
 		
 		// There is also a stream setup for error output. Anything sent here will go
 		// to your server's error log. We'll send something there for fun.

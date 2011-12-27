@@ -20,28 +20,24 @@
 
 
 #include <fstream>
-#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <mosh/fcgi/request.hpp>
 #include <mosh/fcgi/manager.hpp>
+#include <mosh/fcgi/http/misc.hpp>
 #include <mosh/fcgi/http/header.hpp>
 #include <mosh/fcgi/html/element.hpp>
 #include <mosh/fcgi/html/element/s.hpp>
+
+using namespace MOSH_FCGI;
 
 // I like to have an independent error log file to keep track of exceptions while debugging.
 // You might want a different filename. I just picked this because everything has access there.
 void error_log(const char* msg)
 {
 	using namespace std;
-	using namespace boost;
 	static ofstream error;
-	if(!error.is_open())
-	{
-		error.open("/tmp/errlog", ios_base::out | ios_base::app);
-		error.imbue(locale(error.getloc(), new posix_time::time_facet()));
-	}
 
-	error << '[' << posix_time::second_clock::local_time() << "] " << msg << endl;
+	error << '[' << MOSH_FCGI::http::time_to_string("%Y-%m-%d: %H:%M:%S") << "] " << msg << endl;
 }
 
 // Let's make our request handling class. It must do the following:
@@ -96,10 +92,11 @@ private:
 	}
 
 	ssize_t totalBytesReceived;
-	void in_handler(int bytesReceived) {
+	bool in_handler(int bytesReceived) {
 		doHeader();
 		out << (totalBytesReceived+=bytesReceived) << '/' << session.envs["CONTENT_LENGTH"] << html::element::s::br();
 		out.flush();    // Make sure to flush the buffer so it is actually sent.
+		return true;
 	}
 };
 

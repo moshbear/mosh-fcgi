@@ -1,5 +1,5 @@
 /***************************************************************************
-* Copyright (C) 2011 m0shbear <andrey at moshbear dot net>                 *
+* Copyright (C) 2011 m0shbear                                              *
 *                                                                          *
 * This file is part of mosh-fcgi.                                          *
 *                                                                          *
@@ -19,28 +19,24 @@
 
 
 #include <fstream>
-#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <mosh/fcgi/request.hpp>
 #include <mosh/fcgi/manager.hpp>
 #include <mosh/fcgi/http/header.hpp>
+#include <mosh/fcgi/http/misc.hpp>
 #include <mosh/fcgi/html/element.hpp>
 #include <mosh/fcgi/html/element/s.hpp>
+
+using namespace MOSH_FCGI;
 
 // I like to have an independent error log file to keep track of exceptions while debugging.
 // You might want a different filename. I just picked this because everything has access there.
 void error_log(const char* msg)
 {
 	using namespace std;
-	using namespace boost;
 	static ofstream error;
-	if(!error.is_open())
-	{
-		error.open("/tmp/errlog", ios_base::out | ios_base::app);
-		error.imbue(locale(error.getloc(), new posix_time::time_facet()));
-	}
 
-	error << '[' << posix_time::second_clock::local_time() << "] " << msg << endl;
+	error << '[' << MOSH_FCGI::http::time_to_string("%Y-%m-%d: %H:%M:%S") << "] " << msg << endl;
 }
 
 // Let's make our request handling class. It must do the following:
@@ -52,7 +48,8 @@ void error_log(const char* msg)
 
 class Filter: public MOSH_FCGI::Request<char> {
 public:
-	Filter(): doneHeader(false), totalBytesReceived(0) {}
+	
+	Filter(): doneHeader(false), in_tot(0), data_tot(0) {}
 private:
 	// We need to define a state variable so we know where we are when response() is called a second time.
 	bool doneHeader;
@@ -96,15 +93,17 @@ private:
 
 	ssize_t in_tot;
 	ssize_t data_tot;
-	void in_handler(int bytesReceived) {
+	bool in_handler(int bytesReceived) {
 		doHeader();
 		out << "in: " << (in_tot+=bytesReceived) << '/' << session.envs["CONTENT_LENGTH"] << html::element::s::br();
 		out.flush();    // Make sure to flush the buffer so it is actually sent.
+		return true;
 	}
-	void data_handler(int bytesReceived) {
+	bool data_handler(int bytesReceived) {
 		doHeader();
-		out << "data": << (data_tot+=bytesReceived) << '/' << session.envs["FCGI_DATA_LENGTH"] << html::element::s::br();
+		out << "data: " << (data_tot+=bytesReceived) << '/' << session.envs["FCGI_DATA_LENGTH"] << html::element::s::br();
 		out.flush();    // Make sure to flush the buffer so it is actually sent.
+		return true;
 	}
 };
 
