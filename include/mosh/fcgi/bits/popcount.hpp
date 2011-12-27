@@ -29,9 +29,6 @@
 MOSH_FCGI_BEGIN
 
 template <typename T>
-size_t popcount(T);
-
-template <typename T>
 typename std::enable_if<std::is_unsigned<T>::value, size_t>::type
 popcount(T x) {
 	size_t pop = 0;
