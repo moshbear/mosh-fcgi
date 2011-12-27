@@ -20,9 +20,19 @@
 #ifndef MOSH_FCGI_HTTP_HPP
 #define MOSH_FCGI_HTTP_HPP
 
-#include <mosh/fcgi/http/_session.hpp>
+// http::Session_base, http::Session, http::Fcgi_session
+#include <mosh/fcgi/http/session.hpp>
 
 // http::form::*
 #include <mosh/fcgi/http/form.hpp>
+
+// http::header
+#include <mosh/fcgi/http/header.hpp>
+
+// http::Cookie
+#include <mosh/fcgi/http/cookie.hpp>
+
+// http::hostname, http::time_to_string
+#include <mosh/fcgi/http/misc.hpp>
 
 #endif

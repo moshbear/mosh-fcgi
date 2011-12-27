@@ -58,12 +58,12 @@ public:
 
 	//! Copy constructor
 	Header(const Header& h)
-	: helper(h.helper), data(h.data)
+	: helper(h.helper), headers(h.headers), http_response(h.http_response)
 	{ }
 
 	//! Move constructor
 	Header(Header&& h)
-	: helper(h.helper), data(std::move(h.data))
+	: helper(h.helper), headers(std::move(h.headers)), http_response(std::move(h.http_response))
 	{ }
 
 	virtual ~Header()
@@ -202,7 +202,7 @@ public:
 	//! String cast operator
 	operator std::string () const {
 		std::stringstream ss;
-		if (!http.response.empty()) {
+		if (!http_response.empty()) {
 			ss << http_response << "\r\n";
 		}
 		for (const auto& h_k : headers) {
