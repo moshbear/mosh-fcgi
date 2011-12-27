@@ -116,7 +116,7 @@ private:
 	class Fcgibuf: public std::basic_streambuf<_char_type, traits>
 	{
 	public:
-		Fcgibuf() : dump_ptr(0), dump_size(0), ic(Iconv::make_state("", ""), Iconv::Deleter()) {
+		Fcgibuf() : ic(Iconv::make_state("", ""), Iconv::Deleter()), dump_ptr(0), dump_size(0) {
 			setp(buffer, buffer + buff_size);
 		}
 		/*! @brief After construction constructor
@@ -150,6 +150,8 @@ private:
 			dump_size = size;
 			sync();
 		}
+
+		std::shared_ptr<Iconv::IC_state> ic;
 
 	private:
 		typedef typename std::basic_streambuf<_char_type, traits>::int_type int_type;
@@ -189,8 +191,6 @@ private:
 
 		//! Type of output stream (Err or Out)
 		protocol::Record_type type;
-
-		std::shared_ptr<Iconv::IC_state> ic;
 	};
 	//! Stream buffer object
 	Fcgibuf buffer;

@@ -43,7 +43,7 @@ namespace protocol {
 	typedef uint16_t Request_id;
 
 	//! Typedef for aligned header bitstream
-	typedef char MOSH_FCGI_ALIGNEDAS_N(8, Header_data[8]);
+	typedef char MOSH_FCGI_ALIGNED(8, Header_data[8]);
 
 	/*! @brief  A full ID value for a FasTCGI request!
 	 * Because each FastCGI request has a RequestID and a file descriptor
