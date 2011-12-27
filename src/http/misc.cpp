@@ -28,6 +28,7 @@
 #include <iomanip>
 
 extern "C" {
+#include <limits.h>
 #include <unistd.h>
 #include <time.h>
 #include <sys/time.h>
@@ -66,7 +67,7 @@ std::string time_to_string(const std::string& fmt, int add_seconds) {
 	struct tm tm;
 	gmtime_r(&tv.tv_sec, &tm);	
 	std::stringstream ss;
-	bool hit_pct;
+	bool hit_pct = false;
 	char strft_buf[64];
 	tts_lu& lu = tts_lu::instance();
 
