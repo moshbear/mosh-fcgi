@@ -60,16 +60,16 @@ namespace protocol {
 		 * @return Boolean value as to whether or not the connection is kept alive
 		 */
 		bool keep_conn() const {
-			return flags & keep_conn_bit;
+			return _flags & _do_keep_conn;
 		}
 	private:
 		//! Flag bit representing the keep alive value
-		static const int keep_conn_bit = 1;
-		u16_t _role;
+		static const uint8_t _do_keep_conn = 1;
+		uint16_t _role;
 		//! Flag value
-		uint8_t flags;
+		uint8_t _flags;
 		//! Reseved for future use and body padding
-		uint8_t reserved[5];
+		uint8_t _reserved[5];
 	};
 #pragma pack(pop)
 }

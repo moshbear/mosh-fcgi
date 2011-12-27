@@ -64,7 +64,7 @@ namespace protocol {
 		_s_status protocol_status() { return _s_status(_protocol_status); }
 	private:
 		//! Request's exit status
-		u32_t _app_status;
+		uint32_t _app_status;
 		//! Protocol's termination status
 		uint8_t _protocol_status;
 		//! Reseved for future use and body padding

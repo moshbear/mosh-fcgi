@@ -43,11 +43,11 @@ namespace protocol {
 	
 #define MOSH_FCGI_GETSET_T(EX_T, IN_T, GET, SET, ALIAS) \
 	/* Getter-setter */ \
-	class _gs_##EX_T { \
+	class _gs_##ALIAS { \
 		IN_T* _x; \
-		_gs_##EX_T () = delete; \
+		_gs_##ALIAS () = delete; \
 	public: \
-		_gs_##EX_T (IN_T& x) : _x(&x) { } \
+		_gs_##ALIAS (IN_T& x) : _x(&x) { } \
 		/* Getter */ \
 		operator EX_T () const { \
 			return GET(*_x); \
@@ -57,41 +57,38 @@ namespace protocol {
 			*_x = SET(x); \
 		} \
 	}; \
-	typedef _gs_##EX_T _gs_##ALIAS; \
 	\
 	/* Getter */ \
-	class _g_##EX_T { \
+	class _g_##ALIAS { \
 		IN_T const* _x; \
-		_g_##EX_T () = delete; \
+		_g_##ALIAS () = delete; \
 		void operator = (EX_T) = delete; \
 	public: \
-		_g_##EX_T (IN_T const& x) : _x(&x) { } \
+		_g_##ALIAS (IN_T const& x) : _x(&x) { } \
 		/* Getter */ \
 		operator EX_T () const { \
 			return GET(*_x); \
 		} \
 	}; \
-	typedef _g_##EX_T _g_##ALIAS; \
 	\
 	/* Setter */ \
-	class _s_##EX_T { \
+	class _s_##ALIAS { \
 		IN_T* _x; \
-		_s_##EX_T () = delete; \
+		_s_##ALIAS () = delete; \
 		operator EX_T () const = delete; \
 	public: \
-		_s_##EX_T (IN_T& x) : _x(&x) { } \
+		_s_##ALIAS (IN_T& x) : _x(&x) { } \
 		/* Setter */ \
 		void operator = (EX_T x) { \
 			*_x = SET(x); \
 		} \
-	}; \
-	typedef _s_##EX_T _s_##ALIAS
+	}
 
 MOSH_FCGI_GETSET_T(uint8_t, uint8_t, /* GET */, /* SET */, u8);
 MOSH_FCGI_GETSET_T(uint16_t, uint16_t, ntohs, htons, u16);
 MOSH_FCGI_GETSET_T(uint32_t, uint32_t, ntohl, htonl, u32);
 MOSH_FCGI_GETSET_T(Record_type, uint8_t, static_cast<Record_type>, static_cast<uint8_t>, type);
-MOSH_FCGI_GETSET_T(Role, uint16_t, static_cast<Role>, static_cast<uint16_t, role);
+MOSH_FCGI_GETSET_T(Role, uint16_t, static_cast<Role>, static_cast<uint16_t>, role);
 MOSH_FCGI_GETSET_T(Protocol_status, uint8_t, static_cast<Protocol_status>, static_cast<uint8_t>, status);
 
 }

@@ -1,7 +1,7 @@
 //! @file protocol/types.hpp Types used for FastCGI protocol
 /***************************************************************************
-* Copyright (C) 2007 Eddie                                                 *
-*               2011 m0shbear                                              *
+* Copyright (C) 2011 m0shbear                                              *
+*               2007 Eddie                                                 *
 *                                                                          *
 * This file is part of mosh-fcgi.                                          *
 *                                                                          *
@@ -118,7 +118,7 @@ namespace protocol {
 	 * @tparam padding_len Length of padding at the end of the record. This is needed to keep
 	 * the record size a multiple of chunkSize.
 	 */
-	template <int name_len, int value_len, int padding_len>
+	template <uint8_t name_len, uint8_t value_len, uint8_t padding_len>
 	struct Management_reply;
 
 	/*! @brief Data structure used to pass messages within the mosh-fcgi task management system

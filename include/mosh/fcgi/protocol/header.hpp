@@ -46,6 +46,7 @@ namespace protocol {
 	 */
 	class Header {
 	public:	
+		Header() { }
 		Header(uint8_t _version_, Record_type _type_, uint16_t _reqid_, uint16_t _clen_, uint8_t _padlen_) {
 			version() = _version_;
 			type() = _type_;
@@ -90,8 +91,8 @@ namespace protocol {
 		uint8_t _version;
 		//! Record type
 		uint8_t _type;
-		u16_t _request_id;
-		u16_t _content_length;
+		uint16_t _request_id;
+		uint16_t _content_length;
 		//! Length of record padding
 		uint8_t _padding_length;
 		//! Reseved for future use and header padding

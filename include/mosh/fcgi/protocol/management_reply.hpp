@@ -50,12 +50,12 @@ namespace protocol {
 	 * as is. Note that the name and value lengths are left as single bytes so they are limited
 	 * in range from 0-127.
 	 *
-	 * @tparam _name_length Length of name in bytes (0-127). Null terminator not included.
-	 * @tparam _value_length Length of value in bytes (0-127). Null terminator not included.
-	 * @tparam _padding_length Length of padding at the end of the record. This is needed to keep
+	 * @tparam name_len Length of name in bytes (0-127). Null terminator not included.
+	 * @tparam value_len Length of value in bytes (0-127). Null terminator not included.
+	 * @tparam padding_len Length of padding at the end of the record. This is needed to keep
 	 * the record size a multiple of chunkSize.
 	 */
-	template<uint8_t _name_length, uint8_t _value_length, uint8_t _padding_length>
+	template<uint8_t name_len, uint8_t value_len, uint8_t padding_len>
 	struct Management_reply {
 	private:
 		//! Management records header
@@ -65,34 +65,34 @@ namespace protocol {
 		//! Length in bytes of value
 		uint8_t value_length;
 		//! Name data
-		uint8_t name[_name_length];
+		uint8_t name[name_len];
 		//! Value data
-		uint8_t value[_value_length];
+		uint8_t value[value_len];
 		//! Padding data
-		uint8_t padding[_padding_length];
+		uint8_t padding[padding_len];
 	public:
 		/*! @brief  Construct the record based on the name data and value data
 		 *
 		 * A full record is constructed from the name-value data. After
 		 * construction the structure can be casted to raw data and transmitted
 		 * as is. The size of the data arrays pointed to by name and value are
-		 * assumed to correspond with the _name_length and _padding_length template
+		 * assumed to correspond with the name_len and padding_len template
 		 * parameters passed to the class.
 		 *
 		 * @param[in] name Pointer to name data
 		 * @param[in] value Pointer to value data
 		 */
 		Management_reply(const char* name, const char* value)
-		: name_length(_name_length), value_length(_value_length) {
-			for(int i = 0; i < _name_length; i++)
+		: name_length(name_len), value_length(value_len) {
+			for(int i = 0; i < name_len; i++)
 				this->name[i] = *(name+i);
-			for(int i = 0; i < _value_length; i++)
+			for(int i = 0; i < value_len; i++)
 				this->value[i] = *(value+i);
-			header.set_version(version);
-			header.set_type(Record_type::get_values_result);
-			header.set_request_id(0);
-			header.set_content_length(_name_length + _value_length);
-			header.set_padding_length(_padding_length);
+			header.version() = version;
+			header.type() = Record_type::get_values_result;
+			header.request_id() = 0;
+			header.content_length() = name_len + value_len;
+			header.padding_length() = padding_len;
 		}
 	};
 

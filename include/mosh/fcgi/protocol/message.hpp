@@ -54,7 +54,8 @@ namespace protocol {
 		//! Size of the data section.
 		size_t size;
 		//! Pointer to the raw data being passed along with the message.
-		std::shared_ptr<char, Array_deleter<char>> data;
+		std::shared_ptr<char> data;
+		Message() : data(0, Array_deleter<char>()) { }
 	};
 }
 
