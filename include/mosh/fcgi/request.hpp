@@ -196,7 +196,8 @@ private:
 		try {
 			{
 				std::lock_guard<std::mutex> lock(messages_lock);
-				message = messages.pop_front();
+				message = messages.front();
+				messages.pop();
 			}
 			if (!message.type) {
 				aligned<sizeof(Header), Header> _header(static_cast<const void*>(message.data.get()));
