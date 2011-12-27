@@ -264,13 +264,21 @@ namespace ws {
 	const Element comment (Type::comment, "!--");
 	
 	//! @c wchar_t specialization of Html_begin<T>
-	typedef element::HTML_begin<wchar_t> html_begin;
+	typedef element::HTML_begin<wchar_t> HTML_begin;
 	//! @c wchar_t specialization of Html_end<T>
-	typedef element::HTML_end<wchar_t> html_end;
+	typedef element::HTML_end<wchar_t> HTML_end;
 	//! @c wchar_t specialization of Body_begin<T>
-	const element::Body_begin<wchar_t> body_begin;
+	typedef element::Body_begin<wchar_t> Body_begin;
 	//! @c wchar_t specialization of Body_end<T>
-	const element::Body_end<wchar_t> body_end;
+	typedef element::Body_end<wchar_t> Body_end;
+	//! <html>
+	const HTML_begin html_begin;
+	//! </html>
+	const HTML_end html_end;
+	//! <body>
+	const Body_begin body_begin;
+	//! </body>
+	const Body_end body_end;
 
 //@{
 //! @c wchar_t specialization of P

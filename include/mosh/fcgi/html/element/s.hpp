@@ -263,13 +263,21 @@ namespace s {
 	const Element comment (Type::comment, "!--");
 	
 	//! @c char specialization of Html_begin<T>
-	typedef element::HTML_begin<char> html_begin;
+	typedef element::HTML_begin<char> HTML_begin;
 	//! @c char specialization of Html_end<T>
-	typedef element::HTML_end<char> html_end;
+	typedef element::HTML_end<char> HTML_end;
 	//! @c char specialization of Body_begin<T>
-	typedef element::Body_begin<char> body_begin;
+	typedef element::Body_begin<char> Body_begin;
 	//! @c char specialization of Body_end<T>
-	typedef element::Body_end<char> body_end;
+	typedef element::Body_end<char> Body_end;
+	//! <html>
+	const HTML_begin html_begin;
+	//! </html>
+	const HTML_end html_end;
+	//! <body>
+	const Body_begin body_begin;
+	//! </body>
+	const Body_end body_end;
 
 	//@{
 	//! @c char specialization of P

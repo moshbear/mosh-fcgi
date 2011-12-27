@@ -509,6 +509,7 @@ public:
 	: Element<charT>(type_), doctype(html_doctype::html_doctype<charT>(type_)), xml_attributes()
 	{
 		if (is_xhtml()) {
+			this->xml_attributes.insert(std::make_pair("version", wide_string<charT>("1")));
 			this->attributes.insert(std::make_pair("xmlns", wide_string<charT>("http://www.w3.org/1999/xhtml")));
 		}
 	}
@@ -622,7 +623,7 @@ public:
 	virtual operator string () const {
 		std::basic_stringstream<charT> s;
 		if (is_xhtml()) {
-			s << wide_string<charT>("<?xml version=\"1\" ");
+			s << wide_string<charT>("<?xml ");
 			for (const auto& a : this->xml_attributes) {
 				s << wide_string<charT>(a.first + "=\"");
 				s << a.second + wide_string<charT>("\" ");
@@ -681,6 +682,10 @@ struct HTML_end {
 
 	HTML_end() { }
 	virtual ~HTML_end() { }
+
+	HTML_end const & operator () () const {
+		return *this;
+	}
 
 	virtual operator std::basic_string<charT> () const {
 		return wide_string<charT>("</html>");
@@ -757,6 +762,7 @@ public:
 		return e;
 	}
 	//@}
+private:
 	/* @name Unavailable operators
 	 * These operator overloads are disabled for semantic enforcement reasons.
 	 */
@@ -768,6 +774,7 @@ public:
 	this_type operator () (std::initializer_list<attribute>, const string&) const = delete;
 	this_type operator () (std::initializer_list<attribute>, std::initializer_list<string>) const = delete;
 	//@}
+public:
 	virtual operator string () const {
 		std::basic_stringstream<charT> s;
 		s << wide_string<charT>("<body");
@@ -795,6 +802,10 @@ struct Body_end {
 
 	Body_end() { }
 	virtual ~Body_end() { }
+
+	Body_end const & operator () () const {
+		return *this;
+	}
 
 	virtual operator std::basic_string<charT> () const {
 		return wide_string<charT>("</body>");
