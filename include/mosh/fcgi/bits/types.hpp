@@ -28,10 +28,10 @@
 
 #if MOSH_FCGI_HAVE_CXX11_ALIGNAS
 #define MOSH_FCGI_ALIGNEDAS(AlignT, Expr) alignas(AlignT) Expr
-#define MOSH_FCGI_ALIGNEDAS_N(n, Expr) alignas(n) Expr
+#define MOSH_FCGI_ALIGNED(n, Expr) alignas(n) Expr
 #elif __GNUC__ || HAVE_GCC_ALIGN_EMULATION
 #define MOSH_FCGI_ALIGNEDAS(AlignT, Expr) Expr __attribute__((aligned(__alignof__(AlignT))))
-#define MOSH_FCGI_ALIGNEDAS_N(n, Expr) Expr __attribute__((aligned(n)))
+#define MOSH_FCGI_ALIGNED(n, Expr) Expr __attribute__((aligned(n)))
 #else
 #error "Non-gcc / non-C++11 alignment support not implemented"
 #endif
@@ -59,10 +59,11 @@ MOSH_FCGI_BEGIN
 MOSH_FCGI_ALIGNEDAS(AsT, MOSH_FCGI_GROUP(
 	template <typename AsT, typename T>
 	class aligned_as { 
-		typename std::enable_if<std::is_pod<AsT>::value && std::is_pod<T>::value, T>::type x;
+	protected:
+		typename std::enable_if<std::is_pod<AsT>::value, T>::type x;
 	public: 
 		//! construct defaultly
-		aligned_as() : T() { } 
+		aligned_as() : x(T())  { } 
 		//! construct from reference 
 		aligned_as(T const& t) { 
 			std::memcpy(static_cast<void*>(&x), static_cast<const void*>(&t), sizeof(T)); 
@@ -117,13 +118,14 @@ MOSH_FCGI_ALIGNEDAS(AsT, MOSH_FCGI_GROUP(
  *  @tparam N alignment
  *  @tparam T value type (must be POD)
  */
-MOSH_FCGI_ALIGNEDAS_N(N, MOSH_FCGI_GROUP(
+MOSH_FCGI_ALIGNED(N, MOSH_FCGI_GROUP(
 	template <size_t N, typename T> 
 	class aligned { 
-		typename std::enable_if<std::is_pod<T>::value, T>::type x;
+	protected:
+		T x;
 	public: 
 		//! construct defaultly
-		aligned() : T() { }
+		aligned() : x(T()) { }
 		//! construct from reference 
 		aligned(T const& t) { 
 			std::memcpy(static_cast<void*>(&x), static_cast<const void*>(&t), sizeof(T)); 
@@ -175,40 +177,40 @@ MOSH_FCGI_ALIGNEDAS_N(N, MOSH_FCGI_GROUP(
  *  @tparam T2 source value type (must be POD)
  */
 template <size_t N, typename T, typename T2>
-struct zerofill_aligned : public aligned<N, typename std::enable_if<std::is_pod_type<T2>::value, T>::type> {
+struct zerofill_aligned : public aligned<N, typename std::enable_if<std::is_pod<T2>::value, T>::type> {
 	//! construct defaultly
 	zerofill_aligned() { }
 	//! construct from reference
 	zerofill_aligned(T2 const& t) {
-		MOSH_FCGI_ALIGNEDAS_N(N, T2) t_a(t);
+		MOSH_FCGI_ALIGNED(N, T2) t_a(t);
 		this->x = t_a;
 	}
 	//! construct from pointer
 	zerofill_aligned(T2 const* const pt) {
-		MOSH_FCGI_ALIGNEDAS_N(N, T2) t_a(*pt);
+		MOSH_FCGI_ALIGNED(N, T2) t_a(*pt);
 		this->x = t_a;
 	}
 	//! construct from void pointer
 	zerofill_aligned(void const* const pv) {
-		MOSH_FCGI_ALIGNEDAS_N(N, T2) t_a(*static_cast<T2 const* const>(pv));
+		MOSH_FCGI_ALIGNED(N, T2) t_a(*static_cast<T2 const* const>(pv));
 		this->x = t_a;
 	}
 	virtual ~zerofill_aligned() { }
 	//! assign from reference
 	zerofill_aligned<N,T,T2>& operator = (T2 const& t) {
-		MOSH_FCGI_ALIGNEDAS_N(N, T2) t_a(t);
+		MOSH_FCGI_ALIGNED(N, T2) t_a(t);
 		this->x = t_a;
 		return *this;
 	}
 	//! assign from pointer
 	zerofill_aligned<N,T,T2>& operator = (T2 const* const pt) {
-		MOSH_FCGI_ALIGNEDAS_N(N, T2) t_a(*pt);
+		MOSH_FCGI_ALIGNED(N, T2) t_a(*pt);
 		this->x = t_a;
 		return *this;
 	}
 	//! assign from void pointer
 	zerofill_aligned<N,T,T2>& operator = (void const* const pv) {
-		MOSH_FCGI_ALIGNEDAS_N(N, T2) t_a(*static_cast<T2 const* const>(pv));
+		MOSH_FCGI_ALIGNED(N, T2) t_a(*static_cast<T2 const* const>(pv));
 		this->x = t_a;
 		return *this;
 	}
@@ -223,7 +225,7 @@ struct zerofill_aligned : public aligned<N, typename std::enable_if<std::is_pod_
  *  @tparam T2 source value type
  */
 template <typename AsT, typename T, typename T2>
-struct zerofill_aligned_as : public aligned_as<AsT, typename std::enable_if<std::is_pod_type<T2>::value, T>::type>> {
+struct zerofill_aligned_as : public aligned_as<AsT, typename std::enable_if<std::is_pod<T2>::value, T>> {
 	//! construct defaultly
 	zerofill_aligned_as() { }
 	//! construct from reference
@@ -286,7 +288,7 @@ MOSH_FCGI_ALIGNEDAS(uint32_t,
 		uint32_t value;
 		unsigned char b[4];
 	}
-)
+);
 #pragma pack(pop)
 
 
