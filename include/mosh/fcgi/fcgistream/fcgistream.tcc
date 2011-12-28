@@ -23,16 +23,25 @@
 #define MOSH_FCGI_FCGISTREAM_FCGISTREAM_TCC
 
 #include <algorithm>
-#include <locale>
 #include <limits>
+#include <locale>
+#include <memory>
 #include <cstdint>
 #include <cstring>
 #include <ios>
 #include <mosh/fcgi/exceptions.hpp>
+#include <mosh/fcgi/bits/block.hpp>
+#ifndef MOSH_FCGI_USE_CGI
 #include <mosh/fcgi/protocol/types.hpp>
 #include <mosh/fcgi/protocol/vars.hpp>
 #include <mosh/fcgi/protocol/full_id.hpp>
 #include <mosh/fcgi/protocol/header.hpp>
+#else
+#include <mosh/fcgi/bits/array_deleter.hpp>
+extern "C" {
+#include <unistd.h>
+}
+#endif
 #include <mosh/fcgi/fcgistream.hpp>
 #include <mosh/fcgi/bits/iconv.hpp>
 #include <mosh/fcgi/bits/iconv_cvt.hpp>
@@ -53,7 +62,12 @@ int Fcgistream<char_type, traits>::Fcgibuf::empty_buffer() {
 		int remainder = wanted_size % chunk_size;
 		wanted_size += sizeof(Header) + (remainder ? (chunk_size - remainder) : remainder);
 		if (wanted_size > numeric_limits<uint16_t>::max()) wanted_size = numeric_limits<uint16_t>::max();
+#ifndef MOSH_FCGI_USE_CGI
 		Block data_block(transceiver->request_write(wanted_size));
+#else
+		std::unique_ptr<char> data_buf(new char[wanted_size], Array_deleter<char>());
+		Block data_block(data_buf.get(), wanted_size);
+#endif
 		data_block.size = (data_block.size / chunk_size) * chunk_size;
 		char* to_next = data_block.data + sizeof(Header);
 		locale loc = this->getloc();
@@ -80,6 +94,7 @@ int Fcgistream<char_type, traits>::Fcgibuf::empty_buffer() {
 		memcpy(to_next, dump_ptr, dumped_size);
 		dump_ptr += dumped_size;
 		dump_size -= dumped_size;
+#ifndef MOSH_FCGI_USE_CGI
 		uint16_t content_length = to_next - data_block.data + dumped_size - sizeof(Header);
 		uint8_t content_remainder = content_length % chunk_size;
 		Header& header = *(Header*)data_block.data;
@@ -89,6 +104,10 @@ int Fcgistream<char_type, traits>::Fcgibuf::empty_buffer() {
 		header.content_length() = content_length;
 		header.padding_length() = content_remainder ? (chunk_size - content_remainder) : content_remainder;
 		transceiver->secure_write(sizeof(Header) + content_length + header.padding_length(), id, false);
+#else
+		write(fd, data_block.data, data_block.size);
+#endif
+		
 	}
 	pbump(-(this->pptr() - this->pbase()));
 	return 0;

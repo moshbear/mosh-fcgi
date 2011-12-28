@@ -31,10 +31,11 @@
 #include <locale>
 #include <memory>
 
-
+#ifndef MOSH_FCGI_USE_CGI
 #include <mosh/fcgi/protocol/types.hpp>
 #include <mosh/fcgi/protocol/full_id.hpp>
 #include <mosh/fcgi/transceiver.hpp>
+#endif
 #include <mosh/fcgi/bits/iconv.hpp>
 #include <mosh/fcgi/bits/native_utf.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
@@ -54,9 +55,15 @@ class Fcgistream: public std::basic_ostream<_char_type, traits> {
 public:
 	Fcgistream() : std::basic_ostream<_char_type, traits>(&buffer) { }
 	//! Arguments passed directly to Fcgibuf::set()
+#ifndef MOSH_FCGI_USE_CGI
 	void set(protocol::Full_id id, Transceiver& transceiver, protocol::Record_type type) {
 		buffer.set(id, transceiver, type);
 	}
+#else
+	void set(int fd) {
+		buffer.set(fd);
+	}
+#endif
 	/*! @name Dumpers
 	 */
 	//@{
@@ -119,19 +126,33 @@ private:
 		Fcgibuf() : ic(Iconv::make_state("", ""), Iconv::Deleter()), dump_ptr(0), dump_size(0) {
 			setp(buffer, buffer + buff_size);
 		}
+#ifndef MOSH_FCGI_USE_CGI
 		/*! @brief After construction constructor
 		 * Sets FastCGI related member data necessary for operation of the
 		 * stream buffer.
 		 *
 		 * @param[in] id Complete ID associated with the request
 		 * @param[in] transceiver Transceiver object to use for transmission
-		 * @param[in] type Type of output stream (Er_r or Ou_t)
+		 * @param[in] type Type of output stream (err or out)
 		 */
 		void set(protocol::Full_id id, Transceiver& transceiver, protocol::Record_type type) {
 			this->id = id;
 			this->transceiver = &transceiver;
 			this->type = type;
 		}
+#else
+		/*! @brief After construction constructor
+		 * Sets file descriptor number necessary for operation of the
+		 * stream buffer.
+		 *
+		 * @param[in] fd File descriptor
+		 */
+		void set(protocol::Full_id id, Transceiver& transceiver, protocol::Record_type type) {
+			this->id = id;
+			this->transceiver = &transceiver;
+			this->type = type;
+		}
+#endif
 
 		virtual ~Fcgibuf() {
 			try {
@@ -180,17 +201,22 @@ private:
 
 		//! Code converts, packages and transmits all data in the stream buffer along with the dump data
 		int empty_buffer();
+#ifndef MOSH_FCGI_USE_CGI
+
 		//! Transceiver object to use for transmission
 		Transceiver* transceiver;
+		//! Complete ID associated with the request
+		protocol::Full_id id;
+		//! Type of output stream (err or out)
+		protocol::Record_type type;
+#else
+		//! This stream's fd
+		int fd;
+#endif
 		//! Size of the internal stream buffer
 		static const int buff_size = 8192;
 		//! The buffer
 		_char_type buffer[buff_size];
-		//! Complete ID associated with the request
-		protocol::Full_id id;
-
-		//! Type of output stream (Err or Out)
-		protocol::Record_type type;
 	};
 	//! Stream buffer object
 	Fcgibuf buffer;

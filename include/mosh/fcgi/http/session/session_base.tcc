@@ -1,21 +1,21 @@
-//! \file mosh/fcgi/http/session/session_base.tcc Template implementation for Session_base
+//! @file mosh/fcgi/http/session/session_base.tcc Template implementation for Session_base
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *
-* This file is part of fastcgi++.                                          *
+* This file is part of mosh-fcgi.                                          *
 *                                                                          *
-* fastcgi++ is free software: you can redistribute it and/or modify it     *
+* mosh-fcgi is free software: you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as  published   *
 * by the Free Software Foundation, either version 3 of the License, or (at *
 * your option) any later version.                                          *
 *                                                                          *
-* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
+* mosh-fcgi is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
 * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
 * License for more details.                                                *
 *                                                                          *
 * You should have received a copy of the GNU Lesser General Public License *
-* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
+* along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
 
@@ -32,7 +32,9 @@
 #include <vector>
 #include <boost/xpressive/xpressive.hpp>
 #include <mosh/fcgi/boyer_moore.hpp>
+#ifndef MOSH_FCGI_USE_CGI
 #include <mosh/fcgi/protocol/funcs.hpp>
+#endif
 #include <mosh/fcgi/http/conv/converter.hpp>
 #include <mosh/fcgi/bits/singleton.hpp>
 #include <mosh/fcgi/bits/iconv.hpp>
@@ -97,22 +99,32 @@ std::string Session_base<ct>::process_encoded_data() {
 }
 
 // Fill environment
-// fillGets(QUERY_STRING) is called from here
+// fill_gets(QUERY_STRING) is called from here
 // Init of (ue|mp)_regex_cache too (instead of in ctor)
+//
+// Note: if CGI mode is enabled, then [data, data+size) is not a packet of FastCGI PARAMS, but
+// 	an environment variable, in K=V form.
 template <class char_type>
 void Session_base<char_type>::fill(const char* data, size_t size) {
-
+#ifndef MOSH_FCGI_USE_CGI
 	this->xbuf.append(data, data + size);
 	while (this->xbuf.size()) {
+#endif
+
 		size_t name_size;
 		size_t value_size;
 		const char* name;
 		const char* value;
-		
+#ifndef MOSH_FCGI_USE_CGI		
 		if (!protocol::process_param_header(this->xbuf.data(), this->xbuf.size(),
 							name, name_size, value, value_size))
 			return;
-
+#else
+		name = data;
+		value = std::find(data, data + size, '=');
+		name_size = (value - data);
+		value_size = size - name_size - 1;
+#endif
 		std::string k(name, name_size);
 		std::string v(value, value_size);
 		this->xbuf.erase(this->xbuf.begin(), this->xbuf.begin() + name_size + value_size +
@@ -142,7 +154,9 @@ void Session_base<char_type>::fill(const char* data, size_t size) {
 		} else if (k == "HTTP_COOKIE") {
 			fill_ue_oneshot(value, value_size, cookies);
 		}
+#ifndef MOSH_FCGI_USE_CGI
 	}
+#endif
 }
 
 template <class char_type>
