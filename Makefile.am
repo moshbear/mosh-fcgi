@@ -10,5 +10,5 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = mosh_fcgi.pc
 
 doc/*:
-	doxygen doxygen	
+	doxygen
 
