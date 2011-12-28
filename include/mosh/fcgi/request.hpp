@@ -1,23 +1,23 @@
-//! \file request.hpp Defines the Fastcgippm0sh::Request class
+//! @file request.hpp Defines the MOSH_FCGI::Request class
 /***************************************************************************
-* Copyright (C) 2007 Eddie                                                 *
+* Copyright (C) 2011 m0shbear                                              *
+*               2007 Eddie                                                 *
 *                                                                          *
-* This file is part of fastcgi++.                                          *
+* This file is part of mosh-fcgi.                                          *
 *                                                                          *
-* fastcgi++ is free software: you can redistribute it and/or modify it     *
+* mosh-fcgi is free software: you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as  published   *
 * by the Free Software Foundation, either version 3 of the License, or (at *
 * your option) any later version.                                          *
 *                                                                          *
-* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
+* mosh-fcgi is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
 * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
 * License for more details.                                                *
 *                                                                          *
 * You should have received a copy of the GNU Lesser General Public License *
-* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
+* along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
-
 
 #ifndef MOSH_FCGI_REQUEST_HPP
 #define MOSH_FCGI_REQUEST_HPP
@@ -40,13 +40,13 @@
 #include <mosh/fcgi/bits/iconv_cvt.hpp>
 #include <mosh/fcgi/transceiver.hpp>
 #include <mosh/fcgi/fcgistream.hpp>
-#include <mosh/fcgi/http.hpp>
+#include <mosh/fcgi/http/session.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
 
-//! %Request handling class
-/*!
+/*! @brief %Request handling class
+ *
  * Derivations of this class will handle requests. This
  * includes building the session data, processing post/get data,
  * fetching data (files, database), and producing a response.
@@ -61,20 +61,20 @@ MOSH_FCGI_BEGIN
  *
  * @tparam char_type Character type for internal processing (wchar_t or char)
  * @tparam post_vec_type Vector type for storing file data
- * @tparam data_vec_type Vector type for storing fcgi_data 
+ * @tparam data_vec_type Vector type for storing DATA stream (when role == Role::filter)
  */
 template <class char_type, typename post_val_type = std::basic_string<char_type>, typename data_buf_type = std::vector<char>>
 class Request {
 public:
 	//! Initializes what it can. set() must be called by Manager before the data is usable.
 	Request()
-		: state(protocol::Record_type::params) {
+	: state(protocol::Record_type::params) {
 		setloc(std::locale::classic());
 		out.exceptions(std::ios_base::badbit | std::ios_base::failbit | std::ios_base::eofbit);
 	}
 
 protected:
-	//! Structure containing all HTTP session data
+	//! Structure containing all FastCGI HTTP session data
 	http::Fcgi_session<char_type, post_val_type, data_buf_type> session;
 
 	// To dump data into the stream without it being code converted and bypassing the stream buffer
@@ -160,10 +160,10 @@ protected:
 		err.imbue(loc);
 	}
 
-	//! Callback function for dealings outside the fastcgi++ library
+	//! Callback function for dealings outside the mosh-fcgi library
 	/*!
 	 * The purpose of the callback object is to provide a thread safe mechanism for functions and
-	 * classes outside the fastcgi++ library to talk to the requests. Should the library
+	 * classes outside the mosh-fcgi library to talk to the requests. Should the library
 	 * wish to have another thread process or fetch some data, that thread can call this
 	 * function when it is finished. It is equivalent to this:
 	 *
