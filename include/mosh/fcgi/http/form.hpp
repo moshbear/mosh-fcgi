@@ -1,21 +1,21 @@
-//! @file mosh/fcgi/http/form.hpp - HTTP Session form data
+//! @file mosh/fcgi/http/form.hpp HTTP Session form data
 /*!*************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *
-* This file is part of fastcgi++.                                          *
+* This file is part of mosh-fcgi.                                          *
 *                                                                          *
-* fastcgi++ is free software: you can redistribute it and/or modify it     *
+* mosh-fcgi is free software: you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as  published   *
 * by the Free Software Foundation, either version 3 of the License, or (at *
 * your option) any later version.                                          *
 *                                                                          *
-* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
+* mosh-fcgi is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
 * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
 * License for more details.                                                *
 *                                                                          *
 * You should have received a copy of the GNU Lesser General Public License *
-* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
+* along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
 
@@ -34,12 +34,13 @@
 #include <vector>
 
 extern "C" {
-	#include <sys/types.h>
-	#include <sys/stat.h>
-	#include <dirent.h>
-	#include <unistd.h>
-	#include <errno.h>
-	#include <string.h>
+// dir check and getpid
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
 }
 
 #include <mosh/fcgi/bits/cmp.hpp>
@@ -60,7 +61,8 @@ extern "C" {
 MOSH_FCGI_BEGIN
 
 namespace http {
-/*
+/*! @brief Structures for HTML form data
+ * @code
  * List of classes:
  *
  * Classname       | multiple values | headers | files
@@ -68,13 +70,7 @@ namespace http {
  *   Entry          |     yes         |    no   |   no
  *   MP_entry       |     no          |    yes  |   yes
  *   MP_mixed_entry |     yes         |    yes  |   yes
- *
- *   The rationale for declaring certain fields public is as follows:
- *   	There are no invariants for which a particular value is a dependency,
- *   	so the overhead of getters and setters is unwarranted. Furthermore,
- *   	there are no unintented side effects from particular values, so it
- *   	is safe to allow blind access to them outside the class/subclass.
- *
+ * @endcode
  */
 namespace form {
 
@@ -195,6 +191,7 @@ public:
 };
 
 /*! @brief Form entry
+ *
  * The usual form entry, this class is appropriate for holding GETs and x-www-formurl-encoded
  * vars. To allow for duplicate values, an internal vector is employed.
  *
@@ -701,6 +698,7 @@ private:
 };
 
 /*! @brief Multipart/mixed entry
+ *
  * This class holds (a) multipart/mixed entry(/ies), which is a bunch of headers followed
  * by multipart/form-data fields
  * @tparam char_type type of char to use in strings

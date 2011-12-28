@@ -29,14 +29,9 @@
 
 MOSH_FCGI_BEGIN
 
-/* @brief Defines aspects of the FastCGI %Protocol
- * The %Protocol namespace defines the data structures and constants
- * used by the FastCgI protocol version 1. All data has been modelled
- * after the official FastCgI protocol specification located at
- * http://www.fastcgi.com/devkit/doc/fcgi-spec.html
- */
 namespace protocol {
 	/*! @brief  A full ID value for a FastCGI request
+	 *
 	 * Because each FastCGI request has a RequestID and a file descriptor
 	 * associated with it, this class defines an ID value that encompasses
 	 * both. The file descriptor is stored internally as a 32 bit unsigned
@@ -45,6 +40,7 @@ namespace protocol {
 	 */
 	struct Full_id {
 		/*! @brief  Construct from a FastCGI RequestID and a file descriptor
+		 *
 		 * The constructor builds upon a RequestID and the file descriptor
 		 * it is communicating through.
 		 *

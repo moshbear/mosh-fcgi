@@ -13,6 +13,7 @@
 MOSH_FCGI_BEGIN
 
 /*! @brief A singleton class.
+ *
  * A singleton of type @c T has only one instance running at once.
  * This allows for a run-time static class member initialization effect.
  * @tparam T class type

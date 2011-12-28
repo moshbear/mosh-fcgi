@@ -31,19 +31,12 @@
 
 MOSH_FCGI_BEGIN
 
-/* @brief Defines aspects of the FastCGI %Protocol
- * The %Protocol namespace defines the data structures and constants
- * used by the FastCGI protocol version 1. All data has been modelled
- * after the official FastCGI protocol specification located at
- * http://www.fastcgi.com/devkit/doc/fcgi-spec.html
- */
 namespace protocol {
 
 #pragma pack(push, 1)
 
-		//! Requests Status
-
 	/*! @brief Data structure used as the body for FastCGI records with a RecordType of end_request
+	 *
 	 * This structure defines the body used in FastCGI end_request records. It can be casted 
 	 * to raw 8 byte blocks of data and transmitted as is. An end_request record is sent when
 	 * this side wishes to terminate a request. This can be simply because it is complete or

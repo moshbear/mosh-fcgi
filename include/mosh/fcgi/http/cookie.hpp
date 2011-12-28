@@ -129,17 +129,18 @@ public:
 	std::string comment;
 	//! The domain for which this cookie is valid
 	int max_age;
-	//! the subset of URLs in a domain for which this cookie is valid
+	//! The subset of URLs in a domain for which this cookie is valid
 	std::string domain;
 	//! Number of seconds defining the lifetime of this cookie
 	std::string path;
-	//! specifies whether this is a secure cookie (i.e. can only be set on a HTTPS connection)
+	//! Specifies whether this is a secure cookie (i.e. can only be set on a HTTPS connection)
 	bool secure;
-	/*! @brief specifies whether to limit the scope of the cookie to HTTP requests (see RFC 6265 (S) 4.1.2.6)
+	/*! @brief Specifies whether to limit the scope of the cookie to HTTP requests (see RFC 6265 (S) 4.1.2.6)
+	 *
 	 *  Enabled by default for anti-XSS purposes
 	 */
 	bool http_only;
-	//! this cookie's removal state (@c true if deleted, @c false otherwise)
+	//! This cookie's removal state (@c true if deleted, @c false otherwise)
 	bool removed;
 private:
 	static std::initializer_list<int> int_args_default;

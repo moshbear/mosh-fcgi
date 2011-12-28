@@ -1,4 +1,5 @@
 //! @file protocol/funcs.hpp Protocol-related functions
+//
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *               2007 Eddie                                                 *
@@ -28,15 +29,10 @@
 
 MOSH_FCGI_BEGIN
 
-/* @brief Defines aspects of the FastCGI %Protocol
- * The %Protocol namespace defines the data structures and constants
- * used by the FastCGI protocol version 1. All data has been modelled
- * after the official FastCGI protocol specification located at
- * http://www.fastcgi.com/devkit/doc/fcgi-spec.html
- */
 namespace protocol {
 
-	/*! @brief Process the body of a FastCGI parameter record!
+	/*! @brief Process the body of a FastCGI parameter record
+	 *
 	 * Takes the body of a FastCGI record of type parameter and parses  it. You end
 	 * up with a pointer/size for both the name and value of the parameter.
 	 *

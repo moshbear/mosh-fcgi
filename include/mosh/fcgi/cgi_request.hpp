@@ -49,7 +49,7 @@ extern char** environ;
 
 MOSH_FCGI_BEGIN
 
-/*! @brief %CGI %Request handling class
+/*! @brief CGI Request handling class
  *
  * Derivations of this class will handle requests. This
  * includes building the session data, processing post/get data,
@@ -77,8 +77,8 @@ public:
 		err.set(2);
 	}
 
-	//! Response generator
-	/*!
+	/*! @brief Response generator
+	 *
 	 * This function is called by handler() once all request data has been received from the other side.
 	 * The function shall return true if it has completed the response and false otherwise (e.g., on error).
 	 *
@@ -87,8 +87,8 @@ public:
 	 */
 	virtual bool response() = 0;
 
-	//! Request Handler
-	/*!
+	/*! @brief Request handler
+	 *
 	 * This function is called by the application (after application-specific startup, etc. )to
 	 * perform a CGI request.
 	 *
@@ -132,22 +132,22 @@ protected:
 	//! Structure containing all HTTP session data
 	http::Session<char_type, post_val_type> session;
 
-	//! Standard output stream to the client
-	/*!
+	/*! @brief Standard output stream to the client
+	 *
 	 * To dump data directly through the stream without it being code converted and bypassing
 	 * the stream buffer call Fcgistream::dump()
 	 */
 	Fcgistream<char_type, std::char_traits<char_type>> out;
 
-	//! Output stream to the HTTP server error log
-	/*!
+	/*! @brief Output stream to the HTTP server error log
+	 *
 	 * To dump data directly through the stream without it being code converted and bypassing
 	 * the stream buffer call Fcgistream::dump()
 	 */
 	Fcgistream<char_type, std::char_traits<char_type>> err;
 
-	//! Generate a data input response
-	/*!
+	/*! @brief Generate a data input response
+	 *
 	 * This function exists should the library user wish to do something like generate a partial response based on
 	 * bytes received from the client. The function is called by handler() every time %read() returns a positive value.
 	 * The function has no access to the data, but knows exactly how much was received based on the value that was passed.
@@ -162,8 +162,8 @@ protected:
 	//! The locale associated with the request. Should be set with setloc(), not directly.
 	std::locale loc;
 
-	//! Set the requests locale
-	/*!
+	/*! @brief Set the requests locale
+	 *
 	 * This function both sets loc to the locale passed to it and imbues the locale into the
 	 * out and err stream. The user should always call this function as opposed to setting the
 	 * locales directly is this functions insures the iconv code conversion is functioning properly.

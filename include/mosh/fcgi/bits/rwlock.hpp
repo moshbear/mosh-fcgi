@@ -3,20 +3,20 @@
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *
-* This file is part of fastcgi++.                                          *
+* This file is part of mosh-fcgi.                                          *
 *                                                                          *
-* fastcgi++ is free software: you can redistribute it and/or modify it     *
+* mosh-fcgi is free software: you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as  published   *
 * by the Free Software Foundation, either version 3 of the License, or (at *
 * your option) any later version.                                          *
 *                                                                          *
-* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
+* mosh-fcgi is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
 * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
 * License for more details.                                                *
 *                                                                          *
 * You should have received a copy of the GNU Lesser General Public License *
-* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
+* along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
 #ifndef MOSH_FCGI_RWLOCK_HPP
@@ -37,6 +37,7 @@ extern "C" {
 MOSH_FCGI_BEGIN
 
 /*! @brief A reader-writer lock
+ *
  *  This class encapsulates %pthread_rwlock_* with C++ semantics.
  *  It also adds the ability to upgrade a read lock to a write one.
  *
@@ -67,7 +68,7 @@ public:
 	/*! @name Read locks
 	 */
 	//@{
-	/* @brief Acquire a read lock
+	/*! @brief Acquire a read lock
 	 * @throws std::system_error if @c pthread_rwlock_rdlock's return value is non-zero
 	 */
 	void read_lock() {
@@ -75,20 +76,20 @@ public:
 		if (ret != 0)
 			throw_system_error(ret);
 	}
-	/* @brief Acquire a read lock
+	/*! @brief Acquire a read lock
 	 * @see read_lock
 	 */
 	void lock() {
 		read_lock();
 	} 
-	/* @brief Try to acquire a read lock
+	/*! @brief Try to acquire a read lock
 	 * @retval @c true if @c pthread_rwlock_tryrdlock's return value is zero
 	 * @retval @c false otherwise
 	 */
 	bool try_read_lock() noexcept {
 		return !pthread_rwlock_tryrdlock(&lck);
 	}
-	/* @brief Try to acquire a read lock
+	/*! @brief Try to acquire a read lock
 	 * @see try_read_lock
 	 */
 	bool try_lock() noexcept {
@@ -99,7 +100,7 @@ public:
 	/*! @name Write locks
 	 */
 	//@{
-	/* @brief Acquire a write lock
+	/*! @brief Acquire a write lock
 	 * @throws std::system_error if @c pthread_rwlock_wrlock's return value is non-zero
 	 */
 	void write_lock() {
@@ -107,7 +108,7 @@ public:
 		if (ret != 0)
 			throw_system_error(ret);
 	}
-	/* @brief Try to acquire a write lock
+	/*! @brief Try to acquire a write lock
 	 * @retval @c true if @c pthread_rwlock_trywrlock's return value is zero
 	 * @retval @c false otherwise
 	 */
@@ -121,7 +122,7 @@ public:
 		pthread_rwlock_unlock(&lck);
 	}
 
-	/* @brief Upgrade a read lock to a write lock
+	/*! @brief Upgrade a read lock to a write lock
 	 * @sa unlock
 	 * @sa write_lock
 	 */

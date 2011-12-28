@@ -33,12 +33,6 @@ extern "C" {
 
 MOSH_FCGI_BEGIN
 
-/* @brief Defines aspects of the FastCGI %Protocol
- * The %Protocol namespace defines the data structures and constants
- * used by the FastCGI protocol version 1. All data has been modelled
- * after the official FastCGI protocol specification located at
- * http://www.fastcgi.com/devkit/doc/fcgi-spec.html
- */
 namespace protocol {
 	
 #define MOSH_FCGI_GETSET_T(EX_T, IN_T, GET, SET, ALIAS) \

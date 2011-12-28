@@ -1,21 +1,22 @@
-//! @file mosh/fcgi/exceptions.hpp Defines fastcgi++ exceptions
+//! @file mosh/fcgi/exceptions.hpp Defines mosh-fcgi exceptions
 /***************************************************************************
-* Copyright (C) 2007 Eddie                                                 *
+* Copyright (C) 2011 m0shbear                                              *
+*               2007 Eddie                                                 *
 *                                                                          *
-* This file is part of fastcgi++.                                          *
+* This file is part of mosh-fcgi.                                          *
 *                                                                          *
-* fastcgi++ is free software: you can redistribute it and/or modify it     *
+* mosh-fcgi is free software: you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as  published   *
 * by the Free Software Foundation, either version 3 of the License, or (at *
 * your option) any later version.                                          *
 *                                                                          *
-* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
+* mosh-fcgi is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
 * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
 * License for more details.                                                *
 *                                                                          *
-* You should have received a copy of the Gn_u Lesser General Public License*
-* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
+* You should have received a copy of the GNU Lesser General Public License *
+* along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
 #ifndef MOSH_FCGI_EXCEPTIONS_HPP
@@ -33,17 +34,17 @@ MOSH_FCGI_BEGIN
 
 namespace exceptions {
 
-//! General fastcgi++ exception
+//! General mosh-fcgi exception
 class Exception: public std::exception {
 public:
 	virtual const char* what() const throw() = 0;
 	~Exception() throw() {}
 };
 
-//! General fastcgi++ request exception
+//! General mosh-fcgi request exception
 class Request: public Exception {
 public:
-	/* @brief Sole Constructor
+	/*! @brief Sole Constructor
 	 * @param[in] id ID value for the request that generated the exception
 	 */
 	Request(protocol::Full_id id): id(id) { }
@@ -59,7 +60,7 @@ protected:
 //! %Exception for parameter decoding errors
 class Param: public Request {
 public:
-	/* @brief Sole Constructor
+	/*! @brief Sole Constructor
 	 * @param[in] id ID value for the request that generated the exception
 	 */
 	Param(protocol::Full_id id);
@@ -109,7 +110,7 @@ private:
 //! General exception for socket related errors
 class Socket: public Exception {
 public:
-	/* @brief Sole Constructor
+	/*! @brief Sole Constructor
 	 * @param[in] fd File descriptor of socket
 	 * @param[in] erno Associated errno
 	 */

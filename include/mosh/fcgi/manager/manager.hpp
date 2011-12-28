@@ -1,21 +1,22 @@
 //! @file mosh/fcgi/manager/manager.hpp Defines the fcgi::Manager class
 /***************************************************************************
-* Copyright (C) 2007 Eddie                                                 *
+* Copyright (C) 2011 m0shbear                                              *
+*               2007 Eddie                                                 *
 *                                                                          *
-* This file is part of fastcgi++.                                          *
+* This file is part of mosh-fcgi.                                          *
 *                                                                          *
-* fastcgi++ is free software: you can redistribute it and/or modify it     *
+* mosh-fcgi is free software: you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as  published   *
 * by the Free Software Foundation, either version 3 of the License, or (at *
 * your option) any later version.                                          *
 *                                                                          *
-* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
+* mosh-fcgi is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
 * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
 * License for more details.                                                *
 *                                                                          *
 * You should have received a copy of the GNU Lesser General Public License *
-* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
+* along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
 
@@ -92,7 +93,7 @@ public:
 	 * this function. %Requests are associated with their protocol::Full_id value so
 	 * that and the message itself is all that is needed. Calling this function from
 	 * another thread is safe. Although this function can be called from outside
-	 * the fastcgi++ library, the Request class contains a callback function based
+	 * the mosh-fcgi library, the Request class contains a callback function based
 	 * on this that is more usable. An id with a protocol::Requestid of 0 means the message
 	 * is destined for the %Manager itself. Should a message by passed with an id that doesn't
 	 * exist, it will be discarded.

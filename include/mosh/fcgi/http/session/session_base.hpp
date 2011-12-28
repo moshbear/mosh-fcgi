@@ -1,6 +1,6 @@
 // TODO: add complete cookie parsing support
 
-//! @file mosh/fcgi/http/session/session_base.hpp - HTTP Session base class
+//! @file mosh/fcgi/http/session/session_base.hpp HTTP Session base class
 /***************************************************************************
 * Copyright (C) 2011 m0shbear						   *
 *									   *
@@ -62,7 +62,7 @@ public:
 	//! (multi-)set of cookies
 	Kv cookies;
 	
-	/* @brief Parses FastCGI parameter data into the data structure
+	/*! @brief Parses FastCGI parameter data into the data structure
 	 * This function will take the body of a FastCGI parameter record and parse
 	 * the data into the data structure. data should equal the first character of
 	 * the records body with size being it's content length.

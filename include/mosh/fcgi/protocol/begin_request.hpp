@@ -30,17 +30,12 @@
 
 MOSH_FCGI_BEGIN
 
-/* @brief Defines aspects of the FastCGI %Protocol
- * The %Protocol namespace defines the data structures and constants
- * used by the FastCGI protocol version 1. All data has been modelled
- * after the official FastCGI protocol specification located at
- * http://www.fastcgi.com/devkit/doc/fcgi-spec.html
- */
 namespace protocol {
 
 #pragma pack(push, 1)
 		
-	/*! @brief Data structure used as the body for FastCGI records with a RecordType of Begin_request!
+	/*! @brief Data structure used as the body for FastCGI records with a RecordType of %begin_request
+	 *
 	 * This structure defines the body used in FastCGI Begin_request records. It can be casted 
 	 * from raw 8 byte blocks of data and received as is. A Begin_request record is received
 	 * when the other side wished to make a new request.
@@ -51,7 +46,7 @@ namespace protocol {
 		 *  @return The expected Role that the request will play
 		 */
 		_g_role role() const { return _g_role(_role); }
-		/*! @brief Get keep alive value from the record body!
+		/*! @brief Get keep alive value from the record body
 		 *
 		 * If this value is false, the socket should be closed on our side when the request is complete.
 		 * If true, the other side will close the socket when done and potentially reuse the socket and

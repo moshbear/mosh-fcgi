@@ -53,8 +53,8 @@ bool ci_equality(const std::basic_string<charT>& s1, const std::basic_string<cha
  *
  * For case-sensitive comparison, use (s1 == s2);
  * @tparam charT (deduced from input)
- * @param s1 The first string to compare
- * @param s2 The second string to compare
+ * @param ss1 The first string to compare
+ * @param ss2 The second string to compare
  * @param n The number of characters to compare.
  * @return @c true if the strings are equal, @c false if they are not
  */

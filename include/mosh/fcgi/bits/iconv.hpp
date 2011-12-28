@@ -2,20 +2,20 @@
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *
-* This file is part of fastcgi++.                                          *
+* This file is part of mosh-fcgi.                                          *
 *                                                                          *
-* fastcgi++ is free software: you can redistribute it and/or modify it     *
+* mosh-fcgi is free software: you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as  published   *
 * by the Free Software Foundation, either version 3 of the License, or (at *
 * your option) any later version.                                          *
 *                                                                          *
-* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
+* mosh-fcgi is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
 * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
 * License for more details.                                                *
 *                                                                          *
 * You should have received a copy of the GNU Lesser General Public License *
-* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
+* along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
 #ifndef MOSH_FCGI_ICONV_HPP
@@ -32,8 +32,9 @@ extern "C" {
 
 MOSH_FCGI_BEGIN
 
+//! Iconv-related classes and functions
 namespace Iconv {
-
+//! Iconv states
 struct IC_state {
 	iconv_t ic_in;
 	iconv_t ic_out;
@@ -71,6 +72,7 @@ icm_undo_in:
 	throw std::invalid_argument("iconv: cannot convert between " + istate + " and " + ostate);
 }
 
+//! A %Deleter for IC_state.
 struct Deleter {
 	void operator()(IC_state* ic) const {
 		iconv_close(ic->ic_in);

@@ -2,20 +2,20 @@
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *
-* This file is part of fastcgi++.                                          *
+* This file is part of mosh-fcgi.                                          *
 *                                                                          *
-* fastcgi++ is free software: you can redistribute it and/or modify it     *
+* mosh-fcgi is free software: you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as  published   *
 * by the Free Software Foundation, either version 3 of the License, or (at *
 * your option) any later version.                                          *
 *                                                                          *
-* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
+* mosh-fcgi is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
 * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
 * License for more details.                                                *
 *                                                                          *
 * You should have received a copy of the GNU Lesser General Public License *
-* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
+* along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
 #ifndef MOSH_FCGI_TYPES_HPP
@@ -50,6 +50,7 @@ MOSH_FCGI_BEGIN
 //@{
 /*! @class aligned_as
  *  @brief Aligned class template
+ *
  *  If in doubt about alignment and want to be sure that access won't cause an unaligned access,
  *  use this class to create a temporary aligned copy. UA is avoided by using %memcpy for the
  *  bitwise copy.
@@ -112,6 +113,7 @@ MOSH_FCGI_ALIGNEDAS(AsT, MOSH_FCGI_GROUP(
 	} 
 ));
 /*! @brief Aligned class template
+ *
  *  If in doubt about alignment and want to be sure that access won't cause an unaligned access,
  *  use this class to create a temporary aligned copy. UA is avoided by using %memcpy for the
  *  bitwise copy.
@@ -169,6 +171,7 @@ MOSH_FCGI_ALIGNED(N, MOSH_FCGI_GROUP(
  */
 //@{
 /*! @brief Zero-fill aligned class template
+ *
  *  If in doubt about alignment and want to be sure that access won't cause an unaligned access,
  *  use this class to create a temporary aligned copy. UA is avoided by using %memcpy for the
  *  bitwise copy.
@@ -217,6 +220,7 @@ struct zerofill_aligned : public aligned<N, typename std::enable_if<std::is_pod<
 };
 
 /*! @brief Zero-fill aligned class template
+ *
  *  If in doubt about alignment and want to be sure that access won't cause an unaligned access,
  *  use this class to create a temporary aligned copy. UA is avoided by using %memcpy for the
  *  bitwise copy.
@@ -264,33 +268,6 @@ struct zerofill_aligned_as : public aligned_as<AsT, typename std::enable_if<std:
 	}
 };
 //@}
-
-#pragma pack(push, 1)
-MOSH_FCGI_ALIGNEDAS(uint16_t,
-	union u16_t {
-		struct {
-			uint8_t b0;
-			uint8_t b1;
-		};
-		uint16_t value;
-		unsigned char b[2];
-	}
-);
-
-MOSH_FCGI_ALIGNEDAS(uint32_t,
-	union u32_t {
-		struct {
-			uint8_t b0;
-			uint8_t b1;
-			uint8_t b2;
-			uint8_t b3;
-		};
-		uint32_t value;
-		unsigned char b[4];
-	}
-);
-#pragma pack(pop)
-
 
 MOSH_FCGI_END
 

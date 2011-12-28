@@ -31,7 +31,8 @@
 
 MOSH_FCGI_BEGIN
 
-/* @brief Defines aspects of the FastCGI %Protocol
+/*! @brief Defines aspects of the FastCGI %Protocol
+ *
  * The %Protocol namespace defines the data structures and constants
  * used by the FastCGI protocol version 1. All data has been modelled
  * after the official FastCGI protocol specification located at
@@ -45,7 +46,8 @@ namespace protocol {
 	//! Typedef for aligned header bitstream
 	typedef char MOSH_FCGI_ALIGNED(8, Header_data[8]);
 
-	/*! @brief  A full ID value for a FasTCGI request!
+	/*! @brief  A full ID value for a FasTCGI request
+	 *
 	 * Because each FastCGI request has a RequestID and a file descriptor
 	 * associated with it, this class defines an ID value that encompasses
 	 * both. The file descriptor is stored internally as a 16 bit unsigned
@@ -72,7 +74,8 @@ namespace protocol {
 	enum class Protocol_status : uint8_t
 		{ request_complete = 0, cant_mpx_conn, overloaded, unknown_role };
 
-	/*! @brief Data structure used as the header for FastCGI records!
+	/*! @brief Data structure used as the header for FastCGI records
+	 *
 	 * This structure defines the header used in FastCGI records. It can be casted 
 	 * to and from raw 8 byte blocks of data and transmitted/received as is. The
 	 * endianess and order of data is kept correct through the accessor member functions.

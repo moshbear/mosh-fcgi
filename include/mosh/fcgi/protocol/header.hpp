@@ -30,16 +30,11 @@
 
 MOSH_FCGI_BEGIN
 
-/* @brief Defines aspects of the FastCGI %Protocol
- * The %Protocol namespace defines the data structures and constants
- * used by the FastCGI protocol version 1. All data has been modelled
- * after the official FastCGI protocol specification located at
- * http://www.fastcgi.com/devkit/doc/fcgi-spec.html
- */
 namespace protocol {
 
 #pragma pack(push, 1)
-	/*! @brief Data structure used as the header for FastCGI records!
+	/*! @brief Data structure used as the header for FastCGI records
+	 *
 	 * This structure defines the header used in FastCGI records. It can be casted 
 	 * to and from raw 8 byte blocks of data and transmitted/received as is. The
 	 * endianess and order of data is kept correct through the accessor member functions.

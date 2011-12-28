@@ -30,15 +30,9 @@
 
 MOSH_FCGI_BEGIN
 
-/* @brief Defines aspects of the FastCGI %Protocol
- * The %Protocol namespace defines the data structures and constants
- * used by the FastCGI protocol version 1. All data has been modelled
- * after the official FastCGI protocol specification located at
- * http://www.fastcgi.com/devkit/doc/fcgi-spec.html
- */
 namespace protocol {
 
-	/* @brief Data structure used to pass messages within the mosh-fcgi task management system
+	/*! @brief Data structure used to pass messages within the mosh-fcgi task management system
 	 *
 	 * This data structure is crucial to all operation in the FastCGI library as all
 	 * data passed to requests must be encapsulated in this data structure. A type value
@@ -55,6 +49,7 @@ namespace protocol {
 		size_t size;
 		//! Pointer to the raw data being passed along with the message.
 		std::shared_ptr<char> data;
+		//! Default constructor. Initializes data's Deleter.
 		Message() : data(0, Array_deleter<char>()) { }
 	};
 }

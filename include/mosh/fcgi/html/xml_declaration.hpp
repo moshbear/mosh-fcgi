@@ -131,7 +131,7 @@ public:
 
 	/*! @brief String cast operator
 	 *  Renders the declaration, with attributes and pre-rendered data.
-	 *  @warn No escaping is done.
+	 *  @warning No escaping is done.
 	 */
 	operator string() const {
 		std::basic_stringstream<charT> ss;

@@ -41,8 +41,10 @@ MOSH_FCGI_BEGIN
 
 namespace http {
 
+//! HTTP header
 namespace header {
 
+//! HTTP header generator
 class Header {
 public:
 	std::map<std::string, std::vector<Cookie>> cookies;

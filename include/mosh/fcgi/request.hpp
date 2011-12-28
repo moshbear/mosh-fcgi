@@ -81,22 +81,22 @@ protected:
 	// call Fcgistream::dump(char* data, size_t size)
 	// or Fcgistream::dump(std::basicistream<char>& stream)
 
-	//! Standard output stream to the client
-	/*!
+	/*! @brief Standard output stream to the client
+	 *
 	 * To dump data directly through the stream without it being code converted and bypassing
 	 * the stream buffer call Fcgistream::dump()
 	 */
 	Fcgistream<char_type, std::char_traits<char_type>> out;
 
-	//! Output stream to the HTTP server error log
-	/*!
+	/*! @brief Output stream to the HTTP server error log
+	 *
 	 * To dump data directly through the stream without it being code converted and bypassing
 	 * the stream buffer call Fcgistream::dump()
 	 */
 	Fcgistream<char_type, std::char_traits<char_type>> err;
 
-	//! Response generator
-	/*!
+	/*! @brief Response generator
+	 *
 	 * This function is called by handler() once all request data has been received from the other side or if a
 	 * Message not of a FastCGI type has been passed to it. The function shall return true if it has completed
 	 * the response and false if it has not (waiting for a callback message to be sent).
@@ -106,8 +106,8 @@ protected:
 	 */
 	virtual bool response() = 0;
 
-	//! Generate a data input response
-	/*!
+	/*! @brief Generate a data input response
+	 *
 	 * This function exists should the library user wish to do something like generate a partial response based on
 	 * bytes received from the client. The function is called by handler() every time a FastCGI IN record is received.
 	 * The function has no access to the data, but knows exactly how much was received based on the value that was passed.
@@ -119,8 +119,8 @@ protected:
 	 */
 	virtual bool in_handler(int bytes_received) { return true; }
 
-	//! Generate a filter data input response
-	/*!
+	/*! @brief Generate a filter data input response
+	 *
 	 * This function exists should the library user wish to do something like generate a partial response based on
 	 * bytes received from the client. The function is called by handler() every time a FastCGI DATA record is received.
 	 * The function has no access to the data, but knows exactly how much was received based on the value that was passed.
@@ -135,8 +135,8 @@ protected:
 	//! The locale associated with the request. Should be set with setloc(), not directly.
 	std::locale loc;
 
-	//! The message associated with the current handler() call.
-	/*!
+	/*! @brief The message associated with the current handler() call.
+	 *
 	 * This is only of use to the library user when a non FastCGI (type=0) Message is passed
 	 * by using the requests callback.
 	 *
@@ -144,8 +144,8 @@ protected:
 	 */
 	protocol::Message message;
 
-	//! Set the requests locale
-	/*!
+	/*! @brief Set the request's locale
+	 *
 	 * This function both sets loc to the locale passed to it and imbues the locale into the
 	 * out and err stream. The user should always call this function as opposed to setting the
 	 * locales directly is this functions insures the iconv code conversion is functioning properly.
@@ -160,8 +160,8 @@ protected:
 		err.imbue(loc);
 	}
 
-	//! Callback function for dealings outside the mosh-fcgi library
-	/*!
+	/*! @brief Callback function for dealings outside the mosh-fcgi library
+	 *
 	 * The purpose of the callback object is to provide a thread safe mechanism for functions and
 	 * classes outside the mosh-fcgi library to talk to the requests. Should the library
 	 * wish to have another thread process or fetch some data, that thread can call this
@@ -181,8 +181,8 @@ private:
 	std::mutex messages_lock;
 	//@}
 
-	//! Request Handler
-	/*!
+	/*! @brief Request Handler
+	 *
 	 * This function is called by Manager::handler() to handle messages destined for the request.
 	 * It deals with FastCGI messages (type=0) while passing all other messages off to response().
 	 *
@@ -297,6 +297,7 @@ private:
 	}
 
 	/*! @brief Set's up the request with the data it needs.
+	 *
 	 * This function is an "after-the-fact" constructor that build vital initial data for the request.
 	 *
 	 * @param[in] id Complete ID of the request

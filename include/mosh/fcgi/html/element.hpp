@@ -50,13 +50,13 @@ namespace Type {
 	 * Each value must be a power of 2
 	 */
 
-	//! Encodes an unary <foo /> element; resulting tag will have attributes but no data
+	//! Encodes an unary &lt;foo /&gt; element; resulting tag will have attributes but no data
 	const uint8_t unary = 1 << 0;
-	//! Encodes a binary <foo></foo> element; resulting tag will have both attributes and data
+	//! Encodes a binary &lt;foo&gt;&lt;/foo&gt; element; resulting tag will have both attributes and data
 	const uint8_t binary = 1 << 1;
-	//! Encodes a DOCTYPE directive <!FOO >
+	//! Encodes a DOCTYPE directive &lt;!FOO &gt;
 	const uint8_t dtd = 1 << 2;
-	//! Encodes a comment <!-- foo -->
+	//! Encodes a comment &lt;!-- foo --&gt;
 	const uint8_t comment = 1 << 3;
 	
 	inline void _validate(uint8_t t) {
@@ -84,6 +84,7 @@ private:
 	typedef Element<charT> this_type;
 public:
 	/*! @brief Create a new element with a given name and type
+	 *
 	 *  @param[in] name_ Element name
 	 *  @param[in] type_ Element type
 	 *  @sa Type
@@ -130,6 +131,7 @@ public:
 	}
 
 	/*! @name Clone and call
+	 *
 	 * These overloads create new elements which behave as if attributes and values 
 	 * were appended to existing elements.
 	 */
@@ -226,7 +228,7 @@ public:
 	/*! @brief Add an attribute.
 	 *  @param[in] _a attribute
 	 */
-	this_type& operator += (const attribute& _a) {
+	virtual this_type& operator += (const attribute& _a) {
 		if (this->attribute_addition_hook(_a))
 			attributes.insert(_a);
 		return *this;
@@ -235,7 +237,7 @@ public:
 	/*! @brief Add attribute(s).
 	 * @param[in] _a {}-list of attributes
 	 */
-	this_type& operator += (std::initializer_list<attribute> _a) {
+	virtual this_type& operator += (std::initializer_list<attribute> _a) {
 		for (const auto& at : _a) {
 			if (this->attribute_addition_hook(at))
 				attributes.insert(at);
@@ -246,7 +248,7 @@ public:
 	/*! @brief Add a value.
 	 * @param[in] _v value
 	 */
-	this_type& operator += (const string& _v) {
+	virtual this_type& operator += (const string& _v) {
 		if (this->data_addition_hook(_v))
 			data += _v;
 		return *this;
@@ -255,7 +257,7 @@ public:
 	/*! @brief Add value(s).
 	 * @param[in] _v {}-list of values
 	 */
-	this_type& operator += (std::initializer_list<string> _v) {
+	virtual this_type& operator += (std::initializer_list<string> _v) {
 		for (const auto& vv : _v)
 			data += vv;
 		return *this;
@@ -264,8 +266,9 @@ public:
 	//@}
 
 	/*! @brief String cast operator
+	 *
 	 *  Renders the element, with attributes and pre-rendered data.
-	 *  @warn No escaping is done.
+	 *  @warning No escaping is done.
 	 */
 	virtual operator string() const {
 		std::basic_stringstream<charT> s;
@@ -299,7 +302,7 @@ public:
 		return s.str();
 	}
 
-	//! Explicitly convert to string (for times when static_cast<charT>(*this) is akward)
+	//! Explicitly convert to string (for times when static_cast&lt;charT&gt;(*this) is akward)
 	string to_string() const {
 		return this->operator string();
 	}
@@ -320,6 +323,7 @@ protected:
 
 
 	/*! @brief Hook for attribute addition 
+	 * 
 	 *  To perform custon behavior (e.g. value checking) on attribute addition,
 	 *  override this function in derived classes.
 	 *  @retval @c true Add the attribute to the list
@@ -327,6 +331,7 @@ protected:
 	 */
 	virtual bool attribute_addition_hook(const attribute&) { return true; }
 	/*! @brief Hook for data addition 
+	 *
 	 *  To perform custon behavior (e.g. value checking) on data addition,
 	 *  override this function in derived classes.
 	 *  @retval @c true Add the string to data
@@ -341,10 +346,12 @@ private:
 	std::string name;
 protected:
 	/*! @brief List of attributes.
+	 *
 	 *  Unused for comment elements.
 	 */
 	attr_list attributes;
 	/*! @brief Pre-rendered embedded data
+	 *
 	 *  Unused for unary elements.
 	 */
 	string data;
@@ -352,10 +359,15 @@ protected:
 };
 
 /*! @name Concatenators
+ *
  * These overloads create new elements which behave as if 
  * attributes and values were appendedto existing elements.
  */
 //@{
+/*! @brief Embed an element inside another element.
+ *  @param[in] e1 Element
+ *  @param[in] e2 Element to embed
+ */
 template <typename charT, typename T>
 typename std::enable_if<std::is_base_of<Element<charT>, T>::value, T>::type
 operator + (T&& e1, T&& e2) {
@@ -363,7 +375,10 @@ operator + (T&& e1, T&& e2) {
 	e += static_cast<std::basic_string<charT>>(e2);
 	return e;
 }
-
+/*! @brief Embed an element inside another element.
+ *  @param[in] e1 Element
+ *  @param[in] e2 Element to embed
+ */
 template <typename charT, typename T>
 typename std::enable_if<std::is_base_of<Element<charT>, T>::value, T>::type
 operator + (T const& e1, T&& e2) {
@@ -444,6 +459,10 @@ operator + (T&& _e, const std::basic_string<charT>& _v) {
 	return std::move(e);
 }
 
+/*! @brief Append a rendered element to a string.
+ *  @param[in] _v string
+ *  @param[in] _e element
+ */
 template <typename charT, typename T>
 typename std::enable_if<std::is_base_of<Element<charT>, T>::value, std::basic_string<charT>>::type
 operator + (std::basic_string<charT> const& _v, T&& _e) {
@@ -476,6 +495,13 @@ operator + (T&& _e, std::initializer_list<std::basic_string<charT>> _v) {
 
 //@}
 
+/*! @brief Print to ostream
+ *  @note This prints to template ostream, not std::ostream, so
+ *  @note Element<T1> cannot print to std::basic_ostream<T2>, if T1 and T2
+ *  @note aren't the same type.
+ *  @param[in] os ostream
+ *  @parm[in] e element
+ */
 template <typename charT>
 std::basic_ostream<charT>& operator << (std::basic_ostream<charT>& os, const Element<charT>& e) {
 	os << static_cast<std::basic_string<charT>>(e);
@@ -483,10 +509,11 @@ std::basic_ostream<charT>& operator << (std::basic_ostream<charT>& os, const Ele
 }
 
 /*! @brief HTML begin class
+ *
  * This class outputs <!DOCTYPE ...><html ...> when cast to string.
- * @note For XHTML, it adds xmlns and <?xml ...?>
+ * @note For XHTML, it adds xmlns and <?xml ...?>.
  * @note To add attributes to the <?xml ?>, add attributes in the form of { "xml=foo", "bar" }.
- * @note Data added is assumed to be valid SGML DTD
+ * @note Data added is assumed to be valid SGML DTD.
  *
  */
 template <typename charT>
@@ -530,12 +557,12 @@ public:
 	// Copy over all the overloads of () from Element because it's simply too much work to do in-class
 	// type_traits magic.
 	/*! @name Clone and call
+	 *
 	 * These overloads create new elements which behave as if attributes and values 
 	 * were appended to existing elements.
 	 */
 	//@{
-	/*! @brief Create a copy of @c *this.
-	 */
+	//! @brief Create a copy of @c *this.
 	this_type operator () () const {
 		return this_type(*this);
 	}
@@ -620,6 +647,12 @@ public:
 		return e;
 	}
 	//@}
+	/*! @brief Overrides ELement<T>::operator string () const.
+	 *
+	 *  Renders all the necessary XML declarations and doctype preamble,
+	 *  followed by &lt;html&gt;.
+	 *  @sa Element<T>::operator string () const
+	 */
 	virtual operator string () const {
 		std::basic_stringstream<charT> s;
 		if (is_xhtml()) {
@@ -645,6 +678,15 @@ public:
 		return s.str();
 	}	
 protected:
+	/*! @brief Overrides Element<T>::attribute_addition_hook.
+	 *
+	 * This hook adds support for adding xml attributes in the form of
+	 * { "xml=foo", "bar" } in order to get a foo="bar" attribute in
+	 * the XML declaration.
+	 *
+	 * @retval @c true if the attribute is not for XML
+	 * @retval @c false if the attribute is for XML
+	 */
 	virtual bool attribute_addition_hook(const attribute& _a) {
 		if (is_xhtml()) {
 			if (_a.first == "lang") { // make use of lang attribute XHTML-conforming
@@ -657,6 +699,13 @@ protected:
 		}
 		return true;
 	}
+	/*! @brief Overrides Element<T>::data_addition_hook
+	 *
+	 * Logically, the only complete SGML tag is the DOCTYPE one, so appending data
+	 * appends to the doctype. It will not add data past the &lt;html&gt;.
+	 *
+	 * @retval @c false (don't invoke Element<T>.data.operator +=)
+	 */
 	virtual bool data_addition_hook(const string& _s) {
 		doctype += _s;
 		return false;
@@ -665,7 +714,7 @@ protected:
 	//! Doctype
 	sgml_doctype::Doctype_declaration<charT> doctype;
 	
-	//! List of <?xml attributes.
+	//! List of &lt;?xml attributes.
 	attr_list xml_attributes;
 
 private:
@@ -676,7 +725,7 @@ private:
 
 };
 
-//! This class prints </html>
+//! This class prints &lt;/html&gt;
 template <typename charT>
 struct HTML_end {
 
@@ -692,6 +741,13 @@ struct HTML_end {
 	}
 };
 
+/*! @brief Print to ostream
+ *  @note This prints to template ostream, not std::ostream, so
+ *  @note HTML_end<T1> cannot print to std::basic_ostream<T2>, if T1 and T2
+ *  @note aren't the same type.
+ *  @param[in] os ostream
+ *  @parm[in] e element
+ */
 template <typename charT>
 std::basic_ostream<charT>& operator << (std::basic_ostream<charT>& os, const HTML_end<charT>& e) {
 	os << static_cast<std::basic_string<charT>>(e);
@@ -699,8 +755,14 @@ std::basic_ostream<charT>& operator << (std::basic_ostream<charT>& os, const HTM
 }
 
 /*! @brief body begin class
+ *
  * This class outputs <body ...> when cast to string.
- * @note Data added is discarded
+ * @note Unlike HTML_begin<T>, there is no place for valid data here.
+ * @note Hence, use of operator() or operator+= with string data shall trigger
+ * @note a diagnostic.
+ * @note
+ * @note In the event that fails, data_addition_hook is overridden to do nothing
+ * @note and return false.
  */
 template <typename charT>
 class Body_begin : public Element<charT> {
@@ -764,7 +826,8 @@ public:
 	//@}
 private:
 	/* @name Unavailable operators
-	 * These operator overloads are disabled for semantic enforcement reasons.
+	 *
+	 * These overloaded operators are disabled for semantic reasons.
 	 */
 	//@{
 	this_type operator () (const string&) const = delete;
@@ -773,8 +836,12 @@ private:
 	this_type operator () (const attribute&, std::initializer_list<string>) const = delete;
 	this_type operator () (std::initializer_list<attribute>, const string&) const = delete;
 	this_type operator () (std::initializer_list<attribute>, std::initializer_list<string>) const = delete;
+
+	this_type& operator += (const string&) = delete;
+	this_type& operator += (std::initializer_list<string>) = delete;
 	//@}
 public:
+	//! Overrides Element<T>::operator string () const
 	virtual operator string () const {
 		std::basic_stringstream<charT> s;
 		s << wide_string<charT>("<body");
@@ -796,7 +863,7 @@ protected:
 	virtual bool data_addition_hook(const string&) { return false; }
 };
 
-//! This class prints </body>
+//! This class prints &lt;/body&gt;
 template <typename charT>
 struct Body_end {
 
@@ -812,6 +879,13 @@ struct Body_end {
 	}
 };
 
+/*! @brief Print to ostream
+ *  @note This prints to template ostream, not std::ostream, so
+ *  @note Body_end<T1> cannot print to std::basic_ostream<T2>, if T1 and T2
+ *  @note aren't the same type.
+ *  @param[in] os ostream
+ *  @parm[in] e element
+ */
 template <typename charT>
 std::basic_ostream<charT>& operator << (std::basic_ostream<charT>& os, const Body_end<charT>& e) {
 	os << static_cast<std::basic_string<charT>>(e);
@@ -821,19 +895,20 @@ std::basic_ostream<charT>& operator << (std::basic_ostream<charT>& os, const Bod
 /*! @name Attribute taggers
  */
 //@{
-//! Attribute tagger. Use it to create std::pair<T1,T2>s representing element attributes.
+//! Attribute tagger. Use it to create std::pair&lt;T1,T2&gt;s representing element attributes.
 template <typename charT>
 std::pair<std::string, std::basic_string<charT>>
 P(const std::string& s1, const std::basic_string<charT>& s2) {
 	return std::make_pair(s1, s2);
 }
-//! Attribute tagger. Use it to create std::pair<T1,T2>s representing element attributes.
+//! Attribute tagger. Use it to create std::pair&lt;T1,T2&gt;s representing element attributes.
 template <typename charT>
 std::pair<std::string, std::basic_string<charT>>
 P(std::string&& s1, std::basic_string<charT>&& s2) {
 	return std::make_pair(std::move(s1), std::move(s2));
 }
 //@}
+//! Converts a string literal to std::basic_string
 template <typename T, size_t N>
 std::basic_string<T> S(const T (&s)[N]) {
 	return std::basic_string<T>(s, N);

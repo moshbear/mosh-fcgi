@@ -1,2 +1,5 @@
 Todo:
-*	Precompiled header support.
+*	Precompiled header support
+*	CGI (MOSH_FCGI_USE_CGI) example
+*	Full cookie parsing
+

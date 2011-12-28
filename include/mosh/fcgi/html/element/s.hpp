@@ -28,255 +28,255 @@ namespace element {
 
 //! Byte-string html elements
 namespace s {
-	//! @c char specialization of Element<T>
+	//! @c char specialization of Element&lt;T&gt;
 	typedef element::Element<char> Element;
-	//! <a>
+	//! &lt;a&gt;
 	const Element a (Type::binary, "a");
-	//! <abbr>
+	//! &lt;abbr&gt;
 	const Element abbr (Type::binary, "abbr");
-	//! <address>
+	//! &lt;address&gt;
 	const Element address (Type::binary, "address");
-	//! <area>
+	//! &lt;area&gt;
 	const Element area (Type::unary, "area");
-	//! <article> (HTML 5)
+	//! &lt;article&gt; (HTML 5)
 	const Element article (Type::binary, "article");
-	//! <aside> (HTML 5)
+	//! &lt;aside&gt; (HTML 5)
 	const Element aside (Type::binary, "aside");
-	//! <audio> (HTML 5)
+	//! &lt;audio&gt; (HTML 5)
 	const Element audio (Type::binary, "audio");
-	//! <b>
+	//! &lt;b&gt;
 	const Element b (Type::binary, "b");
-	//! <base>
+	//! &lt;base&gt;
 	const Element base (Type::unary, "base");
-	//! <bdi> (HTML 5)
+	//! &lt;bdi&gt; (HTML 5)
 	const Element bdi (Type::binary, "bdi");
-	//! <bdo>
+	//! &lt;bdo&gt;
 	const Element bdo (Type::binary, "bdo");
-	//! <big> (not in HTML 5)
+	//! &lt;big&gt; (not in HTML 5)
 	const Element big (Type::binary, "big");
-	//! <blockquote>
+	//! &lt;blockquote&gt;
 	const Element blockquote (Type::binary, "blockquote");
-	//! <body>
+	//! &lt;body&gt;
 	const Element body (Type::binary, "body");
-	//! <br>
+	//! &lt;br&gt;
 	const Element br (Type::unary, "br");
-	//! <button>
+	//! &lt;button&gt;
 	const Element button (Type::binary, "button");
-	//! <canvas> (HTML 5)
+	//! &lt;canvas&gt; (HTML 5)
 	const Element canvas (Type::binary, "canvas");
-	//! <caption>
+	//! &lt;caption&gt;
 	const Element caption (Type::binary, "caption");
-	//! <cite>
+	//! &lt;cite&gt;
 	const Element cite (Type::binary, "cite");
-	//! <code>
+	//! &lt;code&gt;
 	const Element code (Type::binary, "code");
-	//! <col>
+	//! &lt;col&gt;
 	const Element col (Type::unary, "col");
-	//! <colgroup>
+	//! &lt;colgroup&gt;
 	const Element colgroup (Type::binary, "colgroup");
-	//! <command> (HTML 5)
+	//! &lt;command&gt; (HTML 5)
 	const Element command (Type::binary, "command");
-	//! <datalist> (HTML 5)
+	//! &lt;datalist&gt; (HTML 5)
 	const Element datalist (Type::binary, "datalist");
-	//! <dd>
+	//! &lt;dd&gt;
 	const Element dd (Type::binary, "dd");
-	//! <del>
+	//! &lt;del&gt;
 	const Element del (Type::binary, "del");
-	//! <details> (HTML 5)
+	//! &lt;details&gt; (HTML 5)
 	const Element details (Type::binary, "details");
-	//! <dfn>
+	//! &lt;dfn&gt;
 	const Element dfn (Type::binary, "dfn");
-	//! <div>
+	//! &lt;div&gt;
 	const Element div (Type::binary, "div");
-	//! <dl>
+	//! &lt;dl&gt;
 	const Element dl (Type::binary, "dl");
-	//! <dt>
+	//! &lt;dt&gt;
 	const Element dt (Type::binary, "dt");
-	//! <em>
+	//! &lt;em&gt;
 	const Element em (Type::binary, "em");
-	//! <embed> (HTML 5)
+	//! &lt;embed&gt; (HTML 5)
 	const Element embed (Type::unary, "embed");
-	//! <fieldset>
+	//! &lt;fieldset&gt;
 	const Element fieldset (Type::binary, "fieldset");
-	//! <figcaption> (HTML 5)
+	//! &lt;figcaption&gt; (HTML 5)
 	const Element figcaption (Type::binary, "figcaption");
-	//! <figure> (HTML 5)
+	//! &lt;figure&gt; (HTML 5)
 	const Element figure (Type::binary, "figure");
-	//! <footer> (HTML 5)
+	//! &lt;footer&gt; (HTML 5)
 	const Element footer (Type::binary, "footer");
-	//! <form>
+	//! &lt;form&gt;
 	const Element form (Type::binary, "form");
-	//! <frame> (Frameset DTDs only)
+	//! &lt;frame&gt; (Frameset DTDs only)
 	const Element frame (Type::unary, "frame");
-	//! <frameset> (Frameset DTDs only)
+	//! &lt;frameset&gt; (Frameset DTDs only)
 	const Element frameset (Type::binary, "frameset");
-	//! <h1>
+	//! &lt;h1&gt;
 	const Element h1 (Type::binary, "h1");
-	//! <h2>
+	//! &lt;h2&gt;
 	const Element h2 (Type::binary, "h2");
-	//! <h3>
+	//! &lt;h3&gt;
 	const Element h3 (Type::binary, "h3");
-	//! <h4>
+	//! &lt;h4&gt;
 	const Element h4 (Type::binary, "h4");
-	//! <h5>
+	//! &lt;h5&gt;
 	const Element h5 (Type::binary, "h5");
-	//! <h6>
+	//! &lt;h6&gt;
 	const Element h6 (Type::binary, "h6");
-	//! <head>
+	//! &lt;head&gt;
 	const Element head (Type::binary, "head");
-	//! <header> (HTML 5)
+	//! &lt;header&gt; (HTML 5)
 	const Element header (Type::binary, "header");
-	//! <hgroup> (HTML 5)
+	//! &lt;hgroup&gt; (HTML 5)
 	const Element hgroup (Type::binary, "hgroup");
-	//! <hr>
+	//! &lt;hr&gt;
 	const Element hr (Type::unary, "hr");
-	//! <html>
+	//! &lt;html&gt;
 	const Element html (Type::binary, "html");
-	//! <i>
+	//! &lt;i&gt;
 	const Element i (Type::binary, "i");
-	//! <iframe> (Frameset DTDs only / HTML 5)
+	//! &lt;iframe&gt; (Frameset DTDs only / HTML 5)
 	const Element iframe (Type::binary, "iframe");
-	//! <img>
+	//! &lt;img&gt;
 	const Element img (Type::unary, "img");
-	//! <input>
+	//! &lt;input&gt;
 	const Element input (Type::unary, "input");
-	//! <ins>
+	//! &lt;ins&gt;
 	const Element ins (Type::binary, "ins");
-	//! <keygen> (HTML 5)
+	//! &lt;keygen&gt; (HTML 5)
 	const Element keygen (Type::unary, "keygen");
-	//! <kbd>
+	//! &lt;kbd&gt;
 	const Element kbd (Type::binary, "kbd");
-	//! <label>
+	//! &lt;label&gt;
 	const Element label (Type::binary, "label");
-	//! <legend>
+	//! &lt;legend&gt;
 	const Element legend (Type::binary, "legend");
-	//! <li>
+	//! &lt;li&gt;
 	const Element li (Type::binary, "li");
-	//! <link>
+	//! &lt;link&gt;
 	const Element link (Type::unary, "link");
-	//! <mark> (HTML 5)
+	//! &lt;mark&gt; (HTML 5)
 	const Element mark (Type::binary, "mark");
-	//! <menu>
+	//! &lt;menu&gt;
 	const Element menu (Type::binary, "menu");
-	//! <meta>
+	//! &lt;meta&gt;
 	const Element meta (Type::unary, "meta");
-	//! <meter> (HTML 5)
+	//! &lt;meter&gt; (HTML 5)
 	const Element meter (Type::binary, "meter");
-	//! <nav> (HTML 5)
+	//! &lt;nav&gt; (HTML 5)
 	const Element nav (Type::binary, "nav");
-	//! <noframes> (Frameset DTDs only)
+	//! &lt;noframes&gt; (Frameset DTDs only)
 	const Element noframes (Type::binary, "noframes");
-	//! <noscript>
+	//! &lt;noscript&gt;
 	const Element noscript (Type::binary, "noscript");
-	//! <object>
+	//! &lt;object&gt;
 	const Element object (Type::binary, "object");
-	//! <ol>
+	//! &lt;ol&gt;
 	const Element ol (Type::binary, "ol");
-	//! <optgroup>
+	//! &lt;optgroup&gt;
 	const Element optgroup (Type::binary, "optgroup");
-	//! <option>
+	//! &lt;option&gt;
 	const Element option (Type::binary, "option");
-	//! <output> (HTML 5)
+	//! &lt;output&gt; (HTML 5)
 	const Element output (Type::binary, "output");
-	//! <p>
+	//! &lt;p&gt;
 	const Element p (Type::binary, "p");
-	//! <param>
+	//! &lt;param&gt;
 	const Element param (Type::unary, "param");
-	//! <pre>
+	//! &lt;pre&gt;
 	const Element pre (Type::binary, "pre");
-	//! <progress> (HTML 5)
+	//! &lt;progress&gt; (HTML 5)
 	const Element progress (Type::binary, "progress");
-	//! <q>
+	//! &lt;q&gt;
 	const Element q (Type::binary, "q");
-	//! <rb> (XHTML 1.1 Ruby)
+	//! &lt;rb&gt; (XHTML 1.1 Ruby)
 	const Element rb (Type::binary, "rb");
-	//! <rb> (XHTML 1.1 Ruby)
+	//! &lt;rb&gt; (XHTML 1.1 Ruby)
 	const Element rbc (Type::binary, "rbc");
-	//! <rp> (XHTML 1.1 / HTML 5 Ruby)
+	//! &lt;rp&gt; (XHTML 1.1 / HTML 5 Ruby)
 	const Element rp (Type::binary, "rp");
-	//! <rt> (XHTML 1.1 / HTML 5 Ruby)
+	//! &lt;rt&gt; (XHTML 1.1 / HTML 5 Ruby)
 	const Element rt (Type::binary, "rt");
-	//! <rtc> (XHTML 1.1 Ruby)
+	//! &lt;rtc&gt; (XHTML 1.1 Ruby)
 	const Element rtc (Type::binary, "rtc");
-	//! <ruby> (XHTML 1.1 / HTML 5 Ruby)
+	//! &lt;ruby&gt; (XHTML 1.1 / HTML 5 Ruby)
 	const Element ruby (Type::binary, "ruby");
-	//! <s>
+	//! &lt;s&gt;
 	const Element s (Type::binary, "s");
-	//! <samp>
+	//! &lt;samp&gt;
 	const Element samp (Type::binary, "samp");
-	//! <script>
+	//! &lt;script&gt;
 	const Element script (Type::binary, "script");
-	//! <section> (HTML 5)
+	//! &lt;section&gt; (HTML 5)
 	const Element section (Type::binary, "section"); 
-	//! <select>
+	//! &lt;select&gt;
 	const Element select (Type::binary, "select");
-	//! <small>
+	//! &lt;small&gt;
 	const Element small (Type::binary, "small");
-	//! <source> (HTML 5)
+	//! &lt;source&gt; (HTML 5)
 	const Element source (Type::binary, "source"); 
-	//! <span>
+	//! &lt;span&gt;
 	const Element span (Type::binary, "span");
-	//! <strong>
+	//! &lt;strong&gt;
 	const Element strong (Type::binary, "strong");
-	//! <style>
+	//! &lt;style&gt;
 	const Element style (Type::binary, "style");
-	//! <sub>
+	//! &lt;sub&gt;
 	const Element sub (Type::binary, "sub");
-	//! <summary> (HTML 5)
+	//! &lt;summary&gt; (HTML 5)
 	const Element summary (Type::binary, "summary"); 
-	//! <sup>
+	//! &lt;sup&gt;
 	const Element sup (Type::binary, "sup");
-	//! <table>
+	//! &lt;table&gt;
 	const Element table (Type::binary, "table");
-	//! <tbody>
+	//! &lt;tbody&gt;
 	const Element tbody (Type::binary, "tbody");
-	//! <td>
+	//! &lt;td&gt;
 	const Element td (Type::binary, "td");
-	//! <textarea>
+	//! &lt;textarea&gt;
 	const Element textarea (Type::binary, "textarea");
-	//! <tfoot>
+	//! &lt;tfoot&gt;
 	const Element tfoot (Type::binary, "tfoot");
-	//! <th>
+	//! &lt;th&gt;
 	const Element th (Type::binary, "th");
-	//! <thead>
+	//! &lt;thead&gt;
 	const Element thead (Type::binary, "thread");
-	//! <time> (HTML 5)
+	//! &lt;time&gt; (HTML 5)
 	const Element time (Type::binary, "time");
-	//! <title>
+	//! &lt;title&gt;
 	const Element title (Type::binary, "title");
-	//! <tr>
+	//! &lt;tr&gt;
 	const Element tr (Type::binary, "tr");
-	//! <track> (HTML 5)
+	//! &lt;track&gt; (HTML 5)
 	const Element track (Type::unary, "track");
-	//! <tt> (not in HTML 5)
+	//! &lt;tt&gt; (not in HTML 5)
 	const Element tt (Type::binary, "tt");
-	//! <ul> 
+	//! &lt;ul&gt; 
 	const Element ul (Type::binary, "ul");
-	//! <var>
+	//! &lt;var&gt;
 	const Element var (Type::binary, "var");	
-	//! <video> (HTML 5)
+	//! &lt;video&gt; (HTML 5)
 	const Element video (Type::binary, "video");
-	//!  <wbr> (HTML 5)
+	//!  &lt;wbr&gt; (HTML 5)
 	const Element wbr (Type::binary, "wbr"); 
 	
-	//! <!-- ... -->
+	//! &lt;!-- ... --&gt;
 	const Element comment (Type::comment, "!--");
 	
-	//! @c char specialization of Html_begin<T>
+	//! @c char specialization of Html_begin&lt;T&gt;
 	typedef element::HTML_begin<char> HTML_begin;
-	//! @c char specialization of Html_end<T>
+	//! @c char specialization of Html_end&lt;T&gt;
 	typedef element::HTML_end<char> HTML_end;
-	//! @c char specialization of Body_begin<T>
+	//! @c char specialization of Body_begin&lt;T&gt;
 	typedef element::Body_begin<char> Body_begin;
-	//! @c char specialization of Body_end<T>
+	//! @c char specialization of Body_end&lt;T&gt;
 	typedef element::Body_end<char> Body_end;
-	//! <html>
+	//! &lt;html&gt;
 	const HTML_begin html_begin;
-	//! </html>
+	//! &lt;/html&gt;
 	const HTML_end html_end;
-	//! <body>
+	//! &lt;body&gt;
 	const Body_begin body_begin;
-	//! </body>
+	//! &lt;/body&gt;
 	const Body_end body_end;
 
 	//@{
