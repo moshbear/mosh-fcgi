@@ -5,5 +5,4 @@ echo 'HEADER_LIST = \' >> headerlist
 find mosh/fcgi -type f -name '*.hpp' -o -name '*.tcc' | sed '$!s/$/ \\/' >> headerlist
 echo >> headerlist
 echo -n '('$(find mosh/fcgi -type f -name '*.hpp' -o -name '*.tcc' | wc -l)')'
-echo ' done'
 
