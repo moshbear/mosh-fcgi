@@ -48,7 +48,7 @@ void error_log(const char* msg) {
 	using namespace std;
 	static ofstream error;
 	
-	if(!error.is_open()) {
+	if (!error.is_open()) {
 		error.open("/tmp/errlog", ios_base::out | ios_base::app);
 	}
 

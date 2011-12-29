@@ -29,24 +29,25 @@
 
 // I like to have an independent error log file to keep track of exceptions while debugging.
 // You might want a different filename. I just picked this because everything has access there.
-void error_log(const char* msg)
-{
+void error_log(const char* msg) {
 	using namespace std;
 	static ofstream error;
 	
+	if (!error.is_open()) {
+		error.open("/tmp/errlog", ios_base::out | ios_base::app);
+	}
+
 	error << '[' << MOSH_FCGI::http::time_to_string("%Y-%m-%d: %H:%M:%S") << "] " << msg << endl;
 }
 
 // Let's make our request handling class. It must do the following:
-// 1) Be derived from Fastcgipp::Request
-// 2) Define the virtual response() member function from Fastcgipp::Request()
+// 1) Be derived from MOSH_FCGI::Request
+// 2) Define the virtual response() member function from MOSH_FCGI::Request()
 
 // While native wide utf is used internally, we play around with the external charset; in this case, KOI8-R.
 
-class HelloKoi8r: public MOSH_FCGI::Request<wchar_t>
-{
-	bool response()
-	{
+class HelloKoi8r: public MOSH_FCGI::Request<wchar_t> {
+	bool response() {
 		using namespace MOSH_FCGI::http;
 		using namespace MOSH_FCGI::html::element;
 
@@ -73,6 +74,7 @@ class HelloKoi8r: public MOSH_FCGI::Request<wchar_t>
 		out << L"Russian: Привет мир" << ws::br();
 		out << L"Chinese: ";
 		out.flush();
+		// Let's see how our iconv wrapper handles EILSEQs
 		try {
 			out << L"世界您好";
 		} catch (std::exception& e) {
@@ -83,9 +85,9 @@ class HelloKoi8r: public MOSH_FCGI::Request<wchar_t>
 		
 		// There is also a stream setup for error output. Anything sent here will go
 		// to your server's error log. We'll send something there for fun.
-		err << L"Hello, error.log from utf8-test";
+		err << L"Hello, error.log from koi8r-test";
 
-		// Always return true if you are done. This will let apache know we are done
+		// Always return true if you are done. This will let httpd know we are done
 		// and the manager will destroy the request and free it's resources.
 		// Return false if you are not finished but want to relinquish control and
 		// allow other requests to operate. You might do this after an SQL query
@@ -96,19 +98,15 @@ class HelloKoi8r: public MOSH_FCGI::Request<wchar_t>
 };
 
 // The main function is easy to set up
-int main()
-{
-	try
-	{
-		// First we make a Fastcgipp::Manager object, with our request handling class
+int main() {
+	try {
+		// First we make a MOSH_FCGI::Manager object, with our request handling class
 		// as a template parameter.
 		MOSH_FCGI::Manager<HelloKoi8r> fcgi;
 		// Now just call the object handler function. It will sleep quietly when there
 		// are no requests and efficiently manage them when there are many.
 		fcgi.handler();
-	}
-	catch(std::exception& e)
-	{
+	} catch(std::exception& e) {
 		// Catch any exception and put them in our errlog file.
 		error_log(e.what());
 	}

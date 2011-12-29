@@ -31,10 +31,13 @@ using namespace MOSH_FCGI;
 
 // I like to have an independent error log file to keep track of exceptions while debugging.
 // You might want a different filename. I just picked this because everything has access there.
-void error_log(const char* msg)
-{
+void error_log(const char* msg) {
 	using namespace std;
 	static ofstream error;
+
+	if (!error.is_open()) {
+		error.open("/tmp/errlog", ios_base::out | ios_base::app);
+	}
 
 	error << '[' << MOSH_FCGI::http::time_to_string("%Y-%m-%d: %H:%M:%S") << "] " << msg << endl;
 }
@@ -58,7 +61,7 @@ private:
 		using namespace html::element;
 		
 		// We obviously only want to do our header once.
-		if(!doneHeader) {
+		if (!doneHeader) {
 			out << http::header::content_type("text/html", "US-ASCII");
 			
 			out << s::html_begin()
@@ -75,8 +78,7 @@ private:
 		}
 	}
 
-	bool response()
-	{
+	bool response() {
 		// In case there was no uploaded data, we need to make our header.
 		doHeader();
 		
@@ -84,7 +86,7 @@ private:
 		out << html::element::s::body_end() << html::element::s::html_end();
 		out << "</body></html>";
 
-		// Always return true if you are done. This will let apache know we are done
+		// Always return true if you are done. This will let httpd know we are done
 		// and the manager will destroy the request and free it's resources.
 		// Return false if you are not finished but want to relinquish control and
 		// allow other requests to operate.
@@ -110,7 +112,7 @@ private:
 // The main function is easy to set up
 int main() {
 	try {
-		// First we make a Fastcgipp::Manager object, with our request handling class
+		// First we make a MOSH_FCGI::Manager object, with our request handling class
 		// as a template parameter.
 		MOSH_FCGI::Manager<Filter> fcgi;
 		// Now just call the object handler function. It will sleep quietly when there

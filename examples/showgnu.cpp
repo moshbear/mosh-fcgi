@@ -2,20 +2,20 @@
 * Copyright (C) 2011 m0shbear                                              *
 * 		2007 Eddie                                                 *
 *									   *
-* This file is part of fastcgi++.					   *
+* This file is part of mosh-fcgi.					   *
 *									   *
-* fastcgi++ is free software: you can redistribute it and/or modify it	   *
+* mosh-fcgi is free software: you can redistribute it and/or modify it	   *
 * under the terms of the GNU Lesser General Public License as  published   *
 * by the Free Software Foundation, either version 3 of the License, or (at *
 * your option) any later version.					   *
 *									   *
-* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
+* mosh-fcgi is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or	   *
 * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public	   *
 * License for more details.						   *
 *									   *
 * You should have received a copy of the GNU Lesser General Public License *
-* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.	   *
+* along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.	   *
 ****************************************************************************/
 
 
@@ -43,17 +43,21 @@ void error_log(const char* msg) {
 	using namespace std;
 	static ofstream error;
 
+	if (!error.is_open()) {
+		error.open("/tmp/errlog", ios_base::out | ios_base::app);
+	}
+
 	error << '[' << MOSH_FCGI::http::time_to_string("%Y-%m-%d: %H:%M:%S") << "] " << msg << endl;
 }
 
 // Let's make our request handling class. It must do the following:
-// 1) Be derived from Fastcgipp::Request
-// 2) Define the virtual response() member function from Fastcgipp::Request()
+// 1) Be derived from MOSH_FCGI::Request
+// 2) Define the virtual response() member function from MOSH_FCGI::Request()
 
 // First things first let's decide on what kind of character set we will use.
 // Since we are just displaying an image, we won't need unicode so we don't
 // need to use wide characters. We'll keep everything as narrow characters
-// and pass the 'char' type along to the Fastcgipp::Request template.
+// and pass the 'char' type along to the MOSH_FCGI::Request template.
 
 class ShowGnu: public MOSH_FCGI::Request<char> {
 	// Now we define the actual function that sends a response to the client.
@@ -67,7 +71,6 @@ class ShowGnu: public MOSH_FCGI::Request<char> {
 		posix_time::ptime modTime;
 		int fileSize;
 		int etag;
-
 
 		{
 			// Using the stat function (man 2 stat) to get the modification time and filesize beforehand.
@@ -99,7 +102,7 @@ class ShowGnu: public MOSH_FCGI::Request<char> {
 			dateStream >> s_ifmodsince;
 		}
 	
-		if(!s_ifmodsince.is_not_a_date_time() && etag==s_etag && modTime<=s_ifmodsince) {
+		if (!s_ifmodsince.is_not_a_date_time() && etag==s_etag && modTime<=s_ifmodsince) {
 			out << http::header::status(304);
 			return true;
 		}
@@ -150,7 +153,7 @@ class ShowGnu: public MOSH_FCGI::Request<char> {
 // The main function is easy to set up
 int main() {
 	try {
-		// First we make a Fastcgipp::Manager object, with our request handling class
+		// First we make a MOSH_FCGI::Manager object, with our request handling class
 		// as a template parameter.
 		MOSH_FCGI::Manager<ShowGnu> fcgi;
 		// Now just call the object handler function. It will sleep quietly when there

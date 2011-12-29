@@ -30,17 +30,20 @@
 
 // I like to have an independent error log file to keep track of exceptions while debugging.
 // You might want a different filename. I just picked this because everything has access there.
-void error_log(const char* msg)
-{
+void error_log(const char* msg) {
 	using namespace std;
 	static ofstream error;
 	
+	if (!error.is_open()) {
+		error.open("/tmp/errlog", ios_base::out | ios_base::app);
+	}
+
 	error << '[' << MOSH_FCGI::http::time_to_string("%Y-%m-%d: %H:%M:%S") << "] " << msg << endl;
 }
 
 // Let's make our request handling class. It must do the following:
-// 1) Be derived from Fastcgipp::Request
-// 2) Define the virtual response() member function from Fastcgipp::Request()
+// 1) Be derived from MOSH_FCGI::Request
+// 2) Define the virtual response() member function from MOSH_FCGI::Request()
 
 // First things first let's decide on what kind of character set we will use.
 // Obviously with all these different languages we can't use something like
@@ -52,14 +55,12 @@ void error_log(const char* msg)
 // Anyway, moving right along, the streams will code convert all the UTF-32 data to UTF-8
 // before it is sent out to the client. This way we get the best of both worlds.
 //
-// So, whenever we are going to use UTF-8, our template parameter for Fastcgipp::Request<char_type>
+// So, whenever we are going to use UTF-8, our template parameter for MOSH_FCGI::Request<char_type>
 // should be wchar_t. Keep in mind that this suddendly makes
 // everything wide character and utf compatible. Including HTTP header data (cookies, urls, yada-yada).
 
-class HelloWorld: public MOSH_FCGI::Request<wchar_t>
-{
-	bool response()
-	{
+class HelloWorld: public MOSH_FCGI::Request<wchar_t> {
+	bool response() {
 		using namespace MOSH_FCGI::http;
 		using namespace MOSH_FCGI::html::element;
 
@@ -68,7 +69,6 @@ class HelloWorld: public MOSH_FCGI::Request<wchar_t>
 		// Note: header::operator string() automatically does proper encoding wrt
 		// 	line endings, including \r\n\r\n termination
 		out.dump(header::content_type("text/html", "utf-8"));
-
 
 		// Here we use the html renderer imported from my fork of mosh-cgi
 		out << ws::html_begin();
@@ -94,7 +94,7 @@ class HelloWorld: public MOSH_FCGI::Request<wchar_t>
 		// to your server's error log. We'll send something there for fun.
 		err << L"Hello, error.log from utf8-test";
 
-		// Always return true if you are done. This will let apache know we are done
+		// Always return true if you are done. This will let httpd know we are done
 		// and the manager will destroy the request and free it's resources.
 		// Return false if you are not finished but want to relinquish control and
 		// allow other requests to operate. You might do this after an SQL query
@@ -105,19 +105,15 @@ class HelloWorld: public MOSH_FCGI::Request<wchar_t>
 };
 
 // The main function is easy to set up
-int main()
-{
-	try
-	{
-		// First we make a Fastcgipp::Manager object, with our request handling class
+int main() {
+	try {
+		// First we make a MOSH_FCGI::Manager object, with our request handling class
 		// as a template parameter.
 		MOSH_FCGI::Manager<HelloWorld> fcgi;
 		// Now just call the object handler function. It will sleep quietly when there
 		// are no requests and efficiently manage them when there are many.
 		fcgi.handler();
-	}
-	catch(std::exception& e)
-	{
+	} catch(std::exception& e) {
 		// Catch any exception and put them in our errlog file.
 		error_log(e.what());
 	}

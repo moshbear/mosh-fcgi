@@ -41,10 +41,13 @@ boost::asio::io_service io;
 
 // I like to have an independent error log file to keep track of exceptions while debugging.
 // You might want a different filename. I just picked this because everything has access there.
-void error_log(const char* msg)
-{
+void error_log(const char* msg) {
 	using namespace std;
 	static ofstream error;
+
+	if (!error.is_open()) {
+		error.open("/tmp/errlog", ios_base::out | ios_base::app);
+	}
 
 	error << '[' << MOSH_FCGI::http::time_to_string("%Y-%m-%d: %H:%M:%S") << "] " << msg << endl;
 }
@@ -121,9 +124,7 @@ private:
 				// We must return false if the request is not yet complete.
 				return false;
 			}
-			
-			case FINISH:
-			{
+			case FINISH: {
 				// Although we don't need the message we were sent, it is stored in the Request class as member data named
 				// "message".
 				out << "timer finished! message data: \"" << message.data.get() << "\"";
@@ -140,10 +141,8 @@ private:
 };
 
 // The main function is easy to set up
-int main()
-{
-	try
-	{
+int main() {
+	try {
 		// Let's first setup a thread for our timers. We assign a work object
 		// to it so that boost::asio::io_service::run does not return until
 		// the work object goes out of scope.
@@ -156,9 +155,7 @@ int main()
 		// Now just call the object handler function. It will sleep quietly when there
 		// are no requests and efficiently manage them when there are many.
 		fcgi.handler();
-	}
-	catch(std::exception& e)
-	{
+	} catch(std::exception& e) {
 		error_log(e.what());
 	}
 }
