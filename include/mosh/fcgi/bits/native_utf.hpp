@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/bits/native_utf.hpp Native UTF type
+//! @file  mosh/fcgi/bits/native_utf.hpp Native UTF type
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *

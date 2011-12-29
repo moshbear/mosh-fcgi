@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/http/misc.hpp Non-templated miscellany for http
+//! @file  mosh/fcgi/http/misc.hpp Non-templated miscellany for http
 /*!*************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *

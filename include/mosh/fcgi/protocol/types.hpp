@@ -1,7 +1,8 @@
-//! @file protocol/types.hpp Types used for FastCGI protocol
+//! @file  mosh/fcgi/protocol/types.hpp Types used for FastCGI protocol
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *               2007 Eddie                                                 *
+*  Excerpts (C) 1996 Open Market, Inc. 
 *                                                                          *
 * This file is part of mosh-fcgi.                                          *
 *                                                                          *
@@ -58,21 +59,100 @@ namespace protocol {
 	
 	//! Defines the types of records within the FastCGI protocol
 	enum class Record_type : uint8_t
-		{ invalid = 0,
-		  begin_request = 1, abort_request, end_request,
-		  params, in, out, err, data,
-		  get_values, get_values_result, unknown_type 
+		{ invalid = 0, //!< Default value
+		  /*! @name FastCGI application records
+		   */
+		  //@{
+		  /*! @brief FastCGI start request
+		   *
+		   * Sent by the Web server to start a request.
+		   */
+		  begin_request = 1,
+		  /*! @brief FastCGI abort request
+		   *
+		   * Sent by the Web server to abort a request. This usually
+		   * happens when the HTTP client prematurely closes its connection.
+		   */
+		  abort_request,
+		  /*! @brief FastCGI end request 
+		   *
+		   * Sent by either the Web server or the application to end a request.
+		   *
+		   * This is used for both normal and error termination.
+		   */
+		  end_request,
+		  //! @brief FastCGI per-request environment variables
+		  params,
+		  /*! @name FastCGI byte streams
+		   */
+		  //@{
+		  //! FastCGI stdin 
+		  in,
+		  //! FastCGI stdout 
+		  out,
+		  //! FastCGI stderr 
+		  err, 
+		  //! FastCGI filter data 
+		  data,
+		  //@}
+		  //@}
+		  /*! @name FastCGI management records
+		   */
+		  //@{
+		  /*! @brief Management record query for specific variables
+		   *
+		   * Currently defined:
+		   * @li FCGI_MAX_CONNS
+		   * @li FCGI_MAX_REQS
+		   * @li FCGI_MPXS_CONNS
+		   */
+		  get_values,
+		  /*! @brief Management record response
+		   */
+		  get_values_result,
+		  /*! Management record unknown type 
+		   */
+		  unknown_type, 
+		  //@}
 		};
 	
 	//! Defines the possible roles a FastCGI application may play
 	enum class Role : uint16_t
-		{ invalid = 0,
-		  responder = 1, authorizer, filter
+		{ invalid = 0, //!< Default value
+		   /*! This is the basic FastCGI role, and corresponds to the
+		    * simple functionality offered by CGI today.
+		    */
+		  responder = 1,
+		  /*! The FastCGI program performs an access control decision
+		   *  for the request (such as performing a username/password database
+		   *  lookup).
+		   */
+		  authorizer,
+		  /*! The FastCGI application filters the requested Web server file
+		   *  before sending it to the client.
+		   */
+		  filter,
 		};
 
 	//! Possible statuses a request may declare when complete
 	enum class Protocol_status : uint8_t
-		{ request_complete = 0, cant_mpx_conn, overloaded, unknown_role };
+	{
+	  /*! Normal end of request.
+	   */
+	  request_complete = 0,
+	  /*! Rejecting a new request because the application is unable to
+	   *  handle concurrent requests over one connection
+	   */
+	  cant_mpx_conn,
+	  /*! Rejecting a new request because the application has run out of
+	   *  some resource.
+	   */
+	  overloaded,
+	  /*! Rejecting a new request because the the Web server has specified a
+	   *  role that is unknown to the application.
+	   */
+	  unknown_role
+	};
 
 	/*! @brief Data structure used as the header for FastCGI records
 	 *

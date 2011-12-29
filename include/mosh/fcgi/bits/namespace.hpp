@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/bits/namespace.hpp Defines the %MOSH_FCGI namespace
+//! @file  mosh/fcgi/bits/namespace.hpp Defines the %MOSH_FCGI namespace
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *
@@ -14,7 +14,7 @@
 * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
 * License for more details.                                                *
 *                                                                          *
-* You should have received a copy of the Gn_u Lesser General Public License*
+* You should have received a copy of the GNU Lesser General Public License *
 * along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 

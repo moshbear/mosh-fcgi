@@ -1,4 +1,4 @@
-//! @file request.hpp Defines the MOSH_FCGI::Request class
+//! @file  mosh/fcgi/request.hpp Defines the MOSH_FCGI::Request class
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *               2007 Eddie                                                 *

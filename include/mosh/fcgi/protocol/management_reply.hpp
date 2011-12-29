@@ -1,4 +1,4 @@
-//! @file protocol/management_reply.hpp FastCGI GET_VALUES_RESULT record
+//! @file  mosh/fcgi/protocol/management_reply.hpp FastCGI GET_VALUES_RESULT record
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *               2007 Eddie                                                 *

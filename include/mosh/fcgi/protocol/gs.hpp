@@ -1,4 +1,4 @@
-//! @file protocol/gs.hpp Getter-setters for FastCGI record fields
+//! @file  mosh/fcgi/protocol/gs.hpp Getter-setters for FastCGI record fields
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *

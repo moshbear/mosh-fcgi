@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/http/helpers/helper.hpp interface for helpers/*
+//! @file  mosh/fcgi/http/helpers/helper.hpp interface for helpers/*
 /* 
  *  Copyright (C) 2011 m0shbear
  *

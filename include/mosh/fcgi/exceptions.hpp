@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/exceptions.hpp Defines mosh-fcgi exceptions
+//! @file  mosh/fcgi/exceptions.hpp Defines mosh-fcgi exceptions
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *               2007 Eddie                                                 *

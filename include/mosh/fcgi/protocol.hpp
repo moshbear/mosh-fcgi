@@ -1,4 +1,4 @@
-//! @file protocol.hpp include protocol/*
+//! @file  mosh/fcgi/protocol.hpp include protocol/*
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *               2007 Eddie                                                 *

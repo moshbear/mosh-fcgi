@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/bits/array_deleter.hpp Array deleter (for std::shared_ptr, unique_ptr)
+//! @file  mosh/fcgi/bits/array_deleter.hpp Array deleter (for std::shared_ptr, unique_ptr)
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *

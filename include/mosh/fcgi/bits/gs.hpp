@@ -1,4 +1,4 @@
-//! @file bits/gs.hpp Getter-setters
+//! @file  mosh/fcgi/bits/gs.hpp Getter-setters
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *
@@ -34,7 +34,13 @@ MOSH_FCGI_BEGIN
 /*! @name Getter-setters
  */
 //@{
-//! Defines a getter-setter
+/*! @brief Defines a getter-setter
+ *  @param EX_T External type
+ *  @param IN_T Internal (referenced) type
+ *  @param GET Getter; processes a reference to an EX_T and transforms it into an IN_T
+ *  @param SET Setter; processes the referenced IN_T and transforms it to an EX_T
+ *  @param ALIAS Alias for the getter-setter
+ */
 #define MOSH_FCGI_GETTERSETTER_T(EX_T, IN_T, GET, SET, ALIAS) \
 	class _gs_##ALIAS { \
 		IN_T* _x; \
@@ -51,7 +57,12 @@ MOSH_FCGI_BEGIN
 		} \
 	}
 
-//! Defines a getter
+/*! @brief Defines a getter
+ *  @param EX_T External type
+ *  @param IN_T Internal (referenced) type
+ *  @param GET Getter; processes a reference to an EX_T and transforms it into an IN_T
+ *  @param ALIAS Alias for the getter
+ */
 #define MOSH_FCGI_GETTER_T(EX_T, IN_T, GET, ALIAS) \
 	class _g_##ALIAS { \
 		IN_T const* _x; \
@@ -65,7 +76,12 @@ MOSH_FCGI_BEGIN
 		} \
 	}
 
-//! Defines a setter
+/*! @brief Defines a setter
+ *  @param EX_T External type
+ *  @param IN_T Internal (referenced) type
+ *  @param SET Setter; processes the referenced IN_T and transforms it to an EX_T
+ *  @param ALIAS Alias for the setter
+ */
 #define MOSH_FCGI_SETTER_T(EX_T, IN_T, SET, ALIAS) \
 	class _s_##ALIAS { \
 		IN_T* _x; \
@@ -79,7 +95,16 @@ MOSH_FCGI_BEGIN
 		} \
 	}
 
-//! Defines a getter-setter, getter, and setter
+/*! @brief Defines a getter-setter, getter, and setter
+ *  @param EX_T External type
+ *  @param IN_T Internal (referenced) type
+ *  @param GET Getter; processes a reference to an EX_T and transforms it into an IN_T
+ *  @param SET Setter; processes the referenced IN_T and transforms it to an EX_T
+ *  @param ALIAS Alias for the getter-setter
+ *  @see MOSH_FCGI_GETTERSETTER_T
+ *  @see MOSH_FCGI_GETTER_T
+ *  @see MOSH_FCGI_SETTER_T
+ */
 #define MOSH_FCGI_GETSET_T(EX_T, IN_T, GET, SET, ALIAS) \
 	MOSH_FCGI_GETTERSETTER_T(EX_T, IN_T, GET, SET, ALIAS); \
 	MOSH_FCGI_GETTER_T(EX_T, IN_T, GET, ALIAS); \

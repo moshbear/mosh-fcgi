@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/http/session.hpp Meta-include for session/*
+//! @file  mosh/fcgi/http/session.hpp Meta-include for session/*
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *

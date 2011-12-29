@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/manager.hpp Defines the fcgi::Manager class
+//! @file  mosh/fcgi/manager.hpp Defines the fcgi::Manager class
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *               2007 Eddie                                                 *

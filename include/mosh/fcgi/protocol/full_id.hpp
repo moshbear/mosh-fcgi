@@ -1,4 +1,4 @@
-//! @file protocol/full_id.hpp Full id (request id + request fd)
+//! @file  mosh/fcgi/protocol/full_id.hpp Full id (request id + request fd)
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *               2007 Eddie                                                 *

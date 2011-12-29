@@ -1,4 +1,4 @@
-//! @file transceiver.hpp Defines the MOSH_FCGI::Transceiver class
+//! @file  mosh/fcgi/transceiver.hpp Defines the MOSH_FCGI::Transceiver class
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *               2007 Eddie                                                 *

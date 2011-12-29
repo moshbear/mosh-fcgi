@@ -1,7 +1,7 @@
-//! @file mosh/fcgi/bits/ci_strcomp.hpp Case insensitive string comparison
+//! @file  mosh/fcgi/bits/ci_strcomp.hpp Case insensitive string comparison
 /*
- *  Copyright (C) 1996 - 2007 GNU Cgicc team
- *                2011 m0shbear
+ *  Copyright (C) 2011 m0shbear
+ *                1996 - 2007 GNU Cgicc team
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public

@@ -1,4 +1,4 @@
-//! @file cgi_request.hpp Defines the CGI (not FastCGI) request class
+//! @file  mosh/fcgi/cgi_request.hpp Defines the CGI (not FastCGI) request class
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *

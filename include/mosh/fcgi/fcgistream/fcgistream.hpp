@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/fcgistream/fcgistream.hpp Defines the Fcgistream stream and stream buffer classes
+//! @file  mosh/fcgi/fcgistream/fcgistream.hpp Defines the Fcgistream stream and stream buffer classes
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *               2007 Eddie                                                 *

@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/bits/iconv.hpp Iconv facet miscellany
+//! @file  mosh/fcgi/bits/iconv.hpp Iconv facet miscellany
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *

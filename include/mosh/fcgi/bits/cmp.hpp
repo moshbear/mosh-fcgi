@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/bits/cmp.hpp Templated comparators
+//! @file  mosh/fcgi/bits/cmp.hpp Templated comparators
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *
@@ -36,12 +36,15 @@ enum class Cmp_test {
 	ge, //!< Compare for greater-than-or-equal
 	gt //!< Compare for greater-than
 };
-
+/*! @name cmp
+ */
+//@{
 /*! @brief Compare two objects
  * @param o1 The first object
  * @param o2 The second object
  * @param test The type of test to perform
  * @return The result of test(o1, o2)
+ * @tparam T type of object (implicit)
  */
 template <typename T>
 bool cmp(T&& o1, T&& o2, Cmp_test test) {
@@ -56,12 +59,15 @@ bool cmp(T&& o1, T&& o2, Cmp_test test) {
 	return false;
 }
 
-//! @brief Specialization for @c booleans
+//! @brief Specialization for @c boolean
 template<> bool cmp(const bool& o1, const bool& o2, Cmp_test test) {
 	return cmp(o1 ? 1 : 0, o2 ? 1 : 0, test);
 }
+//@}
 		
-
+/*! @name range_cmp
+ */
+//@{
 /*! @brief Compare two object ranges
  * Compares two object ranges defined by [_1_Begin, _1_End), [_2_Begin, _2_End) and tests their values.
  * @param _1_Begin Start of first range
@@ -131,6 +137,7 @@ template <class Iterable, class My_cmp>
 bool range_cmp(const Iterable& _1, const Iterable& _2, Cmp_test test, My_cmp comp) {
 	return range_cmp(_1.begin(), _1.end(), _2.begin(), _2.end(), test, comp);
 }
+//@}
 
 MOSH_FCGI_END
 

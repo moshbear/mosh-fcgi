@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/http/helpers/status.hpp String lookup for HTTP status codes
+//! @file  mosh/fcgi/http/helpers/status.hpp String lookup for HTTP status codes
 /* 
  *  Copyright (C) 2011 m0shbear
  *

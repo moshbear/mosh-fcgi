@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/boyer_moore.hpp Boyer-moore string search
+//! @file  mosh/fcgi/boyer_moore.hpp Boyer-moore string search
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *

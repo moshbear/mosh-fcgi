@@ -1,4 +1,4 @@
-//! @file protocol/funcs.hpp Protocol-related functions
+//! @file  mosh/fcgi/protocol/funcs.hpp Protocol-related functions
 //
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *

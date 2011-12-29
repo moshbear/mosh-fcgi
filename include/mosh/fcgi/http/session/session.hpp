@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/http/session/session.hpp HTTP Session
+//! @file  mosh/fcgi/http/session/session.hpp HTTP Session
 /***************************************************************************
 * Copyright (C) 2011 m0shbear						   *
 *									   *

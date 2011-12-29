@@ -1,4 +1,4 @@
-//! @file protocol/begin_request.hpp FastCGI BEGIN_REQUEST record
+//! @file  mosh/fcgi/protocol/begin_request.hpp FastCGI BEGIN_REQUEST record
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *               2007 Eddie                                                 *

@@ -1,4 +1,4 @@
-//! @file protocol/header.hpp FastCGI header
+//! @file  mosh/fcgi/protocol/header.hpp FastCGI header
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *               2007 Eddie                                                 *

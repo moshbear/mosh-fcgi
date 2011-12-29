@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/bits/types.hpp Aligned and packed types
+//! @file  mosh/fcgi/bits/types.hpp Aligned and packed types
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *

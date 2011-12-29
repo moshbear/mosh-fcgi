@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/http/conv/qp.hpp Quoted-printable converter
+//! @file  mosh/fcgi/http/conv/qp.hpp Quoted-printable converter
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *

@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/http/cookie.hpp HTTP Cookie class
+//! @file  mosh/fcgi/http/cookie.hpp HTTP Cookie class
 /*                              
  * Copyright (C) 1996-2004 Stephen F. Booth
  * 		 2007	   Sebastian Diaz

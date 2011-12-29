@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/http/helpers/content_type.hpp Content-Type header
+//! @file  mosh/fcgi/http/helpers/content_type.hpp Content-Type header
 /* 
  *  Copyright (C) 2011 m0shbear
  *

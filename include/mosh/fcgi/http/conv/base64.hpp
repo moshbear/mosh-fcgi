@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/http/conv/base64.hpp Base64 converter
+//! @file  mosh/fcgi/http/conv/base64.hpp Base64 converter
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *

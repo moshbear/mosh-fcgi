@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/http/conv/converter.hpp Converter base class
+//! @file  mosh/fcgi/http/conv/converter.hpp Converter base class
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *

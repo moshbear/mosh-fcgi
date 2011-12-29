@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/http/session/fcgi_session.hpp FastCGI HTTP Session
+//! @file  mosh/fcgi/http/session/fcgi_session.hpp FastCGI HTTP Session
 /***************************************************************************
 * Copyright (C) 2011 m0shbear						   *
 *									   *

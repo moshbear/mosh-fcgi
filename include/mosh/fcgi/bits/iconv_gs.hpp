@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/bits/iconv_gs.hpp Iconv getter-setter
+//! @file  mosh/fcgi/bits/iconv_gs.hpp Iconv getter-setter
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *

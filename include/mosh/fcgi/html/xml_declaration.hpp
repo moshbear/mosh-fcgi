@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/html/xml_declaration.hpp XML Declaration
+//! @file  mosh/fcgi/html/xml_declaration.hpp XML Declaration
 /* 
  *  Copyright (C) 2011 m0shbear
  *

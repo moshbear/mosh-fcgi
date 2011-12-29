@@ -1,6 +1,6 @@
 // TODO: add complete cookie parsing support
 
-//! @file mosh/fcgi/http/session/session_base.hpp HTTP Session base class
+//! @file  mosh/fcgi/http/session/session_base.hpp HTTP Session base class
 /***************************************************************************
 * Copyright (C) 2011 m0shbear						   *
 *									   *

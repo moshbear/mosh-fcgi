@@ -1,4 +1,4 @@
-//! @file protocol/end_request.hpp FastCGI END_REQUEST record
+//! @file  mosh/fcgi/protocol/end_request.hpp FastCGI END_REQUEST record
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *               2007 Eddie                                                 *

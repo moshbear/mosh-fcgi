@@ -1,5 +1,5 @@
 // TODO: nt locking (look at VC11 <mutex> for hints)
-//! @file mosh/fcgi/bits/rwlock.hpp Readers-writer lock
+//! @file  mosh/fcgi/bits/rwlock.hpp Readers-writer lock
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *

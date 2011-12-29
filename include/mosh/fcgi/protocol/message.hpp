@@ -1,4 +1,4 @@
-//! @file protocol/message.hpp mosh-fcgi message
+//! @file  mosh/fcgi/protocol/message.hpp mosh-fcgi message
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *               2007 Eddie                                                 *

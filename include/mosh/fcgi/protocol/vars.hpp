@@ -1,4 +1,4 @@
-//! @file protocol/vars.hpp Protocol constants and pseudo-constants
+//! @file  mosh/fcgi/protocol/vars.hpp Protocol constants and pseudo-constants
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *               2007 Eddie                                                 *

@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/bits/singleton.hpp Singleton<T> declaration
+//! @file  mosh/fcgi/bits/singleton.hpp Singleton<T> declaration
 // Copyright © 2011 m0shbear <andrey@moshbear.net>
 // Distributed under the Boost Software License, Version 1.0. (See accompany-
 // ing file LICENSE10.txt or copy at http://www.boost.org/LICENSE10.txt)

@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/bits/popcount.hpp Population count
+//! @file  mosh/fcgi/bits/popcount.hpp Population count
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *

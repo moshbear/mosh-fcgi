@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/html/element/ws.hpp Wide-char elements
+//! @file  mosh/fcgi/html/element/ws.hpp Wide-char elements
 /*
  *  Copyright (C) 2011 m0shbear
  *

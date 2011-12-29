@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/html/html_doctype.hpp HTML DTD Declaration
+//! @file  mosh/fcgi/html/html_doctype.hpp HTML DTD Declaration
 /* 
  *  Copyright (C) 2011 m0shbear
  *

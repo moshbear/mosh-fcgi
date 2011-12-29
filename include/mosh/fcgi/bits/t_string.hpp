@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/bits/t_string.hpp String widening macros
+//! @file  mosh/fcgi/bits/t_string.hpp String widening macros
 /*
  *  Copyright (C) 2011 m0shbear
  *

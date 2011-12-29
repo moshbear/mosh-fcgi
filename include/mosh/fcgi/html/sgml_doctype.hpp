@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/html/sgml_doctype.hpp SGML DTD Declaration
+//! @file  mosh/fcgi/html/sgml_doctype.hpp SGML DTD Declaration
 /* 
  *  Copyright (C) 2011 m0shbear
  *

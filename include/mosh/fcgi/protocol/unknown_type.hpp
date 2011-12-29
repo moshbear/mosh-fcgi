@@ -1,4 +1,4 @@
-//! @file protocol/unknown_type.hpp FastCGI UNKNOWN_TYPE record
+//! @file  mosh/fcgi/protocol/unknown_type.hpp FastCGI UNKNOWN_TYPE record
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *               2007 Eddie                                                 *
