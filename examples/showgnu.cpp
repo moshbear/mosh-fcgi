@@ -24,11 +24,11 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/shared_ptr.hpp>
-
+extern "C" {
 #include <sys/types.h>
 #include <sys/stat.h>
-
 #include <unistd.h>
+}
 
 #include <mosh/fcgi/request.hpp>
 #include <mosh/fcgi/manager.hpp>
