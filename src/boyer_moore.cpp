@@ -105,7 +105,7 @@ MOSH_FCGI_BEGIN
  * Boyer-Moore search algorithm
  */
 void Boyer_moore_searcher::__init__(const char* needle, size_t len) {
-        if(len != 0) {
+        if (len != 0) {
 		if (needle == 0)
 			throw std::invalid_argument("Precondition (needle != 0 || len == 0) failed");
 		this->needle = std::vector<char>(needle, needle + len);
@@ -124,14 +124,14 @@ ssize_t Boyer_moore_searcher::_search(const char* haystack, size_t haystack_len)
 		return -1;
         // Boyer-Moore search 
         ssize_t s = 0;
-        while(s <= (haystack_len - needle_len)) {
+        while (s <= (haystack_len - needle_len)) {
                 size_t j = needle_len;
-                while((j > 0) && (needle[j - 1] == haystack[s + j - 1]))
+                while ((j > 0) && (needle[j - 1] == haystack[s + j - 1]))
                         j--;
-                if(j > 0) {
+                if (j > 0) {
                         int k = badcharacter[(size_t) haystack[s + j - 1]];
                         int m;
-                        if(k < (int)j && ((m = j - k - 1) > goodsuffix[j]))
+                        if (k < (int)j && ((m = j - k - 1) > goodsuffix[j]))
                                 s += m;
                         else
                                 s += goodsuffix[j];

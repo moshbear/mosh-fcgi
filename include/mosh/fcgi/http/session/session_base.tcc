@@ -142,7 +142,7 @@ void Session_base<char_type>::fill(const char* data, size_t size) {
 				} else if (!v.compare(0, mpT.size(), mpT)) {
 					boost::xpressive::smatch m;
 					if (boost::xpressive::regex_search(v, m, rc().boundary)) {
-						if(!this->init_mp("--" + m.str(1)))
+						if (!this->init_mp("--" + m.str(1)))
 							throw std::runtime_error("session_base->init_mp");
 					}
 				} else {
