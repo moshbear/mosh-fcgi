@@ -1,4 +1,4 @@
-//! @file protocol/gs.hpp Getter-setters for FastCGI record fields
+//! @file bits/gs.hpp Getter-setters
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *
@@ -19,15 +19,14 @@
 ****************************************************************************/
 
 
-#ifndef MOSH_FCGI_PROTOCOL_GS_HPP
-#define MOSH_FCGI_PROTOCOL_GS_HPP
+#ifndef MOSH_FCGI_GS_HPP
+#define MOSH_FCGI_GS_HPP
 
 extern "C" {
 #include <netinet/in.h> // for ntohs, ntohl
 #include <arpa/inet.h>  //
 }
 #include <cstdint>
-#include <mosh/fcgi/bits/gs.hpp>
 #include <mosh/fcgi/protocol/types.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
@@ -35,12 +34,48 @@ MOSH_FCGI_BEGIN
 
 namespace protocol {
 	
-MOSH_FCGI_GETSET_T(uint8_t, uint8_t, /* GET */, /* SET */, u8);
-MOSH_FCGI_GETSET_T(uint16_t, uint16_t, ntohs, htons, u16);
-MOSH_FCGI_GETSET_T(uint32_t, uint32_t, ntohl, htonl, u32);
-MOSH_FCGI_GETSET_T(Record_type, uint8_t, static_cast<Record_type>, static_cast<uint8_t>, type);
-MOSH_FCGI_GETSET_T(Role, uint16_t, static_cast<Role>, static_cast<uint16_t>, role);
-MOSH_FCGI_GETSET_T(Protocol_status, uint8_t, static_cast<Protocol_status>, static_cast<uint8_t>, status);
+#define MOSH_FCGI_GETSET_T(EX_T, IN_T, GET, SET, ALIAS) \
+	/* Getter-setter */ \
+	class _gs_##ALIAS { \
+		IN_T* _x; \
+		_gs_##ALIAS () = delete; \
+	public: \
+		_gs_##ALIAS (IN_T& x) : _x(&x) { } \
+		/* Getter */ \
+		operator EX_T () const { \
+			return GET(*_x); \
+		} \
+		/* Setter */ \
+		void operator = (EX_T && x) { \
+			*_x = SET(x); \
+		} \
+	}; \
+	\
+	/* Getter */ \
+	class _g_##ALIAS { \
+		IN_T const* _x; \
+		_g_##ALIAS () = delete; \
+		void operator = (EX_T &&) = delete; \
+	public: \
+		_g_##ALIAS (IN_T const& x) : _x(&x) { } \
+		/* Getter */ \
+		operator EX_T () const { \
+			return GET(*_x); \
+		} \
+	}; \
+	\
+	/* Setter */ \
+	class _s_##ALIAS { \
+		IN_T* _x; \
+		_s_##ALIAS () = delete; \
+		operator EX_T () const = delete; \
+	public: \
+		_s_##ALIAS (IN_T& x) : _x(&x) { } \
+		/* Setter */ \
+		void operator = (EX_T && x) { \
+			*_x = SET(x); \
+		} \
+	}
 
 }
 
