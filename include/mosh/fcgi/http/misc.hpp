@@ -44,7 +44,7 @@ namespace http {
  *  	<tr><td>%M</td><td>Minute (00-60)</td></tr>
  *  	<tr><td>%S</td><td>Second (00-60)</td></tr>
  *  	<tr><td>%Y</td><td>Year (0000-9999)</td></tr>
- *  	<tr><td>%%</td><td>Literal %</td></tr>
+ *  	<tr><td>%</td><td>Literal %</td></tr>
  *  </table>
  *
  *  While not 100% complete, it does everything I need it to do.

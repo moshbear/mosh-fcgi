@@ -38,7 +38,7 @@
 #include <mosh/fcgi/transceiver.hpp>
 #endif
 #include <mosh/fcgi/bits/iconv.hpp>
-#include <mosh/fcgi/bits/native_utf.hpp>
+#include <mosh/fcgi/bits/iconv_gs.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -54,16 +54,15 @@ MOSH_FCGI_BEGIN
 template <class _char_type, class traits>
 class Fcgistream: public std::basic_ostream<_char_type, traits> {
 public:
+#ifndef MOSH_FCGI_USE_CGI
 	Fcgistream() : std::basic_ostream<_char_type, traits>(&buffer) { }
 	//! Arguments passed directly to Fcgibuf::set()
-#ifndef MOSH_FCGI_USE_CGI
 	void set(protocol::Full_id id, Transceiver& transceiver, protocol::Record_type type) {
 		buffer.set(id, transceiver, type);
 	}
 #else
-	void set(int fd) {
-		buffer.set(fd);
-	}
+	//! Arguments passed directly to Fcgibuf::set()
+	Fcgistream(int _fd) : std::basic_ostream<_char_type, traits>(&buffer), buffer(_fd) { }
 #endif
 	/*! @name Dumpers
 	 */
@@ -99,20 +98,13 @@ public:
 	 */
 	void dump(std::basic_istream<char>& stream);
 	//@}
-	/*! @brief Sets the output character set.
+	/*! @brief Get a setter for the charset
 	 * @throws std::invalid_argument if native encoding cannot be converted to argument type
-	 * @param[in] s Output charset
 	 */
-	void set_output_charset(const std::string& s = "") {
-		if (s.empty()) {
-			if (sizeof(_char_type) > 1)
-				buffer.ic.reset(Iconv::make_state("UTF-8", native_utf<sizeof(_char_type)>::value()));
-			else
-				buffer.ic.reset(Iconv::make_state("US-ASCII", native_utf<sizeof(_char_type)>::value())); 
-		} else
-			buffer.ic.reset(Iconv::make_state(s, native_utf<sizeof(_char_type)>::value()));
-	} 
-
+	Iconv::_s_ic_state output_charset() {
+		return Iconv::s_ic_state_s(buffer.ic);
+	}
+	
 private:
 	/*! @brief Stream buffer class for output of client data through FastCGI
 	 * This class is derived from std::basic_streambuf<_char_type, traits>. It acts just
@@ -124,10 +116,10 @@ private:
 	class Fcgibuf: public std::basic_streambuf<_char_type, traits>
 	{
 	public:
+#ifndef MOSH_FCGI_USE_CGI
 		Fcgibuf() : ic(Iconv::make_state("", ""), Iconv::Deleter()), dump_ptr(0), dump_size(0) {
 			setp(buffer, buffer + buff_size);
 		}
-#ifndef MOSH_FCGI_USE_CGI
 		/*! @brief After construction constructor
 		 * Sets FastCGI related member data necessary for operation of the
 		 * stream buffer.
@@ -142,16 +134,8 @@ private:
 			this->type = type;
 		}
 #else
-		/*! @brief After construction constructor
-		 * Sets file descriptor number necessary for operation of the
-		 * stream buffer.
-		 *
-		 * @param[in] fd File descriptor
-		 */
-		void set(protocol::Full_id id, Transceiver& transceiver, protocol::Record_type type) {
-			this->id = id;
-			this->transceiver = &transceiver;
-			this->type = type;
+		Fcgibuf(int _fd) : ic(Iconv::make_state("", ""), Iconv::Deleter()), dump_ptr(0), dump_size(0), fd(_fd) {
+			setp(buffer, buffer + buff_size);
 		}
 #endif
 

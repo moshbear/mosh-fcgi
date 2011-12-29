@@ -34,6 +34,7 @@
 #include <mosh/fcgi/http/conv/converter.hpp>
 #include <mosh/fcgi/bits/singleton.hpp>
 #include <mosh/fcgi/bits/iconv.hpp>
+#include <mosh/fcgi/bits/iconv_gs.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -63,6 +64,7 @@ public:
 	Kv cookies;
 	
 	/*! @brief Parses FastCGI parameter data into the data structure
+	 *
 	 * This function will take the body of a FastCGI parameter record and parse
 	 * the data into the data structure. data should equal the first character of
 	 * the records body with size being it's content length.
@@ -80,27 +82,40 @@ protected:
 
 	Session_base () { }
 
-	//! Initialize post data in derived class
+	/*! @name Initialize post data in derived class.
+	 */
+	//@{
 	virtual bool init_ue() = 0;
 	virtual bool init_mp(const std::string& mp_bound) = 0;
+	//@}
 	
-	//! Convert input to unicode
-	void set_charset(const std::string& s = "");
+	//! Get the charset setter
+	Iconv::_s_ic_state charset() { return Iconv::_s_ic_state_u(ic); }
+
+	/*! @name Convert input to unicode
+	 */
+	//@{
 	std::basic_string<char_type> to_unicode();
+	//! Iconv state handle
 	std::unique_ptr<Iconv::IC_state> ic;
+	//@}
 
 
-	//! Decode encoded data using a converter
+	/*! @name Decode encoded data using a converter
+	 */
+	//@{
 	std::string process_encoded_data();
+	//! Converter handle
 	std::unique_ptr<Converter> conv;
+	//@}
 	
 
 	/*! @brief Get an instance of the regex cache.
+	 *
 	 * On first invocation, the regex_cache constructor is called,
-	 * which ensures that we have to comp_ile the regexes only once.
-	 * With the singleton method, we defer regex comp_ilation to when
-	 * multipart parsing actually begins instead of in the Http::Environment
-	 * constructor.
+	 * which ensures that we have to compile the regexes only once.
+	 * With the singleton method, we defer regex compilation to when
+	 * multipart parsing actually begins.
 	 * @returns an instance of the regex cache
 	 */
 	regex_cache& rc() {

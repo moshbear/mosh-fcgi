@@ -500,7 +500,7 @@ operator + (T&& _e, std::initializer_list<std::basic_string<charT>> _v) {
  *  @note Element<T1> cannot print to std::basic_ostream<T2>, if T1 and T2
  *  @note aren't the same type.
  *  @param[in] os ostream
- *  @parm[in] e element
+ *  @param[in] e element
  */
 template <typename charT>
 std::basic_ostream<charT>& operator << (std::basic_ostream<charT>& os, const Element<charT>& e) {
@@ -746,7 +746,7 @@ struct HTML_end {
  *  @note HTML_end<T1> cannot print to std::basic_ostream<T2>, if T1 and T2
  *  @note aren't the same type.
  *  @param[in] os ostream
- *  @parm[in] e element
+ *  @param[in] e element
  */
 template <typename charT>
 std::basic_ostream<charT>& operator << (std::basic_ostream<charT>& os, const HTML_end<charT>& e) {
@@ -884,7 +884,7 @@ struct Body_end {
  *  @note Body_end<T1> cannot print to std::basic_ostream<T2>, if T1 and T2
  *  @note aren't the same type.
  *  @param[in] os ostream
- *  @parm[in] e element
+ *  @param[in] e element
  */
 template <typename charT>
 std::basic_ostream<charT>& operator << (std::basic_ostream<charT>& os, const Body_end<charT>& e) {

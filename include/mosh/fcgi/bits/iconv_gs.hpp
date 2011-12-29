@@ -22,8 +22,7 @@
 #define MOSH_FCGI_ICONV_GS_HPP
 
 #include <string>
-#include <locale>
-#include <cerrno>
+#include <memory>
 #include <stdexcept>
 extern "C" {
 #include <iconv.h>
@@ -50,7 +49,11 @@ IC_state* make_state_helper(const std::string& s) {
 		return Iconv::make_state(s, native_utf<sizeof(_char_type)>::value());
 }
 
-MOSH_FCGI_SETTER_SMARTPTR_T(std::string, std::shared_ptr<Iconv::IC_state>, make_state_helper, ic_state);
+//! Defines a setter for IC_state shared_ptr handles
+MOSH_FCGI_SETTER_SMARTPTR_T(std::string, std::shared_ptr<Iconv::IC_state>, make_state_helper, ic_state_s);
+
+//! Defines a setter for IC_state unique_ptr handles
+MOSH_FCGI_SETTER_SMARTPTR_T(std::string, std::shared_ptr<Iconv::IC_state>, make_state_helper, ic_state_u);
 
 }
 

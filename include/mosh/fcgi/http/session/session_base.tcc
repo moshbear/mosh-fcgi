@@ -39,7 +39,6 @@
 #include <mosh/fcgi/bits/singleton.hpp>
 #include <mosh/fcgi/bits/iconv.hpp>
 #include <mosh/fcgi/bits/iconv_cvt.hpp>
-#include <mosh/fcgi/bits/native_utf.hpp>
 #include <mosh/fcgi/http/form.hpp>
 #include <mosh/fcgi/http/session/session_base.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
@@ -56,17 +55,6 @@ struct Session_base<ct>::regex_cache {
 		boundary("boundary=" >> !xpr::as_xpr('"') >> (xpr::s1 = +(~(xpr::set = '"', ';', ','))) >> !xpr::as_xpr('"'))
 	{ }
 };
-
-template <typename ct>
-void Session_base<ct>::set_charset(const std::string& s) {
-	if (s.empty()) {
-		if (sizeof(ct) > 1)
-			ic.reset(Iconv::make_state("UTF-8", native_utf<sizeof(ct)>::value()));
-		else
-			ic.reset(Iconv::make_state("US-ASCII", native_utf<sizeof(ct)>::value())); 
-	} else
-		ic.reset(Iconv::make_state(s, native_utf<sizeof(ct)>::value()));
-}
 
 template <>
 std::string Session_base<char>::to_unicode() {

@@ -69,8 +69,8 @@ int Fcgistream<char_type, traits>::Fcgibuf::empty_buffer() {
 		Block data_block(data_buf.get(), wanted_size);
 #endif
 		data_block.size = (data_block.size / chunk_size) * chunk_size;
+		Locale l = this->getloc();
 		char* to_next = data_block.data + sizeof(Header);
-		locale loc = this->getloc();
 		if (count) {
 			if (sizeof(char_type) != sizeof(char)) {
 				Iconv::IC_state* i = ic.get();

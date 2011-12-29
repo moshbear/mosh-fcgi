@@ -70,11 +70,9 @@ template <typename char_type, typename post_val_type = std::basic_string<char_ty
 class Cgi_request {
 public:
 	//! Initialization.
-	Cgi_request() {
+	Cgi_request() : out(1), err(2) {
 		setloc(std::locale::classic());
 		out.exceptions(std::ios_base::badbit | std::ios_base::failbit | std::ios_base::eofbit);
-		out.set(1);
-		err.set(2);
 	}
 
 	/*! @brief Response generator
