@@ -19,6 +19,9 @@
 * along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
+#ifdef MOSH_FCGI_USE_CGI
+#error "MOSH_FCGI_USE_CGI must be undefined in FastCGI (default) mode"
+#endif
 
 #ifndef MOSH_FCGI_MANAGER_HPP
 #define MOSH_FCGI_MANAGER_HPP
