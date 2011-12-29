@@ -1,4 +1,4 @@
-## @(#) Makefile.am - Automake file for the FastCGI++ src directory
+## @(#) Makefile.am - Automake file for the mosh-fcgi src directory
 ##
 ## $Id$
 ##
@@ -13,18 +13,21 @@ LD_HTTP = -lnss3
 LD_CORE = $(BOOST_THREAD_LIBS) 
 LDADD = $(LD_CORE) $(LD_HTTP)
 
+# mosh-fcgi core
 FCGI_FILES = 	boyer_moore.cpp \
 		codecvt_ic.cpp \
 		exceptions.cpp \
 		protocol.cpp \
 		transceiver.cpp
 
+# mosh-fcgi http handling
 FCGI_HTTP_FILES = 	http/misc.cpp \
 			http/converter.cpp \
 			http/base64.cpp \
 			http/qp.cpp \
 			http/url.cpp
 
+# mosh-fcgi http handling imported from mosh-cgi
 FCGI_HTTP_FILES_2 = 	http/cookie.cpp \
 			http/header_helper/content_type.cpp \
 			http/header_helper/redirect.cpp \
@@ -32,6 +35,7 @@ FCGI_HTTP_FILES_2 = 	http/cookie.cpp \
 			http/header_helper/status.cpp \
 			http/header_helper/status_helper.cpp
 
+# mosh-fcgi html handling imported from mosh-cgi
 FCGI_HTML_FILES =	html/html_doctype.cpp
 
 lib_LTLIBRARIES = libmosh_fcgi.la
