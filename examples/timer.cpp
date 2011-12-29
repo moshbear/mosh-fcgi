@@ -1,24 +1,27 @@
 /***************************************************************************
-* Copyright (C) 2007 Eddie                                                 *
+* Copyright (C) 2011 m0shbear                                              *
+*               2007 Eddie                                                 *
 *                                                                          *
-* This file is part of fastcgi++.                                          *
+* This file is part of mosh-fcgi.                                          *
 *                                                                          *
-* fastcgi++ is free software: you can redistribute it and/or modify it     *
+* mosh-fcgi is free software: you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as  published   *
 * by the Free Software Foundation, either version 3 of the License, or (at *
 * your option) any later version.                                          *
 *                                                                          *
-* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
+* mosh-fcgi is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
 * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
 * License for more details.                                                *
 *                                                                          *
 * You should have received a copy of the GNU Lesser General Public License *
-* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
+* along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
 
+#include <cstring>
 #include <fstream>
+#include <memory>
 
 #include <mosh/fcgi/request.hpp>
 #include <mosh/fcgi/http/misc.hpp>
@@ -28,11 +31,9 @@
 #include <mosh/fcgi/manager.hpp>
 
 // In this example we are going to use boost::asio to handle our timers and callback.
-#include <cstring>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
-#include <boost/scoped_ptr.hpp>
 
 using namespace MOSH_FCGI;
 
@@ -62,7 +63,7 @@ private:
 	// We need to define a state variable so we know where we are when response() is called a second time.
 	enum State { START, FINISH } state;
 
-	boost::scoped_ptr<boost::asio::deadline_timer> t;
+	std::unique_ptr<boost::asio::deadline_timer> t;
 
 	bool response() {
 		using namespace MOSH_FCGI::html::element;
@@ -90,7 +91,7 @@ private:
 				t.reset(new boost::asio::deadline_timer(io, boost::posix_time::seconds(5)));
 
 				// Now we work with our callback. Defined in the MOSH_FCGI::Request is a boost::function
-				// that takes a MOSH_FCGI::Message (defined in fastcgi++/protocol.hpp) as a single argument.
+				// that takes a MOSH_FCGI::Message (defined in mosh/fcgi/protocol.hpp) as a single argument.
 				// This callback function will pass the message on to this request therebye calling the response()
 				// function again. The callback function is thread safe. That means you can pass messages back to
 				// requests from other threads.
@@ -100,13 +101,13 @@ private:
 				// The first part of the message we have to define is the type. A type of 0 means a fastcgi message
 				// and is used internally. All other values we can use ourselves to define different message types (sql queries,
 				// file grabs, etc...). We will use type=1 for timer stuff.
-				msg.type=1;
+				msg.type = 1;
 
 				// Now let's put a character string into the message as well. Just for fun.
 				{
 					char cString[] = "I was passed between two threads!!";
-					msg.size=sizeof(cString);
-					msg.data.reset(new char[sizeof(cString)]);
+					msg.size = sizeof(cString);
+					msg.data.reset(new char[sizeof(cString) + 1]);
 					std::strncpy(msg.data.get(), cString, sizeof(cString));
 				}
 
