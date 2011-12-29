@@ -101,7 +101,7 @@ int main() {
 		// Now just call the object handler function. It will block until we
 		// get a request, which effectively is a sleep.
 		cgi.handler();
-	} catch(std::exception& e) {
+	} catch (std::exception& e) {
 		// Catch any exception and put them in our errlog file.
 		error_log(e.what());
 	}

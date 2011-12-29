@@ -92,7 +92,7 @@ class ShowGnu: public MOSH_FCGI::Request<char> {
 		// we don't need to send the image to them.
 		int s_etag;
 		try { s_etag = lexical_cast<int>(session.envs["HTTP_IF_NONE_MATCH"]); }
-		catch(bad_lexical_cast&) { s_etag = 0; }
+		catch (bad_lexical_cast&) { s_etag = 0; }
 		posix_time::ptime s_ifmodsince;
 		{
 			stringstream dateStream;
@@ -159,7 +159,7 @@ int main() {
 		// Now just call the object handler function. It will sleep quietly when there
 		// are no requests and efficiently manage them when there are many.
 		fcgi.handler();
-	} catch(std::exception& e) {
+	} catch (std::exception& e) {
 		error_log(e.what());
 	}
 }

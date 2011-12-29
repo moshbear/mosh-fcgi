@@ -113,7 +113,7 @@ int main() {
 		// Now just call the object handler function. It will sleep quietly when there
 		// are no requests and efficiently manage them when there are many.
 		fcgi.handler();
-	} catch(std::exception& e) {
+	} catch (std::exception& e) {
 		// Catch any exception and put them in our errlog file.
 		error_log(e.what());
 	}

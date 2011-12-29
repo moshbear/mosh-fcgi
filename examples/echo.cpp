@@ -234,14 +234,14 @@ class Echo: public Request<wchar_t> {
 
 // The main function is easy to set up
 int main() {
-	try{
+	try {
 		// First we make a MOSH_FCGI::Manager object, with our request handling class
 		// as a template parameter.
 		MOSH_FCGI::Manager<Echo> fcgi;
 		// Now just call the object handler function. It will sleep quietly when there
 		// are no requests and efficiently manage them when there are many.
 		fcgi.handler();
-	} catch(std::exception& e) {
+	} catch (std::exception& e) {
 		error_log(e.what());
 	}
 }
