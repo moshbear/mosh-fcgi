@@ -1,4 +1,4 @@
-//! @file mosh/fcgi/bits/hash.hpp Hasher
+//! @file  mosh/fcgi/bits/hash.hpp Hasher
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *
@@ -24,6 +24,7 @@
 #include <utility>
 #include <map>
 #include <string>
+#include <vector>
 extern "C" {
 #include <nspr/prtypes.h>
 #include <nss/hasht.h>
