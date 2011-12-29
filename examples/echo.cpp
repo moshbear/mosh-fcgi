@@ -20,13 +20,10 @@
 
 #include <fstream>
 #include <algorithm>
-#include <boost/lexical_cast.hpp>
 #include <string>
 #include <sstream>
 
 extern "C" {
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <unistd.h>
 }
 
@@ -47,17 +44,20 @@ using namespace html::element;
 
 // I like to have an independent error log file to keep track of exceptions while debugging.
 // You might want a different filename. I just picked this because everything has access there.
-void error_log(const char* msg)
-{
+void error_log(const char* msg) {
 	using namespace std;
 	static ofstream error;
+	
+	if(!error.is_open()) {
+		error.open("/tmp/errlog", ios_base::out | ios_base::app);
+	}
 
 	error << '[' << MOSH_FCGI::http::time_to_string("%Y-%m-%d: %H:%M:%S") << "] " << msg << endl;
 }
 
 // Let's make our request handling class. It must do the following:
-// 1) Be derived from Fastcgipp::Request
-// 2) Define the virtual response() member function from Fastcgipp::Request()
+// 1) Be derived from MOSH_FCGI::Request
+// 2) Define the virtual response() member function from MOSH_FCGI::Request()
 
 // First things first let's decide on what kind of character set we will use.
 // Since we want to be able to echo all languages we will use unicode. The way this
@@ -68,12 +68,11 @@ void error_log(const char* msg)
 // Anyway, moving right along, the streams will code convert all the UTF-32 data to UTF-8
 // before it is sent out to the client. This way we get the best of both worlds.
 //
-// So, whenever we are going to use UTF-8, our template parameter for Fastcgipp::Request<char_type>
+// So, whenever we are going to use UTF-8, our template parameter for MOSH_FCGI::Request<char_type>
 // should be wchar_t. Keep in mind that this suddendly makes
 // everything wide character and utf compatible. Including HTTP header data (cookies, urls, yada-yada).
 
-class Echo: public Request<wchar_t>
-{
+class Echo: public Request<wchar_t> {
 	static std::wstring dump_mp(http::form::MP_entry<wchar_t> const& f) {
 		ws::Element ul = ws::ul();
 		if (f.is_file()) {
@@ -95,11 +94,12 @@ class Echo: public Request<wchar_t>
 		}
 		if (f.is_file()) {
 			f.make_file_persistent();
-			const std::string& s = f.disk_filename();
-			struct stat sb;
-			stat(s.c_str(), &sb);
-			ul += ws::li(ws::b(L"file location: ").to_string() + MOSH_FCGI::wide_string<wchar_t>(s) + ws::br.to_string() + S(L"\r\n")
-				+ (ws::b(L"size: ")) + boost::lexical_cast<std::wstring>(sb.st_size));
+			std::wstringstream wss;
+			wss << f.filesize();
+			ul += ws::li(ws::b(L"file location: ").to_string() + MOSH_FCGI::wide_string<wchar_t>(f.disk_filename())
+					+ ws::br.to_string() + S(L"\r\n")
+					+ (ws::b(L"size: ")) + wss.str()
+				);
 			ul += L"\r\n";
 		} else {
 			std::wstringstream wss;
@@ -138,8 +138,7 @@ class Echo: public Request<wchar_t>
 		return ul;
 	}
 		
-	bool response()
-	{
+	bool response()	{
 		using namespace html::element;
 		// Print a header with a set cookie
 		// Note: Cookie data must be ASCII. Q-encoding or url-encoding can be used, but results
@@ -153,7 +152,7 @@ class Echo: public Request<wchar_t>
 					ws::P("content", L"text/html"),
 					ws::P("charset", L"utf-8")
 				}),
-				ws::title(L"mosh-fcgi: Hello World in UTF-8")
+				ws::title(L"mosh-fcgi: Echo in UTF-8")
 			});
 		out << ws::body_begin();
 		out << ws::h1(L"Session Parameters");
@@ -185,7 +184,7 @@ class Echo: public Request<wchar_t>
 				} else {
 					out << ws::li(ws::b(g.first)) + S(L": ") + g.second.value();
 				}	
-			}
+			i}
 			out << ul << ws::br << L"\r\n";
 		}
 		// Print POSTDATA
@@ -234,19 +233,15 @@ class Echo: public Request<wchar_t>
 };
 
 // The main function is easy to set up
-int main()
-{
-	try
-	{
-		// First we make a Fastcgipp::Manager object, with our request handling class
+int main() {
+	try{
+		// First we make a MOSH_FCGI::Manager object, with our request handling class
 		// as a template parameter.
 		MOSH_FCGI::Manager<Echo> fcgi;
 		// Now just call the object handler function. It will sleep quietly when there
 		// are no requests and efficiently manage them when there are many.
 		fcgi.handler();
-	}
-	catch(std::exception& e)
-	{
+	} catch(std::exception& e) {
 		error_log(e.what());
 	}
 }
