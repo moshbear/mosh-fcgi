@@ -24,7 +24,6 @@
 #define MOSH_FCGI_END_REQUEST_HPP
 
 #include <cstdint>
-#include <mosh/fcgi/bits/types.hpp>
 #include <mosh/fcgi/protocol/types.hpp>
 #include <mosh/fcgi/protocol/gs.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
