@@ -22,11 +22,6 @@
 #ifndef MOSH_FCGI_GS_HPP
 #define MOSH_FCGI_GS_HPP
 
-extern "C" {
-#include <netinet/in.h> // for ntohs, ntohl
-#include <arpa/inet.h>  //
-}
-#include <cstdint>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -53,6 +48,10 @@ MOSH_FCGI_BEGIN
 		} \
 		/* Setter */ \
 		void operator = (EX_T && x) { \
+			*_x = SET(x); \
+		} \
+		/* Setter */ \
+		void operator = (EX_T const& x) { \
 			*_x = SET(x); \
 		} \
 	}
@@ -93,6 +92,10 @@ MOSH_FCGI_BEGIN
 		void operator = (EX_T && x) { \
 			*_x = SET(x); \
 		} \
+		/* Setter */ \
+		void operator = (EX_T const& x) { \
+			*_x = SET(x); \
+		} \
 	}
 
 /*! @brief Defines a getter-setter, getter, and setter
@@ -125,7 +128,7 @@ MOSH_FCGI_BEGIN
 			return GET(_x->get()); \
 		} \
 		/* Setter */ \
-		void operator = (EX_T && x) { \
+		void operator = (EX_T x) { \
 			_x->reset(SET(x)); \
 		} \
 	}
@@ -153,7 +156,7 @@ MOSH_FCGI_BEGIN
 	public: \
 		_s_smartptr_##ALIAS (IN_T& x) : _x(&x) { } \
 		/* Setter */ \
-		void operator = (EX_T && x) { \
+		void operator = (EX_T x) { \
 			_x->reset(SET(x)); \
 		} \
 	}
