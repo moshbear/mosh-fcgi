@@ -90,7 +90,7 @@ protected:
 	//@}
 	
 	//! Get the charset setter
-	Iconv::_s_ic_state charset() { return Iconv::_s_ic_state_u(ic); }
+	Iconv::_s_smartptr_u_ic_state<char_type> charset() { return Iconv::_s_smartptr_u_ic_state<char_type>(ic); }
 
 	/*! @name Convert input to unicode
 	 */
