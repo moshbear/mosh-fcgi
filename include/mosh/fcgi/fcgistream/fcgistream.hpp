@@ -31,6 +31,8 @@
 #include <istream>
 #include <locale>
 #include <memory>
+#include <cstring>
+#include <cwchar>
 
 #ifndef MOSH_FCGI_USE_CGI
 #include <mosh/fcgi/protocol/types.hpp>
@@ -43,26 +45,35 @@
 
 MOSH_FCGI_BEGIN
 
+template <typename _char_type> class Fcgistream;
+Fcgistream<_char_type>& operator << (Fcgistream<_char_type>&, std::basic_string<wchar_t> const&);
+Fcgistream<_char_type>& operator << (Fcgistream<_char_type>&, wchar_t);
+Fcgistream<_char_type>& operator << (Fcgistream<_char_type>&, wchar_t*);
+
 //! Stream class for output of client data through FastCGI
 /*!
- * This class is derived from std::basic_ostream<_char_type, traits>. It acts just
- * the same as any stream does with the added feature of the dump() function.
+ * This class is derived from std::ostream with the following modification:
+ * 
+ * operator<< (fcgistream&, std::basic_string<wchar_t> const&) is added.
  *
- * @tparam _char_type Character type (char or wchar_t)
- * @tparam traits Character traits
+ * With this in place, both unicode and byte input can be buffered without
+ * having to resort to the dump() hack.
  */
-template <class _char_type, class traits>
-class Fcgistream: public std::basic_ostream<_char_type, traits> {
+template <typename _char_type>
+class Fcgistream: public std::ostream {
+	friend Fcgistream<_char_type>& operator << (Fcgistream<_char_type>&, std::basic_string<wchar_t> const&);
+	friend Fcgistream<_char_type>& operator << (Fcgistream<_char_type>&, wchar_t);
+	friend Fcgistream<_char_type>& operator << (Fcgistream<_char_type>&, wchar_t*);
 public:
 #ifndef MOSH_FCGI_USE_CGI
-	Fcgistream() : std::basic_ostream<_char_type, traits>(&buffer) { }
+	Fcgistream() : std::ostream(&buffer) { }
 	//! Arguments passed directly to Fcgibuf::set()
 	void set(protocol::Full_id id, Transceiver& transceiver, protocol::Record_type type) {
 		buffer.set(id, transceiver, type);
 	}
 #else
 	//! Arguments passed directly to Fcgibuf::set()
-	Fcgistream(int _fd) : std::basic_ostream<_char_type, traits>(&buffer), buffer(_fd) { }
+	Fcgistream(int _fd) : std::ostream(&buffer), buffer(_fd) { }
 #endif
 	/*! @name Dumpers
 	 */
@@ -113,7 +124,7 @@ private:
 	 * @tparam _char_type Character type (char or wchar_t)
 	 * @tparam traits Character traits
 	 */
-	class Fcgibuf: public std::basic_streambuf<_char_type, traits>
+	class Fcgibuf: public std::streambuf
 	{
 	public:
 #ifndef MOSH_FCGI_USE_CGI
@@ -160,9 +171,9 @@ private:
 		std::shared_ptr<Iconv::IC_state> ic;
 
 	private:
-		typedef typename std::basic_streambuf<_char_type, traits>::int_type int_type;
-		typedef typename std::basic_streambuf<_char_type, traits>::traits_type traits_type;
-		typedef typename std::basic_streambuf<_char_type, traits>::char_type char_type;
+		typedef std::streambuf::int_type int_type;
+		typedef std::streambuf::traits_type traits_type;
+		typedef std::streambuf::char_type char_type;
 		
 		int_type overflow(int_type c = traits_type::eof()) {
 			if (empty_buffer() < 0)
@@ -177,7 +188,7 @@ private:
 			return empty_buffer();
 		}
 
-		std::streamsize xsputn(const _char_type *s, std::streamsize n);
+		std::streamsize xsputn(const char *s, std::streamsize n);
 
 		//! Pointer to the data that needs to be transmitted upon flush
 		const char* dump_ptr;
@@ -201,11 +212,18 @@ private:
 		//! Size of the internal stream buffer
 		static const int buff_size = 8192;
 		//! The buffer
-		_char_type buffer[buff_size];
+		char buffer[buff_size];
 	};
 	//! Stream buffer object
 	Fcgibuf buffer;
 };
+
+Fcgistream<_char_type>& operator << (Fcgistream<_char_type>& fs, std::basic_string<wchar_t> const wc&) {
+	Iconv::IC_state* ic = fs.buffer.ic.get();
+			
+		
+	
+Fcgistream<_char_type>& operator << (Fcgistream<_char_type>& fs, wchar_t wc);
 
 MOSH_FCGI_END
 

@@ -30,6 +30,7 @@ extern "C" {
 #include <nss/hasht.h>
 #include <nss/sechash.h>
 }
+#include <mosh/fcgi/bits/types.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -38,11 +39,11 @@ namespace hash {
 
 template <typename T>
 void hash(HASHContext* h, const std::basic_string<T>&s) {
-	HASH_Update(h, reinterpret_cast<const unsigned char*>(s.data()), s.size() * sizeof(T));
+	HASH_Update(h, reinterpret_cast<const uchar*>(s.data()), s.size() * sizeof(T));
 }
 
 void hash(HASHContext* h, const void* p, size_t len) {
-	HASH_Update(h, reinterpret_cast<const unsigned char*>(p), len);
+	HASH_Update(h, reinterpret_cast<const uchar*>(p), len);
 }
 
 template <typename T1, typename T2>
@@ -53,8 +54,8 @@ void hash(HASHContext* h, const std::map<std::basic_string<T1>, std::basic_strin
 	}
 }
 
-std::vector<unsigned char> hash_finalize(HASHContext* h) {
-	std::vector<unsigned char> v(HASH_ResultLenContext(h));
+std::vector<uchar> hash_finalize(HASHContext* h) {
+	std::vector<uchar> v(HASH_ResultLenContext(h));
 	unsigned vlen;
 	HASH_End(h, v.data(), &vlen, HASH_ResultLenContext(h));
 	v.resize(vlen);
@@ -62,7 +63,7 @@ std::vector<unsigned char> hash_finalize(HASHContext* h) {
 }
 	
 template <typename T>
-std::vector<unsigned char> hash(const T& t) {
+std::vector<uchar> hash(const T& t) {
 	HASHContext* c = HASH_Create(HASH_AlgSHA1);
 	hash(c, t);
 	auto v = hash_finalize(c);

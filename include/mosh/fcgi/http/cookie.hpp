@@ -1,8 +1,6 @@
 //! @file  mosh/fcgi/http/cookie.hpp HTTP Cookie class
 /*                              
- * Copyright (C) 1996-2004 Stephen F. Booth
- * 		 2007	   Sebastian Diaz
- * 		 2011  	   m0shbear
+ * Copyright (C) 2011  	   m0shbear
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,6 +22,7 @@
 #define MOSH_FCGI_HTTP_COOKIE_HPP
 
 #include <initializer_list>
+#include <map>
 #include <string>
 #include <utility>
 #include <mosh/fcgi/bits/namespace.hpp>
@@ -45,23 +44,23 @@ public:
 	 *  @param[in] value_ cookie value
 	 */
 	Cookie(const std::string& name_, const std::string& value_) noexcept
-	: name(name_), value(value_)
-	{ }
+	{
+		reserve();
+		kvs.insert(std::make_pair(name_, value_);
+	}
 
-	/*! @brief Create a cookie ({} form)
-	 *  @param[in] string_args {}-list of string arguments
-	 *  @param[in] int_args {}-list of integral arguments
-	 *  @param[in] bool_args {}-list of boolean arguments
-	 *  @note string_args is of form { key, value *[, comment, domain, path ] }, where * denotes optional
-	 *  @note
-	 *  @note int_args is of form { max_age }
-	 *  @note
-	 *  @note bool_args is of form { secure, *http_only, *removed }
+	/*! @brief Create a cookie from a list of KV attributes
+	 * @param[in] kvs List of attributes
+	 * @throws std::invalid_argument if kvs contains reserved names
+	 * 		(i.e. Comment, Domain, Expires, Max-Age, Path, Version, Secure, HttpOnly)
 	 */
-	Cookie(std::initializer_list<std::string> string_args,
-		std::initializer_list<int> int_args = int_args_default,
-		std::initializer_list<bool> bool_args = bool_args_default
-	);
+	Cookie(std::initializer_list<std::pair<std::string, std::string>> kvs)
+	{
+		for (std::pair const& arg : kvs) {
+			
+			kvs.insert(arg);
+		}
+	}
 
 	/*! @brief Create a fully-specified cookie
 	 *  @param[in] name_ cookie name
@@ -143,9 +142,19 @@ public:
 	//! This cookie's removal state (@c true if deleted, @c false otherwise)
 	bool removed;
 private:
-	static std::initializer_list<int> int_args_default;
-	static std::initializer_list<bool> bool_args_default;
+	std::map<std::string, std::string, ci_cmp_wrapper<char, Cmp_test::lt>> kvs;
 
+	//! Reserve certain KV attributes to avoid mistakes
+	void reserve() {
+		kvs["Comment"] = kvs["$Comment"] = "";
+		kvs["Domain"] = kvs["$Domain"] = "";
+		kvs["Expires"] = kvs["$Expires"] = "";
+		kvs["Max-Age"] = kvs["Max-Age"] = "";
+		kvs["Path"] = kvs["$Path"] = "";
+		kvs["Version"] = kvs["$Version"] = "";
+	 * 		(i.e. Comment, Domain, Expires, Max-Age, Path, Version, Secure, HttpOnly)
+			
+		
 };
 
 }
