@@ -67,8 +67,7 @@ int Fcgistream<char_type, traits>::Fcgibuf::empty_buffer() {
 		Block data_block(transceiver->request_write(wanted_size));
 		data_block.size = (data_block.size / chunk_size) * chunk_size;
 #else
-		int remainder = 0;
-		std::unique_ptr<char> data_buf(new char[wanted_size], Array_deleter<char>());
+		std::unique_ptr<char, Array_deleter<char>> data_buf(new char[wanted_size]);
 		Block data_block(data_buf.get(), wanted_size);
 #endif
 		locale loc = this->getloc();
