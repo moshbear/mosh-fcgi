@@ -41,6 +41,7 @@ MOSH_FCGI_BEGIN
  */
 namespace protocol {
 
+
 	//! The request ID of a FastCGI request
 	typedef uint16_t Request_id;
 
@@ -216,55 +217,10 @@ namespace protocol {
 	 */
 	struct Message;
 
-	/*! @name Getter-setters for uint8_t
-	 */
-	//@{
-	class _gs_u8;
-	class _g_u8;
-	class _s_u8;
-	//@}
-
-	/*! @name Getter-setters for uint16_t
-	 */
-	//@{
-	class _gs_u16;
-	class _g_u16;
-	class _s_u16;
-	//@}
-
-	/*! @name Getter-setters for uint32_t
-	 */
-	//@{
-	class _gs_u32;
-	class _g_u32;
-	class _s_u32;
-	//@}
-
-	/*! @name Getter-setters for Record_type
-	 */
-	//@{
-	class _gs_type;
-	class _g_type;
-	class _s_type;
-	//@}
-
-	/*! @name Getter-setters for Role
-	 */
-	//@{
-	class _gs_role;
-	class _g_role;
-	class _s_role;
-	//@}
-
-	/*! @name Getter-setters for Protocol_status
-	 */
-	//@{
-	class _gs_status;
-	class _g_status;
-	class _s_status;
-	//@}
 }
 
 MOSH_FCGI_END
+
+#include <mosh/fcgi/protocol/gs.hpp> // do not move this to before namespace definition
 
 #endif

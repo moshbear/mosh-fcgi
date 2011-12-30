@@ -35,11 +35,17 @@ MOSH_FCGI_BEGIN
 
 namespace protocol {
 	
+//! Getter-setter for uint8_t
 MOSH_FCGI_GETSET_T(uint8_t, uint8_t, /* GET */, /* SET */, u8);
+//! Big-endian getter-setter for uint16_t
 MOSH_FCGI_GETSET_T(uint16_t, uint16_t, ntohs, htons, u16);
+//! Big-endian getter-setter for uint32_t
 MOSH_FCGI_GETSET_T(uint32_t, uint32_t, ntohl, htonl, u32);
+//! Getter-setter for %Record_type
 MOSH_FCGI_GETSET_T(Record_type, uint8_t, static_cast<Record_type>, static_cast<uint8_t>, type);
+//! Getter-setter for %Role
 MOSH_FCGI_GETSET_T(Role, uint16_t, static_cast<Role>, static_cast<uint16_t>, role);
+//! Getter-setter for %Protocol_status
 MOSH_FCGI_GETSET_T(Protocol_status, uint8_t, static_cast<Protocol_status>, static_cast<uint8_t>, status);
 
 }
