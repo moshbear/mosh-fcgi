@@ -115,7 +115,7 @@ public:
 					break;
 				}
 				else if (did_read < 0) {
-					throw std::runtime_error("Error in Cgi_request::read: " + strerror(errno));
+					throw std::runtime_error(std::string("Error in Cgi_request::read: ") + strerror(errno));
 				}
 				session.fill_post(rd_buf.get(), did_read);
 				in_handler(did_read);
