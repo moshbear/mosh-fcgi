@@ -275,7 +275,7 @@ void Session<ct, pt>::fill_mp(const char* data, size_t size) {
 				return;
 			auto header = this->mp_read_header(this->xbuf);
 			this->xbuf.clear();
-			this->set_charset("UTF-8");
+			this->charset() = "UTF-8";
 			data = _eoh + 4;
 			// Parse the headers
 			MP_entry cur_entry;
@@ -374,7 +374,7 @@ void Session<ct, pt>::fill_mp(const char* data, size_t size) {
 				this->fill_mm(data, bound - data);
 			} else {
 				if (!cur.charset.empty()) {
-					this->set_charset(cur.charset);
+					this->charset() = cur.charset;
 				}
 				if (!cur.ct_encoding.empty()) {
 					this->xbuf.append(data, bound);
@@ -489,7 +489,7 @@ void Session<ct, pt>::fill_mm(const char* data, size_t size) {
 			if (!found)
 				bound = data_end;
 			if (!mp.charset.empty()) {
-				this->set_charset(mp.charset);
+				this->charset() = mp.charset;
 			}	
 			if (!mp.ct_encoding.empty()) {
 				this->xbuf.append(data, bound);

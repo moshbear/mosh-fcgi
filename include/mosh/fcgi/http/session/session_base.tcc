@@ -119,7 +119,7 @@ void Session_base<char_type>::fill(const char* data, size_t size) {
 							(name_size > 0x7F ? 4 : 1) +
 							(value_size > 0x7F ? 4 : 1));
 		this->envs.insert(std::make_pair(k, v));
-		this->set_charset("UTF-8");
+		this->charset() = "UTF-8";
 		if (k == "CONTENT_TYPE") {
 			if (v.size()) {
 				std::string formT("application/x-www-formurl-encoded");
