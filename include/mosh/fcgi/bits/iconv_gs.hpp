@@ -39,21 +39,24 @@ MOSH_FCGI_BEGIN
 //! Iconv-related classes and functions
 namespace Iconv {
 //! Helper for _s_ic_state::operator =
+template <typename ct>
 IC_state* make_state_helper(const std::string& s) {
 	if (s.empty()) {
-		if (sizeof(_char_type) > 1)
-			return Iconv::make_state("UTF-8", native_utf<sizeof(_char_type)>::value());
+		if (sizeof(ct) > 1)
+			return Iconv::make_state("UTF-8", native_utf<sizeof(ct)>::value());
 		else
-			return Iconv::make_state("US-ASCII", native_utf<sizeof(_char_type)>::value());
+			return Iconv::make_state("US-ASCII", native_utf<sizeof(ct)>::value());
 	} else
-		return Iconv::make_state(s, native_utf<sizeof(_char_type)>::value());
+		return Iconv::make_state(s, native_utf<sizeof(ct)>::value());
 }
 
 //! Defines a setter for IC_state shared_ptr handles
-MOSH_FCGI_SETTER_SMARTPTR_T(std::string, std::shared_ptr<Iconv::IC_state>, make_state_helper, ic_state_s);
+template <typename ct>
+MOSH_FCGI_SETTER_SMARTPTR_T(std::string, std::shared_ptr<Iconv::IC_state>, make_state_helper<ct>, s_ic_state);
 
 //! Defines a setter for IC_state unique_ptr handles
-MOSH_FCGI_SETTER_SMARTPTR_T(std::string, std::shared_ptr<Iconv::IC_state>, make_state_helper, ic_state_u);
+template <typename ct>
+MOSH_FCGI_SETTER_SMARTPTR_T(std::string, std::unique_ptr<Iconv::IC_state>, make_state_helper<ct>, u_ic_state);
 
 }
 
