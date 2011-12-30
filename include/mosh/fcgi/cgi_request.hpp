@@ -94,7 +94,6 @@ public:
 	 * @sa response
 	 */
 	bool handler() {
-		using namespace std;
 		// Read env
 		{
 			char** e = environ;
@@ -107,8 +106,9 @@ public:
 		}
 		// Read stdin
 		{
-			constexpr size_t rd_buf_size = 65536;
-			shared_ptr<char> rd_buf(new char[rd_buf_size], Array_deleter<char>());
+			constexpr size_t rd_buf_size = 65535; // FastCGI uses u16be for content length, so we're limited
+							      // to ((2^16)-1)
+			std::unique_ptr<uchar, Array_deleter<uchar>> rd_buf(new uchar[rd_buf_size]);
 			for (;;) {
 				ssize_t did_read = read(0, rd_buf.get(), rd_buf_size);
 				if (did_read == 0) {
