@@ -19,7 +19,7 @@
 ****************************************************************************/
 
 #include <string>
-#include <mosh/fcgi/http/conv/_all.hpp>
+#include <mosh/fcgi/http/conv.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
