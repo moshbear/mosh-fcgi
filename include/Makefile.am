@@ -9,43 +9,19 @@ include $(top_srcdir)/include/headerlist
 
 nobase_include_HEADERS =  $(HEADER_LIST)
 
-# Have CXX process the headers before examples, so that syntactical and semantical errors can be caught
-# at an earlier stage in the build.
+HEADERS: $(HEADER_LIST)
 
-mosh/fcgi/bits/%.hpp:
-	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) $(CFLAGS) $@ || echo $(top_srcdir)/include/$@
+INCLUDES = -I$(top_srcdir)/include
 
-mosh/fcgi/fcgistream/%.hpp:
-	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) $(CFLAGS) $@ || echo $(top_srcdir)/include/$@
+$(HEADER_LIST): hdone
+	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) $(CFLAGS) $(NSS_CFLAGS) $@ || echo $(top_srcdir)/include/$@
+	touch hdone
 
-mosh/fcgi/fcgistream/%.tcc:
-	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) $(CFLAGS) $@ || echo $(top_srcdir)/include/$@
+mosh/fcgi/cgi_request.hpp: hdone
+	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) $(CFLAGS) $(NSS_CFLAGS) -DMOSH_FCGI_USE_CGI=1 $@ || echo $(top_srcdir)/include/$@ 
+	touch hdone
 
-mosh/fcgi/html/%.hpp:
-	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) $(CFLAGS) $@ || echo $(top_srcdir)/include/$@
 
-mosh/fcgi/html/element/%.hpp:
-	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) $(CFLAGS) $@ || echo $(top_srcdir)/include/$@
+hdone:
 
-mosh/fcgi/http/%.hpp:
-	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) $(CFLAGS) $@ || echo $(top_srcdir)/include/$@
-
-mosh/fcgi/http/conv/%.hpp:
-	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) $(CFLAGS) $@ || echo $(top_srcdir)/include/$@
-
-mosh/fcgi/http/helpers/%.hpp:
-	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) $(CFLAGS) $@ || echo $(top_srcdir)/include/$@
-
-mosh/fcgi/http/session/%.hpp:
-	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) $(CFLAGS) $@ || echo $(top_srcdir)/include/$@
-
-mosh/fcgi/manager/%.hpp:
-	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) $(CFLAGS) $@ || echo $(top_srcdir)/include/$@
-	
-mosh/fcgi/protocol/%.hpp:
-	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) $(CFLAGS) $@ || echo $(top_srcdir)/include/$@
-	
-mosh/fcgi/%.hpp:
-	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) $(CFLAGS) $@ || echo $(top_srcdir)/include/$@
-	
 
