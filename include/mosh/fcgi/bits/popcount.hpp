@@ -21,6 +21,7 @@
 #ifndef MOSH_FCGI_POPCOUNT_HPP
 #define MOSH_FCGI_POPCOUNT_HPP
 
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <type_traits>
