@@ -84,7 +84,6 @@ private:
 		
 		out << "upload finished";
 		out << html::element::s::body_end() << html::element::s::html_end();
-		out << "</body></html>";
 
 		// Always return true if you are done. This will let httpd know we are done
 		// and the manager will destroy the request and free it's resources.
