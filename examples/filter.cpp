@@ -96,7 +96,7 @@ private:
 	ssize_t data_tot;
 	bool in_handler(int bytesReceived) {
 		doHeader();
-		out << "in: " << (in_tot+=bytesReceived) << '/' << session.envs["CONTENT_LENGTH"] << html::element::s::br();
+		out << "in: " << (in_tot+=bytesReceived) << '/' << session.envs["HTTP_CONTENT_LENGTH"] << html::element::s::br();
 		out.flush();    // Make sure to flush the buffer so it is actually sent.
 		return true;
 	}
