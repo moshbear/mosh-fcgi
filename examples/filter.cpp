@@ -82,7 +82,11 @@ private:
 		// In case there was no uploaded data, we need to make our header.
 		doHeader();
 		
-		out << "upload finished";
+		out << "upload finished" << html::element::s::br();
+
+		out << "filter data: " << html::element::s::br();
+		out.dump(session.data_buffer.data(), session.data_buffer.size());
+
 		out << html::element::s::body_end() << html::element::s::html_end();
 
 		// Always return true if you are done. This will let httpd know we are done
