@@ -237,7 +237,7 @@ public:
 	/*! @brief Add attribute(s).
 	 * @param[in] _a {}-list of attributes
 	 */
-	virtual this_type& operator += (std::initializer_list<attribute> _a) {
+	this_type& operator += (std::initializer_list<attribute> _a) {
 		for (const auto& at : _a) {
 			if (this->attribute_addition_hook(at))
 				attributes.insert(at);
@@ -248,7 +248,7 @@ public:
 	/*! @brief Add a value.
 	 * @param[in] _v value
 	 */
-	virtual this_type& operator += (const string& _v) {
+	this_type& operator += (const string& _v) {
 		if (this->data_addition_hook(_v))
 			data += _v;
 		return *this;
@@ -257,9 +257,11 @@ public:
 	/*! @brief Add value(s).
 	 * @param[in] _v {}-list of values
 	 */
-	virtual this_type& operator += (std::initializer_list<string> _v) {
-		for (const auto& vv : _v)
-			data += vv;
+	this_type& operator += (std::initializer_list<string> _v) {
+		for (const auto& vv : _v) {
+			if (this->data_addition_hook(vv))
+				data += vv;
+		}
 		return *this;
 	}
 
