@@ -101,8 +101,8 @@ public:
 	/*! @brief Get a setter for the charset
 	 * @throws std::invalid_argument if native encoding cannot be converted to argument type
 	 */
-	Iconv::_s_ic_state output_charset() {
-		return Iconv::s_ic_state_s(buffer.ic);
+	Iconv::_s_smartptr_s_ic_state<_char_type> output_charset() {
+		return Iconv::_s_smartptr_s_ic_state<_char_type>(buffer.ic);
 	}
 	
 private:

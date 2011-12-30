@@ -26,6 +26,7 @@
 #include <limits>
 #include <locale>
 #include <memory>
+#include <stdexcept>
 #include <cstdint>
 #include <cstring>
 #include <ios>
@@ -33,9 +34,9 @@
 #include <mosh/fcgi/bits/block.hpp>
 #ifndef MOSH_FCGI_USE_CGI
 #include <mosh/fcgi/protocol/types.hpp>
-#include <mosh/fcgi/protocol/vars.hpp>
 #include <mosh/fcgi/protocol/full_id.hpp>
 #include <mosh/fcgi/protocol/header.hpp>
+#include <mosh/fcgi/protocol/vars.hpp>
 #else
 #include <mosh/fcgi/bits/array_deleter.hpp>
 extern "C" {
@@ -59,18 +60,23 @@ int Fcgistream<char_type, traits>::Fcgibuf::empty_buffer() {
 		size_t wanted_size = count * sizeof(char_type) + dump_size;
 		if (!wanted_size)
 			break;
+#ifndef MOSH_FCGI_USE_CGI
 		int remainder = wanted_size % chunk_size;
 		wanted_size += sizeof(Header) + (remainder ? (chunk_size - remainder) : remainder);
 		if (wanted_size > numeric_limits<uint16_t>::max()) wanted_size = numeric_limits<uint16_t>::max();
-#ifndef MOSH_FCGI_USE_CGI
 		Block data_block(transceiver->request_write(wanted_size));
+		data_block.size = (data_block.size / chunk_size) * chunk_size;
 #else
+		int remainder = 0;
 		std::unique_ptr<char> data_buf(new char[wanted_size], Array_deleter<char>());
 		Block data_block(data_buf.get(), wanted_size);
 #endif
-		data_block.size = (data_block.size / chunk_size) * chunk_size;
-		Locale l = this->getloc();
+		locale loc = this->getloc();
+#ifndef MOSH_FCGI_USE_CGI
 		char* to_next = data_block.data + sizeof(Header);
+#else
+		char* to_next = data_block.data;
+#endif
 		if (count) {
 			if (sizeof(char_type) != sizeof(char)) {
 				Iconv::IC_state* i = ic.get();
@@ -81,11 +87,19 @@ int Fcgistream<char_type, traits>::Fcgibuf::empty_buffer() {
 					pbump(-(this->pptr() - this->pbase()));
 					dump_size = 0;
 					dump_ptr = 0;
+#ifndef MOSH_FCGI_USE_CGI
 					throw exceptions::Stream(id);
+#else
+					throw std::runtime_error(std::string("stream"));
+#endif
 				}
 			} else {
+#ifndef MOSH_FCGI_USE_CGI
 				size_t cnt = min(data_block.size - sizeof(Header), count);
 				memcpy(data_block.data + sizeof(Header), p_stream_pos, cnt);
+#else
+				size_t cnt = min(data_block.size, count);
+#endif
 				p_stream_pos += cnt;
 				to_next += cnt;
 			}
