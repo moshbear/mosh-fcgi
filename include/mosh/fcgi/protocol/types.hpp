@@ -27,7 +27,7 @@
 #include <map>
 #include <string>
 #include <cstdint>
-#include <mosh/fcgi/bits/types.hpp>
+#include <mosh/fcgi/bits/aligned.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
