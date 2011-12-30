@@ -20,7 +20,7 @@ timer.fcgi: timer.cpp
 
 # We still need most of the lib for cgi too, so the make rule, unsurprisingly, is effectively the same, with the
 # exception of -DMOSH_FCGI_USE_CGI
-%.cgi: %.cpp
+%.cgi: %-cgi.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $^ -I$(top_srcdir)/include -L$(top_srcdir)/src/.libs $(pkgConfigLibs) -lnss3 $(NSS_CFLAGS) -DMOSH_FCGI_USE_CGI
 
 clean:
