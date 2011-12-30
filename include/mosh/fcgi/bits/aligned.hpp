@@ -1,4 +1,4 @@
-//! @file  mosh/fcgi/bits/types.hpp Common types
+//! @file  mosh/fcgi/bits/aligned.hpp Aligned types
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *
@@ -18,20 +18,31 @@
 * along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
-#ifndef MOSH_FCGI_TYPES_HPP
-#define MOSH_FCGI_TYPES_HPP
+#ifndef MOSH_FCGI_ALIGNED_HPP
+#define MOSH_FCGI_ALIGNED_HPP
 
 #include <type_traits>
 #include <cstring>
-#include <cstdint>
 #include <mosh/fcgi/bits/namespace.hpp>
 
-MOSH_FCGI_BEGIN
+#if MOSH_FCGI_HAVE_CXX11_ALIGNAS
+#define MOSH_FCGI_ALIGNEDAS(AlignT, Expr) alignas(AlignT) Expr
+#define MOSH_FCGI_ALIGNED(n, Expr) alignas(n) Expr
+#elif __GNUC__ || HAVE_GCC_ALIGN_EMULATION
+#define MOSH_FCGI_ALIGNEDAS(AlignT, Expr) Expr __attribute__((aligned(__alignof__(AlignT))))
+#define MOSH_FCGI_ALIGNED(n, Expr) Expr __attribute__((aligned(n)))
+#else
+#error "Non-gcc / non-C++11 alignment support not implemented"
+#endif
 
-//! Typedef for byte
-typedef unsigned char uchar;
-//! Typedef for content length
-typedef uint16_t content_len_t;
+#define MOSH_FCGI_GROUP(...) __VA_ARGS__
+
+
+#ifndef MOSH_FCGI_ALIGNEDAS
+#error "No alignment support"
+#endif
+
+MOSH_FCGI_BEGIN
 
 /*! @name Aligned class template
  */
