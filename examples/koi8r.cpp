@@ -1,6 +1,5 @@
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
-*               2007 Eddie                                                 *
 *                                                                          *
 * This file is part of mosh-fcgi.                                          *
 *                                                                          *
@@ -57,7 +56,7 @@ class HelloKoi8r: public MOSH_FCGI::Request<wchar_t> {
 		// 	line endings, including \r\n\r\n termination
 		out.dump(header::content_type("text/html", "KOI8-R"));
 
-		out.set_output_charset("KOI8-R");
+		out.output_charset() = "KOI8-R";
 
 		// Here we use the html renderer imported from my fork of mosh-cgi
 		out << ws::html_begin();
