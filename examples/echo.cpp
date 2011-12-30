@@ -184,7 +184,7 @@ class Echo: public Request<wchar_t> {
 				} else {
 					out << ws::li(ws::b(g.first)) + S(L": ") + g.second.value();
 				}	
-			i}
+			}
 			out << ul << ws::br << L"\r\n";
 		}
 		// Print POSTDATA
