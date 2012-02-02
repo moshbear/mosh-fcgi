@@ -25,7 +25,6 @@
 #include <stdexcept>
 #include <map>
 #include <utility>
-#include <mosh/fcgi/bits/t_string.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -135,21 +134,12 @@ public:
 	 */
 	operator string() const {
 		std::basic_stringstream<charT> ss;
-		ss << wide_string<charT>("<?xml");
+		ss << "<?xml":
 		for (const auto& at : attributes) {
-			ss << wide_char<charT>(' ');
-			ss << at.first;
-			ss << wide_string<charT>("=\"");
-			ss << at.second;
-			ss << wide_char<charT>('"');
+			ss << ' ' << at.first << "=\"" << at.second << '"';
 		}
-		ss << wide_string<charT>(" ?>");
+		ss << " ?>";
 		return ss.str();
-	}
-
-	//! String cast operator
-	operator const charT* () const {
-		return this->operator string().c_str();
 	}
 
 private:

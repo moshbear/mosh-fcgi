@@ -30,7 +30,6 @@
 #include <ostream>
 #include <type_traits>
 #include <mosh/fcgi/html/html_doctype.hpp>
-#include <mosh/fcgi/bits/t_string.hpp>
 #include <mosh/fcgi/bits/popcount.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
@@ -77,9 +76,9 @@ public:
 	//! Typedef for strings
 	typedef typename std::basic_string<charT> string;
 	//! Typedef for attributes
-	typedef typename std::pair<std::string, string> attribute;
+	typedef typename std::pair<string, string> attribute;
 	//! Typedef for attribute lists
-	typedef typename std::map<std::string, string> attr_list;
+	typedef typename std::map<string, string> attr_list;
 private:
 	typedef Element<charT> this_type;
 public:
@@ -89,7 +88,7 @@ public:
 	 *  @param[in] type_ Element type
 	 *  @sa Type
 	 */
-	Element(uint8_t type_, const std::string& name_)
+	Element(uint8_t type_, const string& name_)
 	: type(type_), name(name_), attributes(), data()
 	{
 		Type::_validate(type_);
@@ -274,33 +273,24 @@ public:
 	 */
 	virtual operator string() const {
 		std::basic_stringstream<charT> s;
-		s << wide_char<charT>('<');
-		s << wide_string<charT>(this->name);
+		s << '<' << this->name;
 		for (const auto& a : this->attributes) {
-			s << wide_char<charT>(' ');
-			s << wide_string<charT>(a.first);
-			s << wide_char<charT>('=');
-			s << wide_char<charT>('"');
-			s << a.second;
-			s << wide_char<charT>('"');
+			s << a.first << "=\"" << a.second << "\" ";
 		}
 		if (this->type == Type::unary) {
-			s << wide_char<charT>(' ');
-			s << wide_char<charT>('/');
+			s << " /";
 		} else {
 			if (this->type == Type::binary) {
-				s << wide_char<charT>('>');
+				s << '>';
 			}
 			s << this->data;		
 			if (this->type == Type::binary) {
-				s << wide_char<charT>('<');
-				s << wide_char<charT>('/');
-				s << wide_string<charT>(this->name);
+				s << "</" << this->name;
 			} else if (this->type == Type::comment) {
-				s << wide_string<charT>("--");
+				s << "--";
 			}
 		}
-		s << wide_char<charT>('>');
+		s << '>';
 		return s.str();
 	}
 
@@ -345,7 +335,7 @@ protected:
 	unsigned type;
 private:
 	//! Element name
-	std::string name;
+	string name;
 protected:
 	/*! @brief List of attributes.
 	 *
@@ -538,8 +528,8 @@ public:
 	: Element<charT>(type_), doctype(html_doctype::html_doctype<charT>(type_)), xml_attributes()
 	{
 		if (is_xhtml()) {
-			this->xml_attributes.insert(std::make_pair("version", wide_string<charT>("1")));
-			this->attributes.insert(std::make_pair("xmlns", wide_string<charT>("http://www.w3.org/1999/xhtml")));
+			this->xml_attributes["version"] = "1";
+			this->attributes["xmlns"] = "http://www.w3.org/1999/xhtml";
 		}
 	}
 
@@ -658,24 +648,18 @@ public:
 	virtual operator string () const {
 		std::basic_stringstream<charT> s;
 		if (is_xhtml()) {
-			s << wide_string<charT>("<?xml ");
+			s << "<?xml ";
 			for (const auto& a : this->xml_attributes) {
-				s << wide_string<charT>(a.first + "=\"");
-				s << a.second + wide_string<charT>("\" ");
+				s << a.first << "=\"" << a.second << "\" ";
 			}
-			s << wide_string<charT>("?>\r\n");
+			s << "?>\r\n";
 		}	
-		s << this->doctype << wide_string<charT>("\r\n");
-		s << wide_string<charT>("<html");
+		s << this->doctype << "\r\n";
+		s << "<html";
 		for (const auto& a : this->attributes) {
-			s << wide_char<charT>(' ');
-			s << wide_string<charT>(a.first);
-			s << wide_char<charT>('=');
-			s << wide_char<charT>('"');
-			s << a.second;
-			s << wide_char<charT>('"');
+			s << ' ' << a.first << "=\"" << a.second << '"';
 		}
-		s << wide_char<charT>('>');
+		s << '>';
 
 		return s.str();
 	}	
@@ -692,7 +676,7 @@ protected:
 	virtual bool attribute_addition_hook(const attribute& _a) {
 		if (is_xhtml()) {
 			if (_a.first == "lang") { // make use of lang attribute XHTML-conforming
-				this->attributes.insert(std::make_pair("xml:lang", _a.second));
+				this->attributes["xml:lang"] = _a.second;
 			}
 			if (!_a.first.compare(0, 4, "xml=")) {
 				this->xml_attributes.insert(std::make_pair(_a.first.substr(4), _a.second));
@@ -739,7 +723,7 @@ struct HTML_end {
 	}
 
 	virtual operator std::basic_string<charT> () const {
-		return wide_string<charT>("</html>");
+		return "</html>";
 	}
 };
 
@@ -773,9 +757,9 @@ public:
 	//! Typedef for strings
 	typedef typename std::basic_string<charT> string;
 	//! Typedef for attributes
-	typedef typename std::pair<std::string, string> attribute;
+	typedef typename std::pair<string, string> attribute;
 	//! Typedef for attribute lists
-	typedef typename std::map<std::string, string> attr_list;
+	typedef typename std::map<string, string> attr_list;
  
  	//! Default constructor
 	Body_begin()
@@ -846,16 +830,11 @@ public:
 	//! Overrides Element<T>::operator string () const
 	virtual operator string () const {
 		std::basic_stringstream<charT> s;
-		s << wide_string<charT>("<body");
+		s << "<body";
 		for (const auto& a : this->attributes) {
-			s << wide_char<charT>(' ');
-			s << wide_string<charT>(a.first);
-			s << wide_char<charT>('=');
-			s << wide_char<charT>('"');
-			s << a.second;
-			s << wide_char<charT>('"');
+			s << ' ' << a.first << "=\"" << a.second << '"';
 		}
-		s << wide_char<charT>('>');
+		s << '>';
 
 		return s.str();
 	}
@@ -877,7 +856,7 @@ struct Body_end {
 	}
 
 	virtual operator std::basic_string<charT> () const {
-		return wide_string<charT>("</body>");
+		return "</body>";
 	}
 };
 
@@ -899,14 +878,14 @@ std::basic_ostream<charT>& operator << (std::basic_ostream<charT>& os, const Bod
 //@{
 //! Attribute tagger. Use it to create std::pair&lt;T1,T2&gt;s representing element attributes.
 template <typename charT>
-std::pair<std::string, std::basic_string<charT>>
-P(const std::string& s1, const std::basic_string<charT>& s2) {
+std::pair<std::basic_string<charT>, std::basic_string<charT>>
+P(const std::basic_string<charT>& s1, const std::basic_string<charT>& s2) {
 	return std::make_pair(s1, s2);
 }
 //! Attribute tagger. Use it to create std::pair&lt;T1,T2&gt;s representing element attributes.
 template <typename charT>
-std::pair<std::string, std::basic_string<charT>>
-P(std::string&& s1, std::basic_string<charT>&& s2) {
+std::pair<std::basic_string<charT>, std::basic_string<charT>>
+P(std::basic_string<charT>&& s1, std::basic_string<charT>&& s2) {
 	return std::make_pair(std::move(s1), std::move(s2));
 }
 //@}
