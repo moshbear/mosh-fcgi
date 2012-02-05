@@ -1,6 +1,9 @@
 //! @file  mosh/fcgi/http/cookie.hpp HTTP Cookie class
-/*                              
- * Copyright (C) 2011  	   m0shbear
+/*      
+ * Copyright (C) 1996-2004 Stephen F. Booth
+ * 		 2007	   Sebastian Diaz
+ * 		 2011  	   m0shbear
+ *
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,9 +25,12 @@
 #define MOSH_FCGI_HTTP_COOKIE_HPP
 
 #include <initializer_list>
-#include <map>
 #include <string>
+#include <sstream>
 #include <utility>
+#include <mosh/fcgi/http/misc.hpp>
+#include <mosh/fcgi/bits/ci_strcomp.hpp>
+#include <mosh/fcgi/bits/t_string.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -44,23 +50,67 @@ public:
 	 *  @param[in] value_ cookie value
 	 */
 	Cookie(const std::string& name_, const std::string& value_) noexcept
+	: name(name_), value(value_)
+	{ }
+ 
+ 	/*! @brief Create a cookie ({} form)
+ 	 *  @param[in] string_args {}-list of string arguments
+ 	 *  @param[in] int_args {}-list of integral arguments
+ 	 *  @param[in] bool_args {}-list of boolean arguments
+ 	 *  @note string_args is of form { key, value *[, comment, domain, path ] }, where * denotes optional
+ 	 *  @note
+ 	 *  @note int_args is of form { max_age }
+ 	 *  @note
+ 	 *  @note bool_args is of form { secure, *http_only, *removed }
+  	 */
+ 	Cookie(std::initializer_list<std::string> string_args,
+ 		std::initializer_list<int> int_args = int_args_default,
+ 		std::initializer_list<bool> bool_args = bool_args_default
+ 		)
 	{
-		reserve();
-		kvs.insert(std::make_pair(name_, value_);
-	}
+		{
+			const std::string* s_arg = string_args.begin();
+			switch (string_args.size()) {
+			case 5:
+				comment = s_arg[2];
+				domain = s_arg[3];
+				path = s_arg[4];
+			case 2:
+				name = s_arg[0];
+				value = s_arg[1];
+				break;
+			default:
+				throw std::invalid_argument("string_args has an incorrect number of arguments");
+			}
+		}
 
-	/*! @brief Create a cookie from a list of KV attributes
-	 * @param[in] kvs List of attributes
-	 * @throws std::invalid_argument if kvs contains reserved names
-	 * 		(i.e. Comment, Domain, Expires, Max-Age, Path, Version, Secure, HttpOnly)
-	 */
-	Cookie(std::initializer_list<std::pair<std::string, std::string>> kvs)
-	{
-		for (std::pair const& arg : kvs) {
-			
-			kvs.insert(arg);
+		{
+			const int* i_arg = int_args.begin();
+			switch (int_args.size()) {
+			case 1:
+				max_age = i_arg[0];
+				break;
+			default:
+				throw std::invalid_argument("i_args has an incorrect number of arguments");
+			}
+		}
+	
+		{
+			const bool* bool_arg = bool_args.begin();
+			switch (bool_args.size()) {
+			case 3:
+				removed = bool_arg[2];
+			case 2:
+				http_only = bool_arg[1];
+			case 1:
+				secure = bool_arg[0];
+				break;
+			default:
+				throw std::invalid_argument("bool_args has an incorrect number of arguments");
+			}
 		}
 	}
+
 
 	/*! @brief Create a fully-specified cookie
 	 *  @param[in] name_ cookie name
@@ -110,7 +160,19 @@ public:
 		return c;
 	}
 	//! Compare for equality
-	bool operator == (const Cookie& cookie) const;
+	bool operator == (const Cookie& cookie) const {
+		return (this == &cookie) ||
+			(ci_cmp(name, cookie.name, Cmp_test::eq)
+			&& ci_cmp(value, cookie.value, Cmp_test::eq)
+			&& ci_cmp(comment, cookie.comment, Cmp_test::eq)
+			&& ci_cmp(domain, cookie.domain, Cmp_test::eq)
+			&& max_age == cookie.max_age
+			&& ci_cmp(path, cookie.path, Cmp_test::eq)
+			&& secure == cookie.secure
+			&& removed == cookie.removed
+			&& http_only == cookie.http_only);
+	}
+
 	
 	//! Compare for inequality
 	bool operator != (const Cookie& cookie) const {
@@ -118,7 +180,36 @@ public:
 	}
 
 	//! Convert to header line
-	operator std::pair<std::string, std::string> () const;
+	operator std::pair<std::string, std::string> () const {
+	std::basic_stringstream<std::string> ss;
+	ss << name << "=\"" << value << "\"";
+	if (!comment.empty()) {
+		ss << "; Comment=\"" << comment << "\"";
+	}
+	if (!domain.empty()) {
+		ss << "; Domain=\"" << domain << "\"";
+	}
+	if (removed) {
+		ss << "; Expires=Fri, 01-Jan-1971 01:00:00 GMT";
+		ss << "; Max-Age=0";
+	} else if (max_age > 0) {
+		ss << "; Max-Age=" << max_age;
+		ss << "; Expires=" << time_to_string("%a, %d-%b-%Y %H:%M:%S GMT", max_age);
+	}
+	if (!path.empty()) {
+		ss << "; Path=\"" << path << "\"";
+	}
+	if (secure) {
+		ss << "; Secure";
+	}
+	if (http_only) {
+		ss << "; HttpOnly";
+	}
+	ss << "; Version=\"1\"";
+	
+	return std::make_pair("Set-Cookie", ss.str());
+}
+
 
 	//! The name of this cookie	
 	std::string name;
@@ -142,20 +233,12 @@ public:
 	//! This cookie's removal state (@c true if deleted, @c false otherwise)
 	bool removed;
 private:
-	std::map<std::string, std::string, ci_cmp_wrapper<char, Cmp_test::lt>> kvs;
-
-	//! Reserve certain KV attributes to avoid mistakes
-	void reserve() {
-		kvs["Comment"] = kvs["$Comment"] = "";
-		kvs["Domain"] = kvs["$Domain"] = "";
-		kvs["Expires"] = kvs["$Expires"] = "";
-		kvs["Max-Age"] = kvs["Max-Age"] = "";
-		kvs["Path"] = kvs["$Path"] = "";
-		kvs["Version"] = kvs["$Version"] = "";
-	 * 		(i.e. Comment, Domain, Expires, Max-Age, Path, Version, Secure, HttpOnly)
-			
-		
+	static std::initializer_list<int> int_args_default;
+	static std::initializer_list<bool> bool_args_default;
 };
+
+std::initializer_list<int>  Cookie::int_args_default = { 0 };
+std::initializer_list<bool> Cookie::bool_args_default = { false, true, false };
 
 }
 
