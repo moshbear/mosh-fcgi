@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <utility>
 #include <mosh/fcgi/bits/namespace.hpp>
+#include <mosh/fcgi/bits/iterator_plus_n.hpp>
 
 MOSH_FCGI_BEGIN
 
@@ -36,6 +37,7 @@ enum class Cmp_test {
 	ge, //!< Compare for greater-than-or-equal
 	gt //!< Compare for greater-than
 };
+
 /*! @name cmp
  */
 //@{
@@ -121,7 +123,7 @@ bool range_cmp(InputIterator _1_Begin, InputIterator _1_End, InputIterator _2_Be
  * @return the value of range_cmp(_1.begin(), _1.end(), _2.begin(), _2.end(), test)
  */
 template <class Iterable>
-bool range_cmp(const Iterable& _1, const Iterable& _2, Cmp_test test) {
+bool range_cmp(Iterable&& _1, Iterable&& _2, Cmp_test test) {
 	return range_cmp(_1.begin(), _1.end(), _2.begin(), _2.end(), test);
 }
 
@@ -134,8 +136,39 @@ bool range_cmp(const Iterable& _1, const Iterable& _2, Cmp_test test) {
  * @return the value of range_cmp(_1.begin(), _1.end(), _2.begin(), _2.end(), test, comp)
  */
 template <class Iterable, class My_cmp>
-bool range_cmp(const Iterable& _1, const Iterable& _2, Cmp_test test, My_cmp comp) {
+bool range_cmp(Iterable&& _1, Iterable&& _2, Cmp_test test, My_cmp comp) {
 	return range_cmp(_1.begin(), _1.end(), _2.begin(), _2.end(), test, comp);
+}
+
+/*! @brief Compare two iterable objects, up to a specific length
+ * Runs range_cmp on (_1.begin(), _1.end(), _2.begin(), _2.end(), test).
+ * @param _1 First iterable object
+ * @param _2 Second iterable object
+ * @param n Number of elements to test
+ * @param test The type of test to perform
+ * @return the value of range_cmp(_1.begin(), _1.end(), _2.begin(), _2.end(), test)
+ */
+template <class Iterable>
+bool range_cmp(Iterable&& _1, Iterable&& _2, size_t n, Cmp_test test) {
+	return range_cmp(_1.begin(), iterator_plus_n(_1.begin(), _1.end(), n),
+			 _2.begin(), iterator_plus_n(_2.begin(), _2.end(), n),
+			 test);
+}
+
+/*! @brief Compare two iterable objects, up to a specific length (custom comparator)
+ * Runs range_cmp on (_1.begin(), _1.end(), _2.begin(), _2.end(), test, comp).
+ * @param _1 First iterable object
+ * @param _2 Second iterable object
+ * @param n Number of elements to test
+ * @param test The type of test to perform
+ * @param comp The comparator to use; must contain public bool operator()(T const&, T const&, Cmp_test)
+ * @return the value of range_cmp(_1.begin(), _1.end(), _2.begin(), _2.end(), test, comp)
+ */
+template <class Iterable, class My_cmp>
+bool range_cmp(Iterable&& _1, Iterable&& _2, size_t n, Cmp_test test, My_cmp comp) {
+	return range_cmp(_1.begin(), iterator_plus_n(_1.begin(), _1.end(), n),
+			 _2.begin(), iterator_plus_n(_2.begin(), _2.end(), n),
+			 test, comp);
 }
 //@}
 
