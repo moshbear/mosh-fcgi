@@ -22,6 +22,7 @@
 #define MOSH_FCGI_TYPES_HPP
 
 #include <type_traits>
+#include <string>
 #include <cstring>
 #include <cstdint>
 #include <mosh/fcgi/bits/namespace.hpp>
@@ -32,6 +33,8 @@ MOSH_FCGI_BEGIN
 typedef unsigned char uchar;
 //! Typedef for content length
 typedef uint16_t content_len_t;
+//! Typedef for a string of unsigned chars
+typedef std::basic_string<uchar> u_string;
 
 /*! @name Aligned class template
  */
