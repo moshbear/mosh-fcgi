@@ -15,10 +15,11 @@ LDADD = $(LD_CORE) $(LD_HTTP)
 
 # mosh-fcgi core
 FCGI_FILES = 	boyer_moore.cpp \
-		codecvt_ic.cpp \
 		exceptions.cpp \
+		fcgistream.cpp \
 		protocol.cpp \
-		transceiver.cpp
+		transceiver.cpp \
+		utf8.cpp
 
 # mosh-fcgi http handling
 FCGI_HTTP_FILES = 	http/misc.cpp \
@@ -28,8 +29,7 @@ FCGI_HTTP_FILES = 	http/misc.cpp \
 			http/url.cpp
 
 # mosh-fcgi http handling imported from mosh-cgi
-FCGI_HTTP_FILES_2 = 	http/cookie.cpp \
-			http/header_helper/content_type.cpp \
+FCGI_HTTP_FILES_2 = 	http/header_helper/content_type.cpp \
 			http/header_helper/redirect.cpp \
 			http/header_helper/response.cpp \
 			http/header_helper/status.cpp \
