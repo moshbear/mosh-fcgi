@@ -33,7 +33,8 @@ FCGI_HTTP_FILES_2 = 	http/header_helper/content_type.cpp \
 			http/header_helper/redirect.cpp \
 			http/header_helper/response.cpp \
 			http/header_helper/status.cpp \
-			http/header_helper/status_helper.cpp
+			http/header_helper/status_helper.cpp \
+			http/cookie.cpp
 
 # mosh-fcgi html handling imported from mosh-cgi
 FCGI_HTML_FILES =	html/html_doctype.cpp

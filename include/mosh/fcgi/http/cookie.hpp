@@ -30,7 +30,6 @@
 #include <utility>
 #include <mosh/fcgi/http/misc.hpp>
 #include <mosh/fcgi/bits/ci_strcomp.hpp>
-#include <mosh/fcgi/bits/t_string.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -66,51 +65,7 @@ public:
  	Cookie(std::initializer_list<std::string> string_args,
  		std::initializer_list<int> int_args = int_args_default,
  		std::initializer_list<bool> bool_args = bool_args_default
- 		)
-	{
-		{
-			const std::string* s_arg = string_args.begin();
-			switch (string_args.size()) {
-			case 5:
-				comment = s_arg[2];
-				domain = s_arg[3];
-				path = s_arg[4];
-			case 2:
-				name = s_arg[0];
-				value = s_arg[1];
-				break;
-			default:
-				throw std::invalid_argument("string_args has an incorrect number of arguments");
-			}
-		}
-
-		{
-			const int* i_arg = int_args.begin();
-			switch (int_args.size()) {
-			case 1:
-				max_age = i_arg[0];
-				break;
-			default:
-				throw std::invalid_argument("i_args has an incorrect number of arguments");
-			}
-		}
-	
-		{
-			const bool* bool_arg = bool_args.begin();
-			switch (bool_args.size()) {
-			case 3:
-				removed = bool_arg[2];
-			case 2:
-				http_only = bool_arg[1];
-			case 1:
-				secure = bool_arg[0];
-				break;
-			default:
-				throw std::invalid_argument("bool_args has an incorrect number of arguments");
-			}
-		}
-	}
-
+ 	);
 
 	/*! @brief Create a fully-specified cookie
 	 *  @param[in] name_ cookie name
@@ -160,19 +115,7 @@ public:
 		return c;
 	}
 	//! Compare for equality
-	bool operator == (const Cookie& cookie) const {
-		return (this == &cookie) ||
-			(ci_cmp(name, cookie.name, Cmp_test::eq)
-			&& ci_cmp(value, cookie.value, Cmp_test::eq)
-			&& ci_cmp(comment, cookie.comment, Cmp_test::eq)
-			&& ci_cmp(domain, cookie.domain, Cmp_test::eq)
-			&& max_age == cookie.max_age
-			&& ci_cmp(path, cookie.path, Cmp_test::eq)
-			&& secure == cookie.secure
-			&& removed == cookie.removed
-			&& http_only == cookie.http_only);
-	}
-
+	bool operator == (const Cookie& cookie) const ;
 	
 	//! Compare for inequality
 	bool operator != (const Cookie& cookie) const {
@@ -180,35 +123,7 @@ public:
 	}
 
 	//! Convert to header line
-	operator std::pair<std::string, std::string> () const {
-	std::basic_stringstream<std::string> ss;
-	ss << name << "=\"" << value << "\"";
-	if (!comment.empty()) {
-		ss << "; Comment=\"" << comment << "\"";
-	}
-	if (!domain.empty()) {
-		ss << "; Domain=\"" << domain << "\"";
-	}
-	if (removed) {
-		ss << "; Expires=Fri, 01-Jan-1971 01:00:00 GMT";
-		ss << "; Max-Age=0";
-	} else if (max_age > 0) {
-		ss << "; Max-Age=" << max_age;
-		ss << "; Expires=" << time_to_string("%a, %d-%b-%Y %H:%M:%S GMT", max_age);
-	}
-	if (!path.empty()) {
-		ss << "; Path=\"" << path << "\"";
-	}
-	if (secure) {
-		ss << "; Secure";
-	}
-	if (http_only) {
-		ss << "; HttpOnly";
-	}
-	ss << "; Version=\"1\"";
-	
-	return std::make_pair("Set-Cookie", ss.str());
-}
+	operator std::pair<std::string, std::string> () const;
 
 
 	//! The name of this cookie	
