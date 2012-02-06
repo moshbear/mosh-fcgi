@@ -24,6 +24,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <functional>
 #include <iomanip>
 #include <map>
 #include <memory>
@@ -142,7 +143,10 @@ protected:
 
 	virtual ~Data()
 	{ }
-	
+
+	/*! @brief Assignment operator for base class members
+	 *  @throws std::runtime_error if the derived classes aren't the same
+	 */
 	this_type& operator = (const this_type& dat) {
 		if (type != dat.type)
 			throw std::runtime_error("caught attempt to use base type of incompatible derived types");
@@ -152,6 +156,9 @@ protected:
 		return *this;
 	}
 
+	/*! @brief Assignment operator for base class members
+	 *  @throws std::runtime_error if the derived classes aren't the same
+	 */
 	this_type& operator = (this_type&& dat) {
 		if (type != dat.type)
 			throw std::runtime_error("caught attempt to use base type of incompatible derived types");
@@ -168,7 +175,6 @@ protected:
 	inline bool operator >= (const this_type& dat) const { return cmp(dat, Cmp_test::ge); }
 	inline bool operator > (const this_type& dat) const { return cmp(dat, Cmp_test::gt); }
 
-protected:
 	//! Returns true if this form entry is indeed empty (i.e. name == "")
 	bool am_i_empty() const {
 		return name.empty();
@@ -182,7 +188,7 @@ protected:
 		return ::MOSH_FCGI::cmp(name, dat.name, test);
 	}
 private:
-	Type type;
+	Type type; // should be const
 
 public:
 	//! entry name
@@ -223,12 +229,6 @@ public:
 	{
 		add_value(value);
 	}
-#if 0
-	//! Copy ctor
-	Entry(const this_type& e)
-	: base_type(Type::form_entry, e), values(e.values)
-	{ }
-#endif
 	//! Move ctor
 	Entry(this_type&& e)
 	: base_type(Type::form_entry, e), values(std::move(e.values))
@@ -238,18 +238,6 @@ public:
 
 	virtual ~Entry()
 	{ }
-	
-	/*! @brief Add a value to the values list
-	 * This add_s a value to the values list.
-	 * If uniqueness is enabled, std::find checks for duplicates, making insertion
-	 * O(n). Otherwise, it is O(1).
-	 * @param[in] value the value to add
-	 */
-	void add_value(const value_type& value) {
-		if ((!uniqueness_mode)
-		|| (std::find(values.begin(), values.end(), value) == values.end()))
-			values.push_back(value);
-	}
 	
 	/*! @brief Add a value to the values list
 	 * This add_s a value to the values list.
@@ -305,15 +293,6 @@ public:
 	bool is_scalar_value() const {
 		return (values.size() <= 1); // strictly speaking, an empty value is a scalar value
 	}
-#if 0
-	this_type& operator = (const this_type& e) {
-		if (this != &e) {
-			base_type::operator = (e);
-			values = e.values;
-		}
-		return *this;
-	}
-#endif
 
 	this_type& operator = (this_type&& e) {
 		if (this != &e) {
@@ -322,19 +301,9 @@ public:
 		}
 		return *this;
 	}
-#if 0
+	
 	/*! @brief Left-shift operator
-	 * This is used to shift in an add_itional value to the end of the vec.
-	 * @param[in] val the value to add
-	 * @returns *this
-	 */
-	inline this_type& operator << (const value_type& val) {
-		add_value(val);
-		return *this;
-	}
-#endif
-	/*! @brief Left-shift operator
-	 * This is used to shift in an add_itional value to the end of the vec.
+	 * This is used to shift in an additional value to the end of the vec.
 	 * @param[in] val the value to add
 	 * @returns *this
 	 */
@@ -343,8 +312,6 @@ public:
 		return *this;
 	}
 
-	
-
 	inline bool operator == (const this_type& e) const { return this->cmp(e, Cmp_test::eq); }
 	inline bool operator != (const this_type& e) const { return this->cmp(e, Cmp_test::ne); }
 	inline bool operator < (const this_type& e) const { return this->cmp(e, Cmp_test::lt); }
@@ -352,7 +319,7 @@ public:
 	inline bool operator >= (const this_type& e) const { return this->cmp(e, Cmp_test::ge); }
 	inline bool operator > (const this_type& e) const { return this->cmp(e, Cmp_test::gt); }
 	
-	//! \brief List of values for this particular entry
+	//! List of values for this particular entry
 	std::vector<value_type> values;
 protected:
 	//! Returns true if this form entry is indeed empty (i.e. name == "")
@@ -369,6 +336,13 @@ protected:
 	}
 private:
 	bool uniqueness_mode;
+	
+	// enforce noncopy semantics
+	Entry(this_type const&) = delete;
+	this_type& operator = (this_type const&) = delete;
+	this_type& operator << (value_type const&) = delete;
+	void add_value(value_type const&) = delete;
+
 };
 
 /*! @brief Multipart entry
@@ -384,6 +358,8 @@ private:
 	typedef MP_entry<char_type, value_type> this_type;
 	typedef Data<char_type> base_type;
 	typedef std::basic_string<char_type> string_type;
+// Not all libc++'s have C++11 fstream semantics, so we use the unique_ptr hack
+// to implement move semantics if configure deems it necessary
 #ifdef HAVE_CXX11_IOSTREAM
 	typedef std::fstream file_type;
 #else
@@ -437,7 +413,7 @@ public:
 			if (!f_persist && !actual_filename.empty()) {
 				errno = 0;
 				if (unlink(actual_filename.c_str()) == -1) {
-					throw std::runtime_error("unlink(): " + std::string(strerror(errno)));
+					propagate_error(_eh_fl_::call_eh, "unlink()", errno);
 				}
 			}
 		}
@@ -488,6 +464,7 @@ public:
 		require_file_mode();
 		if (actual_filename.empty()) {
 			using namespace std;
+
 			actual_filename = make_filename();
 #ifdef HAVE_CXX11_IOSTREAM
 			_file.exceptions(std::ios_base::failbit | std::ios_base::badbit);
@@ -588,6 +565,8 @@ public:
 	std::string ct_encoding;	
 	//! list of all headers
 	std::map<std::string, std::string> headers;
+	//! error handler (used for propagating errors of POSIX file functions)
+	std::function<void(std::string const&, int)> error_handler;	
 protected:
 	bool am_i_empty() const {
 		return (base_type::am_i_empty()
@@ -613,6 +592,20 @@ protected:
 			return false;
 		return true;
 	}
+
+	/*! @brief Propagate an error.
+	 *
+	 * Only use this (instead of just throwing) when the error is not the user's fault (e.g. I/O error,
+	 * 	allocation error)
+	 *
+	 * @param emsg Error string
+	 * @param eno Error number (undefined behavior if there's no constant in &lt;cerrno&gt; corresponding
+	 * 		to eno
+	 * @see _eh_fl_
+	 */
+	void propagate_error(std::string const& emsg, int eno) {
+		(void)(error_handler ? error_handler(emsg, eno) : throw std::runtime_error("Error handler not defined"));
+	}
 private:
 	value_type _data;
 	file_type _file;
@@ -620,7 +613,7 @@ private:
 	Mode mode;
 	// Make file persistent (no unlink in dtor)
 	mutable bool f_persist;
-	
+
 	// Create a filename in the form of /tmp/mosh-fcgi/$(hostname).$(pid)-$(date.date).$(date.time)-$(sha1(headers))
 	std::string make_filename() const { 
 		std::string dir = "/tmp/mosh-fcgi/";
@@ -637,10 +630,10 @@ private:
 			} else {
 				if (errno == ENOENT) {
 					if (mkdir("/tmp/mosh-fcgi", 0700) == -1)
-						throw std::runtime_error("mkdir(): " + std::string(strerror(errno)));
+						propagate_error("mkdir()", errno);
 
 				} else {
-					throw std::runtime_error("opendir(): " + std::string(strerror(errno)));
+						propagate_error("opendir()", errno);
 				}
 			}
 		}
@@ -734,12 +727,6 @@ public:
 		: base_type(Type::mixed_entry, mme), headers(std::move(mme.headers)),
 		values(std::move(mme.values)), bound(mme.bound), s_bound(std::move(mme.s_bound))
 	{ }
-#if 0	
-	//! @brief Create a new MP_mixed_entry from an existing MP_entry
-	MP_mixed_entry(const entry_type& mpe)
-		: base_type(Type::mixed_entry, mpe.name), headers(mpe.headers) 
-	{ }
-#endif
 	//! @brief Create a new MP_mixed_entry from an existing MP_entry
 	MP_mixed_entry(entry_type&& mpe)
 		: base_type(Type::mixed_entry, std::move(mpe.name)), headers(std::move(mpe.headers))
@@ -764,18 +751,6 @@ public:
 	void add_header(std::string&& k, std::string&& v) {
 		headers.insert(std::make_pair(std::move(k), std::move(v)));
 	}
-#if 0
-	/*! @brief Add a value to the values list
-	 * This add_s a value to the values list. Uniqueness check is determined by unique checking
-	 * mode.
-	 * @param[in] value the value to add
-	 */
-	void add_value(const entry_type& value) {
-		if ((!uniqueness_mode)
-				|| (std::find(values.begin(), values.end(), value) == values.end()))
-			values.push_back(value);
-	}
-#endif	
 	/*! @brief Add a value to the values list
 	 * This add_s a value to the values list.
 	 * If uniqueness is enabled, std::find checks for duplicates, making insertion
@@ -786,6 +761,9 @@ public:
 		if ((!uniqueness_mode)
 				|| (std::find(values.begin(), values.end(), value) == values.end()))
 			values.push_back(std::move(value));
+			values.back().error_handler = std::bind(&MP_mixed_entry::propagate_error,
+								std::ref(*this), values.back().filename, 
+								std::placeholders::_2, std::placeholders::_3);
 	}
 
 	/*! @brief sets the boundary
@@ -808,6 +786,7 @@ public:
 		bound = s;
 		s_bound = Boyer_moore_searcher(bound);
 		return *this;
+
 	}
 
 	const std::string& boundary() const {
@@ -826,6 +805,16 @@ public:
 	//! Disables uniqueness mode
 	void disable_unique_mode() {
 		uniqueness_mode = 0;
+	}
+
+	/*! @brief Left-shift operator
+	 * This is used to shift in an additional value to the end of the vec.
+	 * @param[in] val the value to add
+	 * @returns *this
+	 */
+	inline this_type& operator << (value_type&& val) {
+		add_value(std::move(val));
+		return *this;
 	}
 
 	/*! @brief Get the last value
@@ -898,6 +887,8 @@ public:
 	std::vector<entry_type> values;
 	//! content-transfer-encoding
 	std::string ct_encoding;
+	//! error handler (used for propagating errors of POSIX file functions)
+	std::function<void(std::basic_string<char_type> const&, std::string const&, int)> error_handler;	
 protected:
 	
 	//! Returns true if this form entry is indeed empty (i.e. name == "")
@@ -917,10 +908,30 @@ protected:
 	}
 		
 
+	/*! @brief Propagate an error.
+	 *
+	 * Only use this (instead of just throwing) when the error is not the user's fault (e.g. I/O error,
+	 * 	allocation error)
+	 *
+	 * @param efile File name
+	 * @param emsg Error string
+	 * @param eno Error number (undefined behavior if there's no constant in &lt;cerrno&gt; corresponding
+	 * 		to eno
+	 * @see _eh_fl_
+	 */
+	void propagate_error(std::basic_string<char_type>& const efile, 
+				std::string const& emsg, int eno)
+	{
+		(void)(error_handler ? error_handler(efile, emsg, eno) : throw std::runtime_error("Error handler not defined"));
+	}
 private:
 	bool uniqueness_mode;
 	std::string bound;
 	Boyer_moore_searcher s_bound;
+
+	// enfore noncopy semantics
+	MP_mixed_entry(const entry_type&) = delete;
+	void add_value(const entry_type&) = delete;
 };
 } // namespace form
 } // namespace http
