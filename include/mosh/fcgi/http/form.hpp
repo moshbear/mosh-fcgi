@@ -396,7 +396,8 @@ public:
 	//! Move constructor
 	MP_entry(this_type&& mpe)
 	: base_type(Type::mp_entry, std::move(mpe)), filename(std::move(mpe.filename)),
-		content_type(std::move(mpe.content_type)), headers(std::move(mpe.headers))
+		content_type(std::move(mpe.content_type)), headers(std::move(mpe.headers)),
+		error_handler(std::move(mpe.error_handler))
 	{
 		if (filename.empty()) {
 			mode = Mode::entry;
@@ -544,6 +545,7 @@ public:
 				_file = std::move(mpe._file);
 				break;
 			}
+			error_handler = std::move(mpe.error_handler);
 		}
 		return *this;
 	}
@@ -725,7 +727,8 @@ private:
 public:
 	MP_mixed_entry(this_type&& mme)	
 		: base_type(Type::mixed_entry, mme), headers(std::move(mme.headers)),
-		values(std::move(mme.values)), bound(mme.bound), s_bound(std::move(mme.s_bound))
+		values(std::move(mme.values)), bound(mme.bound), s_bound(std::move(mme.s_bound)),
+		error_handler(std::move(mme.error_handler))
 	{ }
 	//! @brief Create a new MP_mixed_entry from an existing MP_entry
 	MP_mixed_entry(entry_type&& mpe)
@@ -870,6 +873,7 @@ public:
 			bound = std::move(mme.bound);
 			s_bound = std::move(mme.s_bound);
 			values = std::move(mme.values);
+			error_handler = std::move(mme.error_handler);
 		}
 		return *this;
 	}
