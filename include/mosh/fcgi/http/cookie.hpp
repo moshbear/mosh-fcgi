@@ -26,10 +26,7 @@
 
 #include <initializer_list>
 #include <string>
-#include <sstream>
 #include <utility>
-#include <mosh/fcgi/http/misc.hpp>
-#include <mosh/fcgi/bits/ci_strcomp.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
