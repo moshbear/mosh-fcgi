@@ -30,7 +30,7 @@ T wide_char(char ch) {
 	// It's a bit roundabout, but this is the only way to get the current locale
 	std::locale loc = std::locale::global(std::locale::classic());
 	std::locale::global(loc);
-	return std::use_facet<std::ctype<T>>(loc). widen(ch);
+	return std::use_facet<std::ctype<T>>(loc).widen(ch);
 }
 
 template <typename T>
