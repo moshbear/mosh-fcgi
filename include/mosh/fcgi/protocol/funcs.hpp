@@ -25,27 +25,24 @@
 #define MOSH_FCGI_PROTOCOL_FUNCS_HPP
 
 #include <cstddef>
+#include <string>
+#include <utility>
+#include <mosh/fcgi/bits/types.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
 
 namespace protocol {
 
-	/*! @brief Process the body of a FastCGI parameter record
-	 *
-	 * Takes the body of a FastCGI record of type parameter and parses  it. You end
-	 * up with a pointer/size for both the name and value of the parameter.
+	/*! @brief Extract a name-value pair from a FastCGI PARAMS record
 	 *
 	 * @param[in] data Pointer to the record body
 	 * @param[in] data_size Length of the record body
-	 * @param[out] name Reference to a pointer that will be pointed to the first byte of the parameter name
-	 * @param[out] name_size Reference to a value to will be given the size in bytes of the parameter name
-	 * @param[out] value Reference to a pointer that will be pointed to the first byte of the parameter value
-	 * @param[out] value_size Reference to a value to will be given the size in bytes of the parameter value
+	 * @param[out] result Reference to pair holding name and value
+	 * @return The number of bytes consumed
+	 * @retval -1 Record body too small
 	 */
-	bool process_param_header(const char* data, size_t data_size,
-				const char*& name, size_t& name_size,
-				const char*& value, size_t& value_size);
+	ssize_t process_param_header(const uchar* data, size_t data_size, std::pair<std::string, std::string>& result);
 
 }
 

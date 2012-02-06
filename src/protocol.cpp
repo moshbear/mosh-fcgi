@@ -25,7 +25,9 @@ extern "C" {
 }
 
 #include <cstdint>
-#include <cstring>
+#include <stdexcept>
+#include <string>
+#include <utility>
 #include <mosh/fcgi/protocol/types.hpp>
 #include <mosh/fcgi/protocol/funcs.hpp>
 #include <mosh/fcgi/protocol/vars.hpp>
@@ -37,25 +39,49 @@ MOSH_FCGI_BEGIN
 
 namespace protocol {
 
-bool process_param_header(const char* data, size_t data_size,
-        const char*& name, size_t& name_size,
-        const char*& value, size_t& value_size)
+ssize_t process_param_header(const uchar* data, size_t data_size, std::pair<std::string, std::string>>& result)
 {
-	if (*data & 0x80) {
-		name_size = ntohl((aligned<4, uint32_t>(static_cast<const void*>(data)))) & 0x7FFFFFFF;
-		data += sizeof(uint32_t);
-	} else
-		name_size = zerofill_aligned_as<size_t, size_t, char>(data++);
+	size_t name_size;
+	size_t value_size;
 
-	if (*data & 0x80) {
-		value_size = ntohl((aligned<4, uint32_t>(static_cast<const void*>(data)))) & 0x7FFFFFFF;
-		data += sizeof(uint32_t);
-	} else
-		value_size = zerofill_aligned_as<size_t, size_t, char>(data++);
+	size_t _size = data_size;
 
-	name = data;
-	value = name + name_size;
-	return (name + name_size + value_size <= data + data_size);
+	if (data_size < 1)
+		goto err_len;
+	if (*data & 0x80) {
+		if (data_size < 4)
+			goto err_len;
+		name_size = ntohl((aligned<4, uint32_t>(static_cast<const void*>(data)))) & 0x7FFFFFFFUL;
+		data += 4;
+		data_size -= 4;
+	} else {
+		name_size = zerofill_aligned_as<size_t, size_t, uchar>(data++);
+		--data_size;
+	}
+	if (data_size < 1)
+		goto err_len;
+	if (*data & 0x80) {
+		if (data_size < 4)
+			goto err_len;
+		value_size = ntohl((aligned<4, uint32_t>(static_cast<const void*>(data)))) & 0x7FFFFFFFUL;
+		data += 4;
+		data_size -= 4;
+	} else {
+		value_size = zerofill_aligned_as<size_t, size_t, uchar>(data++);
+		--data_size;
+	}
+
+	if (name_size + value_size <= data_size) {
+		result.first = std::string(data, name_size);
+		data += name_size;
+		data_size -= name_size;
+		result.second = std::string(data, value_size);
+		data += value_size;
+		data_size -= value_size;
+		return _size - data_size;	
+	}
+err_len:
+	return -1;
 }
 
 Management_reply<14, 2, 8> max_conns_reply("FCGI_MAX_CONNS", "10");
