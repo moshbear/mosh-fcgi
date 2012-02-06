@@ -604,7 +604,7 @@ protected:
 	 * @see _eh_fl_
 	 */
 	void propagate_error(std::string const& emsg, int eno) {
-		(void)(error_handler ? error_handler(emsg, eno) : throw std::runtime_error("Error handler not defined"));
+		(void)(error_handler ? error_handler(emsg, eno) : std::terminate());
 	}
 private:
 	value_type _data;
@@ -922,7 +922,7 @@ protected:
 	void propagate_error(std::basic_string<char_type>& const efile, 
 				std::string const& emsg, int eno)
 	{
-		(void)(error_handler ? error_handler(efile, emsg, eno) : throw std::runtime_error("Error handler not defined"));
+		(void)(error_handler ? error_handler(efile, emsg, eno) : std::terminate());
 	}
 private:
 	bool uniqueness_mode;
