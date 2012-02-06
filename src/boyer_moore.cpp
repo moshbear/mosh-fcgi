@@ -27,13 +27,14 @@
 #include <vector>
 #include <cassert>
 
+#include <mosh/fcgi/bits/types.hpp>
 #include <mosh/fcgi/boyer_moore.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 namespace { // local static functions
 
 
-std::vector<short> compute_prefix_func(const std::vector<char>& p) {
+std::vector<short> compute_prefix_func(const std::vector<unsigned char>& p) {
         short k = 0;
 	std::vector<short> pi(p.size());
 
@@ -48,15 +49,15 @@ std::vector<short> compute_prefix_func(const std::vector<char>& p) {
 	return pi;
 }
 
-std::vector<int> prepare_badcharacter_heuristic(const std::vector<char>& str) {
+std::vector<int> prepare_badcharacter_heuristic(const std::vector<unsigned char>& str) {
 	std::vector<int> result(1 << CHAR_BIT, str.size());
 	for (size_t i = 0; i < str.size(); i++)
-		result[static_cast<size_t>(str[i])] = i;
+		result[str[i]] = i;
 	return result;
 }
  
-std::vector<int> prepare_goodsuffix_heuristic(const std::vector<char>& normal) {
-	std::vector<char> reversed(normal);
+std::vector<int> prepare_goodsuffix_heuristic(const std::vector<unsigned char>& normal) {
+	std::vector<unsigned char> reversed(normal);
 	std::reverse(reversed.begin(), reversed.end());
 	std::vector<short> prefix_reversed = compute_prefix_func(reversed);
 
@@ -104,11 +105,11 @@ MOSH_FCGI_BEGIN
 /*
  * Boyer-Moore search algorithm
  */
-void Boyer_moore_searcher::__init__(const char* needle, size_t len) {
+void Boyer_moore_searcher::__init__(const uchar* needle, size_t len) {
         if (len != 0) {
 		if (needle == 0)
 			throw std::invalid_argument("Precondition (needle != 0 || len == 0) failed");
-		this->needle = std::vector<char>(needle, needle + len);
+		this->needle = std::vector<uchar>(needle, needle + len);
 	        // Initialize heuristics
 		badcharacter = prepare_badcharacter_heuristic(this->needle);
 		goodsuffix = prepare_goodsuffix_heuristic(this->needle);
@@ -117,7 +118,7 @@ void Boyer_moore_searcher::__init__(const char* needle, size_t len) {
 	this->needle_len = len;
 }
 
-ssize_t Boyer_moore_searcher::_search(const char* haystack, size_t haystack_len) const {
+ssize_t Boyer_moore_searcher::_search(const uchar* haystack, size_t haystack_len) const {
 	if (haystack_len == 0 || needle_len == 0)
 		return 0;
 	if (needle_len == 0 && haystack_len != 0)
@@ -129,9 +130,9 @@ ssize_t Boyer_moore_searcher::_search(const char* haystack, size_t haystack_len)
                 while ((j > 0) && (needle[j - 1] == haystack[s + j - 1]))
                         j--;
                 if (j > 0) {
-                        int k = badcharacter[(size_t) haystack[s + j - 1]];
+                        int k = badcharacter[haystack[s + j - 1]];
                         int m;
-                        if (k < (int)j && ((m = j - k - 1) > goodsuffix[j]))
+                        if (k < static_cast<int>(j) && ((m = j - k - 1) > goodsuffix[j]))
                                 s += m;
                         else
                                 s += goodsuffix[j];
