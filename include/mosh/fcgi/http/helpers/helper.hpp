@@ -20,10 +20,10 @@
 #ifndef MOSH_FCGI_HTTP_HELPERS_HELPER_HPP
 #define MOSH_FCGI_HTTP_HELPERS_HELPER_HPP
 
-#include <string>
 #include <vector>
 #include <utility>
 #include <functional>
+#include <mosh/fcgi/bits/types.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -34,17 +34,17 @@ namespace http {
 struct Helper {
 
 	//! Type of message returned by helpers
-	typedef std::vector<std::pair<std::string, std::string>> header_pair;
+	typedef std::vector<std::pair<ustring, ustring>> header_pair;
 
 	/*! @name Functors
 	 */
 	//@{
 	std::function<header_pair (unsigned)> do_u;
-	std::function<header_pair (std::string const&)> do_s;
+	std::function<header_pair (ustring const&)> do_s;
 	
-	std::function<header_pair (unsigned, std::string const&)> do_u_s;
-	std::function<header_pair (std::string const&, unsigned)> do_s_u;
-	std::function<header_pair (std::string const&, std::string const&)> do_s_s;
+	std::function<header_pair (unsigned, ustring const&)> do_u_s;
+	std::function<header_pair (ustring const&, unsigned)> do_s_u;
+	std::function<header_pair (ustring const&, ustring const&)> do_s_s;
 	//@}	
 	Helper()
 	{ }

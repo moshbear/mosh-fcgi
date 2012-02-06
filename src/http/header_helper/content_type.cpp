@@ -17,8 +17,8 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
  */
 
-#include <string>
 #include <utility>
+#include <string>
 #include <mosh/fcgi/http/helpers/helper.hpp>
 #include <mosh/fcgi/http/helpers/content_type.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>

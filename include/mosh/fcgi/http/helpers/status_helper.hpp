@@ -20,7 +20,7 @@
 #ifndef MOSH_FCGI_HTTP_HELPERS_STATUS_HELPER_HPP
 #define MOSH_FCGI_HTTP_HELPERS_STATUS_HELPER_HPP
 
-#include <string>
+#include <mosh/fcgi/bits/types.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -38,7 +38,7 @@ namespace status_helper {
  *  @return the corresponding status string
  *  @throw std::invalid_argument if the status code is invalid
  */
-std::string get_string (unsigned st);
+u_string get_string (unsigned st);
 
 }
 

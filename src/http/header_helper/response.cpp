@@ -1,4 +1,4 @@
-//! @file http/header_helper/response.hpp - HTTP response
+//! @file http/header_helper/response.cpp - HTTP response
 /* 
  *  Copyright (C) 2011 m0shbear
  *
@@ -17,9 +17,9 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
  */
 
-#include <string>
 #include <sstream>
 #include <utility>
+#include <string>
 #include <mosh/fcgi/http/helpers/helper.hpp>
 #include <mosh/fcgi/http/helpers/response.hpp>
 #include <mosh/fcgi/http/helpers/status_helper.hpp>
@@ -41,7 +41,7 @@ namespace response {
  *  @sa status_helper
  */
 Helper::header_pair print_response(const std::string& ver, unsigned code) {
-	std::stringstream ss;
+	std::basic_stringstream ss;
 	ss << "HTTP/" << ver;
 	ss << ' ' << code;
 	ss << ' ' << status_helper::get_string(code);

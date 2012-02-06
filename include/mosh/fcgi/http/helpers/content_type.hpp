@@ -20,7 +20,7 @@
 #ifndef MOSH_FCGI_HTTP_HELPERS_CONTENT_TYPE_HPP
 #define MOSH_FCGI_HTTP_HELPERS_CONTENT_TYPE_HPP
 
-#include <string>
+#include <mosh/fcgi/bits/types.hpp>
 #include <mosh/fcgi/http/helpers/helper.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
@@ -38,14 +38,14 @@ namespace content_type {
  *  @param[in] ctype content type
  *  @return { { "Content-Type", "<ctype>" } }
  */
-Helper::header_pair print_ct(const std::string& ctype);
+Helper::header_pair print_ct(const ustring& ctype);
 
 /*! @brief Generate Content-Type header
  *  @param[in] ctype content type
  *  @param[in] cset charset
  *  @return { { "Content-Type", "<ctype>; charset=<cset>" } }
  */
-Helper::header_pair print_ct_with_cs(const std::string& ctype, const std::string& cset);
+Helper::header_pair print_ct_with_cs(const ustring& ctype, const ustring& cset);
 	
 //! Create a helper consisting of Content-Type generators
 Helper helper();

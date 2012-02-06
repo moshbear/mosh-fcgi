@@ -17,9 +17,9 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
  */
 
-#include <string>
 #include <sstream>
 #include <utility>
+#include <string>
 #include <mosh/fcgi/http/helpers/helper.hpp>
 #include <mosh/fcgi/http/helpers/status_helper.hpp>
 #include <mosh/fcgi/http/helpers/status.hpp>
@@ -40,7 +40,7 @@ namespace status {
  *  @sa status_helper
  */
 Helper::header_pair print_status (unsigned st) {
-	std::stringstream ss;
+	std::basic_stringstream ss;
 	ss << st;
 	ss << " " + status_helper::get_string(st);
 	return { std::make_pair("Status", ss.str()) };

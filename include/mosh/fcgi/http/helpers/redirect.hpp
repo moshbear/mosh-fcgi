@@ -20,8 +20,7 @@
 #ifndef MOSH_FCGI_HTTP_HELPERS_REDIRECT_HPP
 #define MOSH_FCGI_HTTP_HELPERS_REDIRECT_HPP
 
-#include <string>
-#include <sstream>
+#include <mosh/fcgi/bits/types.hpp>
 #include <mosh/fcgi/http/helpers/helper.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
@@ -43,7 +42,7 @@ namespace redirect {
  *  @throw std::invalid_argument code is not valid 3xx
  *  @sa status
  */
-Helper::header_pair print_redir(unsigned code, const std::string& loc);
+Helper::header_pair print_redir(unsigned code, const ustring& loc);
 
 //! Create a helper consisting of redirection generators
 Helper helper();

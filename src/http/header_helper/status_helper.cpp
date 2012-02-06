@@ -17,14 +17,14 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
  */
 
-#include <string>
 #include <stdexcept>
+#include <string>
 #include <mosh/fcgi/http/helpers/status_helper.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 namespace {
 
-extern "C" const char* status_string(unsigned st) {
+extern "C" const  char* status_string(unsigned st) {
 	switch (st) {
 	// Informational 1xx
 	case 100: return "Continue"; // HTTP/1.1

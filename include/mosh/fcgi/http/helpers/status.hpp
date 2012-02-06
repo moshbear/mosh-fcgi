@@ -20,7 +20,6 @@
 #ifndef MOSH_FCGI_HTTP_HELPERS_STATUS_HPP
 #define MOSH_FCGI_HTTP_HELPERS_STATUS_HPP
 
-#include <string>
 #include <mosh/fcgi/http/helpers/helper.hpp>
 #include <mosh/fcgi/http/helpers/status_helper.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>

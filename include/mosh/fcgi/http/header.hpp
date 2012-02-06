@@ -25,9 +25,9 @@
 #include <map>
 #include <ostream>
 #include <stdexcept>
-#include <string>
 #include <utility>
 #include <vector>
+#include <string>
 
 #include <mosh/fcgi/http/cookie.hpp>
 #include <mosh/fcgi/http/helpers/helper.hpp>
@@ -35,6 +35,7 @@
 #include <mosh/fcgi/http/helpers/redirect.hpp>
 #include <mosh/fcgi/http/helpers/response.hpp>
 #include <mosh/fcgi/http/helpers/status.hpp>
+#include <mosh/fcgi/http/helpers/x_sendfile.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -290,6 +291,7 @@ const Header content_type (helpers::content_type::helper());
 const Header redirect (helpers::redirect::helper());
 const Header response (helpers::response::helper());
 const Header status (helpers::status::helper());
+const Header x_sendfile (helpers::xsendfile::helper());
 //@}
 
 }

@@ -20,8 +20,7 @@
 #ifndef MOSH_FCGI_HTTP_HELPERS_RESPONSE_HPP
 #define MOSH_FCGI_HTTP_HELPERS_RESPONSE_HPP
 
-#include <string>
-#include <sstream>
+#include <mosh/fcgi/bits/types.hpp>
 #include <mosh/fcgi/http/helpers/helper.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
@@ -41,7 +40,7 @@ namespace response {
  *  @return { { "<reserved value>", "HTTP/$ver <code> <status(code)>" } }
  *  @sa Status_helper
  */
-Helper::header_pair print_response(const std::string& ver, unsigned code);
+Helper::header_pair print_response(const u_string& ver, unsigned code);
 
 //! Create a helper consisting of response generators
 Helper helper();
