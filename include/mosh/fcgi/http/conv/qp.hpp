@@ -20,8 +20,8 @@
 #ifndef MOSH_FCGI_HTTP_CONV_QP_HPP
 #define MOSH_FCGI_HTTP_CONV_QP_HPP
 
-#include <string>
 #include <mosh/fcgi/http/conv/converter.hpp>
+#include <mosh/fcgi/bits/types.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -37,7 +37,7 @@ struct Qp : public Converter {
 	 * @param[in] in_next On return, this points to the first untranslated character
 	 * @return decoded input
 	 */
-	std::string in(const char* in, const char* in_end, const char*& in_next) const;
+	u_string in(const uchar* in, const uchar* in_end, const uchar*& in_next) const;
 	/*! @brief Encode a quoted-printable string.
 	 *
 	 * @param[in] in Start of decoded data
@@ -45,7 +45,7 @@ struct Qp : public Converter {
 	 * @param[in] in_next On return, this points to the first untranslated character
 	 * @return encoded input
 	 */
-	std::string out(const char* in, const char* in_end, const char*& in_next) const;
+	u_string out(const uchar* in, const uchar* in_end, const uchar*& in_next) const;
 };
 
 }

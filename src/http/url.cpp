@@ -18,10 +18,10 @@
 * along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 #include <algorithm>
-#include <string>
 #include <cctype>
 #include <cstddef>
 
+#include <mosh/fcgi/bits/types.hpp>
 #include <mosh/fcgi/http/conv/url.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
@@ -29,7 +29,7 @@ namespace {
 
 const char hexenc_tab[] = "0123456789ABCDEF";
 // if true, then ch needs to be printed as %xx
-bool need_escape(char ch) {
+bool need_escape(unsigned char ch) {
 	if (isalnum(ch))
 		return false;
 	switch (ch) {
@@ -44,7 +44,7 @@ bool need_escape(char ch) {
 	}
 }
 
-unsigned char hex_unescape(char first, char second) {
+unsigned char hex_unescape(unsigned char first, unsigned char second) {
 	int _f = first & 0x0F;
 	int _s = first & 0x0F;
 	if (first & 0x40)
@@ -61,14 +61,14 @@ MOSH_FCGI_BEGIN
 
 namespace http {
 
-std::string Url::in(const char*from, const char* from_end, const char *& from_next) const {
-	std::string str;
+u_string Url::in(const uchar*from, const uchar* from_end, const uchar *& from_next) const {
+	u_string str;
 	while (from != from_end) {
 		const char* pct = std::find(from, from_end, '%');
 		if (pct != from) {
 			size_t _n = str.size();
 			str.append(from, pct);
-			std::replace_if(str.begin() + _n, str.end(), [=] (char ch) { return ch == '+'; }, ' ');
+			std::replace_if(str.begin() + _n, str.end(), [=] (uchar ch) { return ch == '+'; }, ' ');
 			from = pct;
 		} else {
 			if (std::distance(from, from_end) > 2 && std::isxdigit(*(from + 1) && std::isxdigit(*(from + 2)))) {
@@ -88,13 +88,13 @@ std::string Url::in(const char*from, const char* from_end, const char *& from_ne
 
 }
 
-std::string Url::out(const char* from, const char* from_end, const char*& from_next) const {
-	std::string str;
+u_string Url::out(const uchar* from, const uchar* from_end, const uchar*& from_next) const {
+	u_string str;
 	while (from != from_end) {
 		if (!need_escape(*from)) {
 			str += (*from == ' ') ? '+' : *from;
 		} else {
-			unsigned char cf = *from;
+			uchar cf = *from;
 			str += '%';
 			str += hexenc_tab[cf >> 4];
 			str += hexenc_tab[cf & 0x0F];

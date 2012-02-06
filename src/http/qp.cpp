@@ -19,10 +19,10 @@
 ****************************************************************************/
 
 #include <algorithm>
-#include <string>
 #include <cctype>
 #include <cstddef>
 
+#include <mosh/fcgi/bits/types.hpp>
 #include <mosh/fcgi/http/conv/qp.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
@@ -30,7 +30,7 @@ namespace {
 
 const char hexenc_tab[] = "0123456789ABCDEF";
 // if true, then ch needs to be printed as =xx
-bool need_escape(char ch) {
+bool need_escape(unsigned char ch) {
 	if (ch >= 0x80)
 		return true;
 	if (isalnum(ch))
@@ -42,7 +42,7 @@ bool need_escape(char ch) {
 	return true;
 }
 
-unsigned char hex_unescape(char first, char second) {
+unsigned char hex_unescape(unsigned char first, unsigned char second) {
 	int _f = first & 0x0F;
 	int _s = first & 0x0F;
 	if (first & 0x40)
@@ -59,10 +59,10 @@ MOSH_FCGI_BEGIN
 
 namespace http {
 
-std::string Qp::in(const char* from, const char* from_end, const char *& from_next) const {
-	std::string str;
+u_string Qp::in(const uchar* from, const uchar* from_end, const uchar *& from_next) const {
+	u_string str;
 	while (from != from_end) {
-		const char* eq = std::find(from, from_end, '=');
+		const uchar* eq = std::find(from, from_end, '=');
 		if (eq != from) {
 			str.append(from, eq);
 			from = eq;
@@ -73,7 +73,7 @@ std::string Qp::in(const char* from, const char* from_end, const char *& from_ne
 				)
 				||(*(from+1) == 0x0D && *(from + 2) == 0x0A)
 			)) {
-				char ch = *++from;
+				uchar ch = *++from;
 				if (ch == 0x0D) { // NBSP
 					++from;
 				} else {
@@ -92,13 +92,13 @@ std::string Qp::in(const char* from, const char* from_end, const char *& from_ne
 	return str;	
 }
 
-std::string Qp::out(const char* from, const char* from_end, const char*& from_next) const {
-	std::string str;
+u_string Qp::out(const uchar* from, const uchar* from_end, const uchar*& from_next) const {
+	u_string str;
 	while (from != from_end) {
 		if (!need_escape(*from)) {
 			str += *from;
 		} else {
-			unsigned char cf = *from;
+			uchar cf = *from;
 			str += '=';
 			str += hexenc_tab[cf >> 4];
 			str += hexenc_tab[cf & 0x0F];

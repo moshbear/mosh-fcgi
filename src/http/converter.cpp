@@ -18,7 +18,7 @@
 * along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
-#include <string>
+#include <mosh/fcgi/bits/types.hpp>
 #include <mosh/fcgi/http/conv.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
@@ -31,7 +31,7 @@ namespace http {
  * @param[in] c_name encoding name
  * @return pointer to @c Converter instance that handles the encoding
  */
-Converter* get_conv(const std::string& c_name) {
+Converter* get_conv(const u_string& c_name) {
 	if (c_name == "quoted-printable")
 		return new Qp;
 	if (c_name == "base64")

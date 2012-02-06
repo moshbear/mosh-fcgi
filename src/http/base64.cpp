@@ -20,9 +20,9 @@
 
 #include <algorithm>
 #include <locale>
-#include <string>
 #include <stdexcept>
 #include <cstdint>
+#include <mosh/fcgi/bits/types.hpp>
 #include <mosh/fcgi/http/conv/base64.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
@@ -46,7 +46,7 @@ namespace {
 #define IS_LALPHA(x) (('a' <= (x)) && ((x) <= 'z'))
 #define IS_DIGIT(x) (('0' <= (x)) && ((x) <= '9'))
 
-int8_t b64_val(register char ch) {
+int8_t b64_val(char ch) {
 	if (IS_UALPHA(ch))
 		return (ch - 'A');
 	if (IS_LALPHA(ch))
@@ -69,7 +69,7 @@ const char b64_tab[64] = { UALPHA, LALPHA, DIGIT, CH62, CH63 };
 // The smallest bytesize possible is gcd(6,8) = 24
 // in_bytes needed = 24/6 = 4
 // out_bytes needed = 24/8 = 3
-int do_in_i4o3(const char* in /* 4 */, char* out /* 3 */) {
+int do_in_i4o3(const unsigned char* in /* 4 */, unsigned char* out /* 3 */) {
 	uint32_t chars;
 	int eq_cnt = 0;
 	for (size_t i = 0; i < 4; ++i) {
@@ -98,7 +98,7 @@ int do_in_i4o3(const char* in /* 4 */, char* out /* 3 */) {
 // The smallest bytesize possible is gcd(6,8) = 24
 // in_bytes needed = 24/8 = 3
 // out_bytes needed = 24/6 = 4
-int do_out_i3o4(const char* in /* 3 */, char* out /* 4 */) {
+int do_out_i3o4(const unsigned char* in /* 3 */, unsigned char* out /* 4 */) {
 	uint32_t chars;
 	for (size_t i = 2; i >= 0; --i) {
 		chars <<= 8;
@@ -111,13 +111,13 @@ int do_out_i3o4(const char* in /* 3 */, char* out /* 4 */) {
 	return 0;
 }
 
-std::codecvt_base::result base64_do_in(std::mbstate_t&, const char* from,
-			const char* from_end, const char *& from_next,
-			char* to, char* to_end, char*& to_next) {
+std::codecvt_base::result base64_do_in(std::mbstate_t&, const unsigned char* from,
+			const unsigned char* from_end, const unsigned char *& from_next,
+			unsigned char* to, unsigned char* to_end, unsigned char*& to_next) {
 	using std::codecvt_base;
-	char ibuf[4];
-	char obuf[3];
-	const char* from4 = from;
+	unsigned char ibuf[4];
+	unsigned char obuf[3];
+	const unsigned char* from4 = from;
 	size_t ipos = 0; // offset in ibuf where next char should be placed
 	while ((from != from_end || ipos == 4) && to != to_end) {
 		if (ipos == 4) {
@@ -163,14 +163,14 @@ MOSH_FCGI_BEGIN
 
 namespace http {
 
-std::string Base64::in(const char* in, const char* in_end, const char*& in_next) const {
+u_string Base64::in(const uchar* in, const uchar* in_end, const uchar*& in_next) const {
 	using std::codecvt_base;
-	std::string str;
+	u_string str;
 	str.resize(std::distance(in, in_end));
 	std::mbstate_t dummy;
-	char* str_beg = &(*str.begin());
-	char* str_end = &(*str.end());
-	char* str_next;
+	uchar* str_beg = &(*str.begin());
+	uchar* str_end = &(*str.end());
+	uchar* str_next;
 	(void)base64_do_in(dummy, in, in_end, in_next, str_beg, str_end, str_next);
 	str.resize(std::distance(str_beg, str_next));
 	return str;

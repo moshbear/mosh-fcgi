@@ -20,8 +20,8 @@
 #ifndef MOSH_FCGI_HTTP_BASE64_HPP
 #define MOSH_FCGI_HTTP_BASE64_HPP
 
-#include <string>
 #include <stdexcept>
+#include <mosh/fcgi/bits/types.hpp>
 #include <mosh/fcgi/http/conv/converter.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
@@ -38,7 +38,7 @@ struct Base64 : public Converter {
 	 * @param[in] in_next On return, this points to the first untranslated character
 	 * @return decoded input
 	 */
-	std::string in(const char* in, const char* in_end, const char*& in_next) const;
+	u_string in(const uchar* in, const uchar* in_end, const uchar*& in_next) const;
 	/*! @brief Encode a quoted-printable string [UNIMPLEMENTED]
 	 * \warning This function is not implemented.
 	 * \warning Using it will throw a std::logic_errror.
@@ -48,7 +48,7 @@ struct Base64 : public Converter {
 	 * @param[in] in_next On return, this points to the first untranslated character
 	 * @return encoded input
 	 */
-	std::string out(const char* in, const char* in_end, const char*& in_next) const {
+	u_string out(const uchar* in, const uchar* in_end, const uchar*& in_next) const {
 		throw std::logic_error("mosh::fcgi::http::Base64::out: UNIMPLEMENTED");
 	}
 };
