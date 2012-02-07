@@ -48,6 +48,7 @@ namespace protocol {
 	 *
 	 * @param[in] data Start of record body
 	 * @param[in] data_len Value of record's content_length field
+	 * @return A FastCGI GET_VALUES_RESULT record
 	 */
 	u_string process_gv(const uchar* data, size_t data_len);
 
