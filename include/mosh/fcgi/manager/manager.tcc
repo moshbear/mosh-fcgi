@@ -45,7 +45,6 @@ extern "C" {
 #include <mosh/fcgi/protocol/header.hpp>
 #include <mosh/fcgi/protocol/begin_request.hpp>
 #include <mosh/fcgi/protocol/unknown_type.hpp>
-#include <mosh/fcgi/protocol/management_reply.hpp>
 #include <mosh/fcgi/protocol/message.hpp>
 #include <mosh/fcgi/transceiver.hpp>
 #include <mosh/fcgi/manager/manager.hpp>
@@ -202,26 +201,12 @@ void Manager<T>::local_handler(protocol::Full_id id) {
 		Header& header = _header;
 		switch (header.type()) {
 		case Record_type::get_values: {
-			size_t name_size;
-			size_t value_size;
-			const char* name;
-			const char* value;
-			process_param_header(message.data.get() + sizeof(Header), header.content_length(),
-			                   name, name_size, value, value_size);
-			if (name_size == 14 && !memcmp(name, "FCGI_MAX_CONNS", 14)) {
-				Block buffer(transceiver.request_write(sizeof(max_conns_reply)));
-				memcpy(buffer.data, (const char*)&max_conns_reply, sizeof(max_conns_reply));
-				transceiver.secure_write(sizeof(max_conns_reply), id, false);
-			} else if (name_size == 13 && !memcmp(name, "FCGI_MAX_REQS", 13)) {
-				Block buffer(transceiver.request_write(sizeof(max_reqs_reply)));
-				memcpy(buffer.data, (const char*)&max_reqs_reply, sizeof(max_reqs_reply));
-				transceiver.secure_write(sizeof(max_reqs_reply), id, false);
-			} else if (name_size == 15 && !memcmp(name, "FCGI_MPXS_CONNS", 15)) {
-				Block buffer(transceiver.request_write(sizeof(mpxs_conns_reply)));
-				memcpy(buffer.data, (const char*)&mpxs_conns_reply, sizeof(mpxs_conns_reply));
-				transceiver.secure_write(sizeof(mpxs_conns_reply), id, false);
-			}
-
+			u_string res = process_gv(message.data.get() + sizeof(Header), header.content_length());
+			Block buffer(transceiver.request_write(res.size() + 16));
+			memcpy(buffer.data + 8, res.data(), res.size());
+			Header h(version, Record_type::get_values_result, 0, res.size(), (8 - (res.size() % 8)) % 8);
+			memcpy(buffer.data, &h, sizeof(Header));
+			transceiver.secure_write(sizeof h + h.content_length() + h.padding_length(), id, false);
 			break;
 		}
 

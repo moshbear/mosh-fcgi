@@ -44,6 +44,13 @@ namespace protocol {
 	 */
 	ssize_t process_param_header(const uchar* data, size_t data_size, std::pair<std::string, std::string>& result);
 
+	/*! @brief Reply to a FastCGI GET_VALUES record
+	 *
+	 * @param[in] data Start of record body
+	 * @param[in] data_len Value of record's content_length field
+	 */
+	u_string process_gv(const uchar* data, size_t data_len);
+
 }
 
 MOSH_FCGI_END

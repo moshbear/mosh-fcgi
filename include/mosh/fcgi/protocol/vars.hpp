@@ -40,13 +40,6 @@ namespace protocol {
 	const uint8_t version = 1;
 	//! All FastCGI records will be a multiple of this many bytes
 	const size_t chunk_size = 8;
-
-	//! Reply record that will be sent when asked the maximum allowed file descriptors open at a time
-	extern Management_reply<14, 2, 8> max_conns_reply;
-	//! Reply record that will be sent when asked the maximum allowed requests at a time
-	extern Management_reply<13, 2, 1> max_reqs_reply;
-	//! Reply record that will be sent when asked if requests can be multiplexed over a single connections
-	extern Management_reply<15, 1, 8> mpxs_conns_reply;
 }
 
 MOSH_FCGI_END
