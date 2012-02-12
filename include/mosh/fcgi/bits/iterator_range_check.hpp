@@ -1,4 +1,4 @@
-//! @file  mosh/fcgi/bits/iterator_plus_n.hpp iterator_plus_n template function
+//! @file  mosh/fcgi/bits/iterator_range_check.hpp - Iterator range check
 /***************************************************************************
 * Copyright (C) 2012 m0shbear                                              *
 *                                                                          *
@@ -18,35 +18,31 @@
 * along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
-#ifndef MOSH_FCGI_ITERATOR_PLUS_N_HPP
-#define MOSH_FCGI_ITERATOR_PLUS_N_HPP
+#ifndef MOSH_FCGI_ITERATOR_RANGE_CHECK_HPP
+#define MOSH_FCGI_ITERATOR_RANGE_CHECK_HPP
 
 #include <algorithm>
+#include <mosh/fcgi/bits/iterator_plus_n.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
 
-/*! @brief Safe iterator increment
- * 
- * This function checks if @c begin + @c n is inside [@c begin, @c end].
- * If not, it returns @c end.
+/*! @brief Iterator range check
  *
- * T(d, n) is O(1) for @c RandomAccessIterators, and O(d + n) otherwise.
+ * Checks if begin + n is refers to an object inside [begin, end].
  *
+ * @sa iterator_plus_n
  * @param begin Iterator to start
- * @param end Iterator to end; if @c begin + @c n goes past here, return this value.
- * @param n Distance to increment
- * @return @c begin + @c n if @c begin + @c n &lt;= @c end; @c end otherwise
+ * @param end Iterator to end
+ * @param n Distance to check
+ * @retval true if [begin + n] is inside [begin, end]
+ * @retval false otherwise
  */
 template <typename Iterator>
-Iterator iterator_plus_n(Iterator begin, Iterator end, size_t n) {
-	size_t max_n = std::distance(begin, end);
-	if (n > max_n) {
-		return end;
-	} else {
-		std::advance(begin, n);
-		return begin;
-	}
+bool iterator_range_check(Iterator begin, Iterator end, size_t n) {
+	Iterator plus_n = iterator_plus_n(begin, end, n);
+	std::advance(begin, n);
+	return (plus_n == begin);
 }
 
 MOSH_FCGI_END
