@@ -437,29 +437,78 @@ e_ilseq:
 	return -EILSEQ;
 }
 
-std::size_t utf8_length(const uchar* from, const uchar* from_end, std::size_t limit) {
+ssize_t utf8_length(const uchar* from, const uchar* from_end, std::size_t limit) {
 	size_t len = 0;
-	Native_utf my_utf = native_utf<sizeof(wchar_t)>();
+	constexpr Native_utf my_utf = native_utf<sizeof(wchar_t)>();
 	while (from != from_end && len < limit) {
+		// simultaneously check for valid starting char
+		// and get the trailinging byte count
 		int shift = in_needbytes(*from);
-		// found bad character
 		if (shift < 0)
+			goto e_ilseq;
+		// is there enough src bytes?
+		if (!iterator_range_check(from, from_end, shift + 1))
 			break;
-		if (!iterator_range_check(from, from_end, shift))
-			break;
-		from += shift;
-		// Increment len by 2 if we're dealing with UTF-16 and
-		// input is in [U+10000, 10FFFF]
-		if (my_utf == Native_utf::_16 && (shift == 3))
-			len += 2; 
-		else
-			len += 1;
+		break;
+		Utf16_pair p;
+		uint32_t cp = decode_u8_char(shift, from);
+		if (cp == ~static_cast<uint32_t>(0)) // utf-8 sequence too short
+			goto e_ilseq;
+		if (shift != (out_needbytes(cp) - 1)) // utf-8 sequence too long
+			goto e_ilseq;
+		if (is_surrogate(cp) == Surrogate_id::trailing) // unexpected trailing surrogate
+			goto e_ilseq; 
+		if (is_surrogate(cp) == Surrogate_id::leading) {
+			if (!do_cesu8()) // unxpected leading surrogate
+				goto e_ilseq;
+			p.leading = cp;
+			if (in_needbytes(*(from + 3)) != 2)
+				goto e_ilseq;
+			if (!iterator_range_check(from, from_end, 6)) {
+				break;
+			}
+			uint32_t cp2 = decode_u8_char(2, from + 3);
+			if (cp2 == ~static_cast<uint32_t>(0))
+				goto e_ilseq;
+			// expect trailing surrogate
+			if (is_surrogate(p.trailing = cp2) != Surrogate_id::trailing)
+				goto e_ilseq;
+			switch (my_utf) {
+			case Native_utf::_16:
+				if ((len + 2) > limit)
+					goto break_loop;
+				++len;
+				break;
+			case Native_utf::_32:
+				break;
+			default:
+				std::terminate();
+			}
+			from += 3;
+		} else {
+			if ((shift == 3) && do_cesu8()) // detected a non-BMP code point
+				goto e_ilseq;		// which isn't allowed in CESU-8
+			// is there enough dst wchars?
+			if ((my_utf == Native_utf::_16) && (shift == 3)) {
+				// is there enough room in dst for a surrogate pair?
+				if ((len + 2) > limit)
+					break;
+			} else {
+				if ((len + 1) > limit)
+					break;
+			}
+			if (my_utf == Native_utf::_16) {
+				if (cp >= 0x10000)
+					++len;
+			}
+		}
+		++len;
+		from += shift + 1;
 	}
-	if (len == limit + 1)
-		len -= 2;
-	if (len < 0)
-		len = 0;
-	return len;
+break_loop:
+	return (len >= 0) ? len : 0;
+e_ilseq:
+	return -EILSEQ;
 }
 
 MOSH_FCGI_END

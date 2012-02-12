@@ -39,7 +39,7 @@ MOSH_FCGI_BEGIN
  * @retval 0
  * @retval 1 Partial decoding - output buffer denoted by [to, to_end) too small
  */
-int utf8_in(const uchar* from, const uchar* from_end, const uchar *& from_next,
+int utf8_in(const uchar* from, const uchar* from_end, const uchar*& from_next,
 		wchar_t* to, wchar_t* to_end, wchar_t*& to_next);
 /*! @brief Encode UTF-16/32 (depending on sizeof(wchar_t)) to UTF-8
  *
@@ -53,10 +53,12 @@ int utf8_in(const uchar* from, const uchar* from_end, const uchar *& from_next,
  * @retval 0
  * @retval 1 Partial decoding - output buffer denoted by [to, to_end) too small
  */
-int utf8_out(const wchar_t* from, const wchar_t* from_end, const wchar_t *& from_next,
-		uchar* to, uchar* to_end, uchar *& to_next);
+int utf8_out(const wchar_t* from, const wchar_t* from_end, const wchar_t*& from_next,
+		uchar* to, uchar* to_end, uchar*& to_next);
 //! Get the number of code points represented by the UTF-8 in [from, from_end)
-std::size_t utf8_length(const uchar* from, const uchar* from_end, std::size_t limit);
+ssize_t utf8_length(const uchar* from, const uchar* from_end, std::size_t limit);
+
+MOSH_FCGI_END
 
 #endif
 
