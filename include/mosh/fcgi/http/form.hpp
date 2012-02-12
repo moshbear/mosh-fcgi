@@ -1,4 +1,4 @@
-//! @file  mosh/fcgi/http/form.hpp HTTP Session form data
+//! @file  mosh/fcgi/http/form.hpp - HTTP Session form data
 /*!*************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *
@@ -23,7 +23,6 @@
 #define MOSH_FCGI_HTTP_FORM_HPP
 
 #include <algorithm>
-#include <fstream>
 #include <functional>
 #include <iomanip>
 #include <map>
@@ -36,14 +35,12 @@
 
 extern "C" {
 // dir check and getpid
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dirent.h>
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
 }
 
+#include <mosh/fcgi/bits/u.hpp>
 #include <mosh/fcgi/bits/cmp.hpp>
 #include <mosh/fcgi/boyer_moore.hpp>
 #ifdef MOSH_FCGI_USE_HYBRID_VECTOR
@@ -56,6 +53,7 @@ extern "C" {
 #endif
 #include <mosh/fcgi/bits/hash.hpp>
 #include <mosh/fcgi/http/misc.hpp>
+#include <mosh/fcgi/bits/tempfile.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 
@@ -358,13 +356,6 @@ private:
 	typedef MP_entry<char_type, value_type> this_type;
 	typedef Data<char_type> base_type;
 	typedef std::basic_string<char_type> string_type;
-// Not all libc++'s have C++11 fstream semantics, so we use the unique_ptr hack
-// to implement move semantics if configure deems it necessary
-#ifdef HAVE_CXX11_IOSTREAM
-	typedef std::fstream file_type;
-#else
-	typedef std::unique_ptr<std::fstream> file_type;
-#endif
 	enum class Mode {
 		entry,
 		file
@@ -396,8 +387,7 @@ public:
 	//! Move constructor
 	MP_entry(this_type&& mpe)
 	: base_type(Type::mp_entry, std::move(mpe)), filename(std::move(mpe.filename)),
-		content_type(std::move(mpe.content_type)), headers(std::move(mpe.headers)),
-		error_handler(std::move(mpe.error_handler))
+		content_type(std::move(mpe.content_type)), headers(std::move(mpe.headers))
 	{
 		if (filename.empty()) {
 			mode = Mode::entry;
@@ -405,19 +395,11 @@ public:
 		} else {
 			mode = Mode::file;
 			actual_filename = std::move(mpe.actual_filename);
-			_file = std::move(mpe._file);
+			file = std::move(mpe.file);
 		}
 	}
 
 	virtual ~MP_entry() {
-		if (is_file()) {
-			if (!f_persist && !actual_filename.empty()) {
-				errno = 0;
-				if (unlink(actual_filename.c_str()) == -1) {
-					propagate_error(_eh_fl_::call_eh, "unlink()", errno);
-				}
-			}
-		}
 	}
 
 	/*! @brief Add a header
@@ -439,7 +421,7 @@ public:
 	/*! @brief Add data
 	 * @param[in] s data
 	 */
-	void append_text(std::basic_string<char_type>&& s) {
+	inline void append_text(std::basic_string<char_type>&& s) {
 		append_text(&(*s.begin()), &(*s.end()));
 	}
 	/*! @brief Add data
@@ -448,39 +430,28 @@ public:
 	 */
 	void append_text(const char_type* s, const char_type* e) {
 		require_entry_mode();
-		_data.insert(_data.end(), s, e);
+		
+		
 	}
 
 	/*! @brief Add bytes
-	 * @param[in] s data
+	 * @param[in] s start of data
+	 * @param[in] e end of data
 	 */
-	void append_binary(std::string&& s) {
-		append_binary(&(*s.begin()), &(*s.end()));
+	inline void append_binary(const char* s, const char* e) {
+		append_binary(sign_cast<const uchar*>(s), sign_cast<const uchar*>(e));
 	}
 	/*! @brief Add bytes
 	 * @param[in] s start of data
 	 * @param[in] e end of data
 	 */
-	void append_binary(const char* s, const char* e) {
+	void append_binary(const uchar* s, const uchar* e) {
 		require_file_mode();
 		if (actual_filename.empty()) {
-			using namespace std;
-
 			actual_filename = make_filename();
-#ifdef HAVE_CXX11_IOSTREAM
-			_file.exceptions(std::ios_base::failbit | std::ios_base::badbit);
-			_file.open(actual_filename, std::ios_base::in | std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
-#else
-			_file.reset(new std::fstream);
-			_file->exceptions(std::ios_base::failbit | std::ios_base::badbit);
-			_file->open(actual_filename, std::ios_base::in | std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
-#endif
+			file = Tempfile(make_filename);
 		}
-#ifdef HAVE_CXX11_IOSTREAM
-		_file.write(s, e - s);
-#else
-		_file->write(s, e - s);
-#endif
+		file.write(s, e - s);
 	}
 
 	//! Get the file size
@@ -488,11 +459,7 @@ public:
 
 		require_file_mode();
 		if (!actual_filename.empty())
-#ifdef HAVE_CXX11_IOSTREAM
-			return _file.tellp();
-#else
-			return _file->tellp();
-#endif
+			return file.filesize();
 		else
 			return 0;
 	}
@@ -509,20 +476,9 @@ public:
 		return _data;
 	}
 	
-	std::ifstream& file() {
-		require_file_mode();
-#if HAVE_CXX11_IOSTREAM
-		_file.sync();
-		return _file;
-#else
-		_file->sync();
-		return *_file;
-#endif
-	}
-
 	void make_file_persistent() const {
 		require_file_mode();
-		f_persist = true;
+		file.make_permanent();
 	}
 
 private:
@@ -542,10 +498,9 @@ public:
 				break;
 			case Mode::file:
 				actual_filename = std::move(mpe.actual_filename);
-				_file = std::move(mpe._file);
+				file = std::move(mpe.file);
 				break;
 			}
-			error_handler = std::move(mpe.error_handler);
 		}
 		return *this;
 	}
@@ -567,8 +522,6 @@ public:
 	std::string ct_encoding;	
 	//! list of all headers
 	std::map<std::string, std::string> headers;
-	//! error handler (used for propagating errors of POSIX file functions)
-	std::function<void(std::string const&, int)> error_handler;	
 protected:
 	bool am_i_empty() const {
 		return (base_type::am_i_empty()
@@ -595,22 +548,9 @@ protected:
 		return true;
 	}
 
-	/*! @brief Propagate an error.
-	 *
-	 * Only use this (instead of just throwing) when the error is not the user's fault (e.g. I/O error,
-	 * 	allocation error)
-	 *
-	 * @param emsg Error string
-	 * @param eno Error number (undefined behavior if there's no constant in &lt;cerrno&gt; corresponding
-	 * 		to eno
-	 * @see _eh_fl_
-	 */
-	void propagate_error(std::string const& emsg, int eno) {
-		(void)(error_handler ? error_handler(emsg, eno) : std::terminate());
-	}
 private:
 	value_type _data;
-	file_type _file;
+	Tempfile file;
 	std::string actual_filename;
 	Mode mode;
 	// Make file persistent (no unlink in dtor)
@@ -618,67 +558,47 @@ private:
 
 	// Create a filename in the form of /tmp/mosh-fcgi/$(hostname).$(pid)-$(date.date).$(date.time)-$(sha1(headers))
 	std::string make_filename() const { 
-		std::string dir = "/tmp/mosh-fcgi/";
-		std::string file;
+		std::string fn = "/tmp/mosh-fcgi/";
 	
-		// Check if /tmp/mosh-fcgi exists
-		// If it doesn't create it
-		// (Note: only mosh-fcgi is created, as posix systems already have /tmp)
-		{
-			errno = 0;
-			DIR* dir = opendir("/tmp/mosh-fcgi");
-			if (dir != NULL) {
-				closedir(dir);
-			} else {
-				if (errno == ENOENT) {
-					if (mkdir("/tmp/mosh-fcgi", 0700) == -1)
-						propagate_error("mkdir()", errno);
-
-				} else {
-						propagate_error("opendir()", errno);
-				}
-			}
-		}
+		fn += hostname();
 		
-		file += hostname();
-		
-		file += "."; 
+		fn += "."; 
 
 		// Get pid
 		{
 			// Get the PID as a string
 			std::stringstream s;
 			s << getpid();
-			file += s.str();
+			fn += s.str();
 		}
 		
-		file += "-";
+		fn += "-";
 		
-		file += time_to_string("%Y%m%d.%H%M%S%f");
+		fn += time_to_string("%Y%m%d.%H%M%S%f");
 		
-		file += "-";
+		fn += "-";
 		
 		// Get sha1 of all headers
 		{
-			HASHContext* hash = HASH_Create(HASH_AlgSHA1);
-			hash::hash(hash, headers);
-			hash::hash(hash, filename);
-			hash::hash(hash, content_type);
-			auto h = hash::hash_finalize(hash);
-			HASH_Destroy(hash);
+			Hash hh;
+		
+			hash_update(hh, headers);
+			hash_update(hh, filename);
+			hash_update(hh, content_type);
+			auto h = hh.finalize();
 
 			// Print the values of each byte in h in %02x format
 			std::stringstream ss;
 			for (auto& i : h)
 				ss << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(i);
-			file += ss.str();
+			fn += ss.str();
 		}
 		/* Filename components have a maximum length of 255.
 		 * If we exceeded that, resize the string so that the length is 255.
 		 */
-		if (file.size() > 255)
-			file.resize(255);
-		return dir + file;
+		if (fn.substr(fn.find('/')).size() > 255)
+			fn.resize(255 + fn.find('/'));
+		return fn;
 	}
 
 	inline void require_entry_mode() const {
@@ -727,8 +647,7 @@ private:
 public:
 	MP_mixed_entry(this_type&& mme)	
 		: base_type(Type::mixed_entry, mme), headers(std::move(mme.headers)),
-		values(std::move(mme.values)), bound(mme.bound), s_bound(std::move(mme.s_bound)),
-		error_handler(std::move(mme.error_handler))
+		values(std::move(mme.values)), bound(mme.bound), s_bound(std::move(mme.s_bound))
 	{ }
 	//! @brief Create a new MP_mixed_entry from an existing MP_entry
 	MP_mixed_entry(entry_type&& mpe)
@@ -764,9 +683,6 @@ public:
 		if ((!uniqueness_mode)
 				|| (std::find(values.begin(), values.end(), value) == values.end()))
 			values.push_back(std::move(value));
-			values.back().error_handler = std::bind(&MP_mixed_entry::propagate_error,
-								std::ref(*this), values.back().filename, 
-								std::placeholders::_2, std::placeholders::_3);
 	}
 
 	/*! @brief sets the boundary
@@ -873,7 +789,6 @@ public:
 			bound = std::move(mme.bound);
 			s_bound = std::move(mme.s_bound);
 			values = std::move(mme.values);
-			error_handler = std::move(mme.error_handler);
 		}
 		return *this;
 	}
@@ -891,8 +806,6 @@ public:
 	std::vector<entry_type> values;
 	//! content-transfer-encoding
 	std::string ct_encoding;
-	//! error handler (used for propagating errors of POSIX file functions)
-	std::function<void(std::basic_string<char_type> const&, std::string const&, int)> error_handler;	
 protected:
 	
 	//! Returns true if this form entry is indeed empty (i.e. name == "")
@@ -910,24 +823,7 @@ protected:
 		// don't check boundary
 		return ::MOSH_FCGI::cmp(values, mme.values, test);
 	}
-		
 
-	/*! @brief Propagate an error.
-	 *
-	 * Only use this (instead of just throwing) when the error is not the user's fault (e.g. I/O error,
-	 * 	allocation error)
-	 *
-	 * @param efile File name
-	 * @param emsg Error string
-	 * @param eno Error number (undefined behavior if there's no constant in &lt;cerrno&gt; corresponding
-	 * 		to eno
-	 * @see _eh_fl_
-	 */
-	void propagate_error(std::basic_string<char_type>& const efile, 
-				std::string const& emsg, int eno)
-	{
-		(void)(error_handler ? error_handler(efile, emsg, eno) : std::terminate());
-	}
 private:
 	bool uniqueness_mode;
 	std::string bound;
