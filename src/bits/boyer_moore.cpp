@@ -1,6 +1,6 @@
-//! @file boyer-moore.cpp - Boyer-moore string searcher
+//! @file bits/boyer-moore.cpp - Boyer-moore string searcher
 /***************************************************************************
-* Copyright (C) 2011 m0shbear                                              *
+* Copyright (C) 2011-2 m0shbear                                            *
 *                                                                          *
 * This file is part of mosh-fcgi.                                          *
 *                                                                          *
@@ -27,14 +27,17 @@
 #include <vector>
 #include <cassert>
 
-#include <mosh/fcgi/bits/types.hpp>
-#include <mosh/fcgi/boyer_moore.hpp>
+#include <mosh/fcgi/bits/boyer_moore.hpp>
+#include <mosh/fcgi/bits/u.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
-namespace { // local static functions
+#include <src/u.hpp>
+#include <src/namespace.hpp>
+
+namespace {
 
 
-std::vector<short> compute_prefix_func(const std::vector<unsigned char>& p) {
+std::vector<short> compute_prefix_func(const std::vector<SRC::uchar>& p) {
         short k = 0;
 	std::vector<short> pi(p.size());
 
@@ -49,15 +52,15 @@ std::vector<short> compute_prefix_func(const std::vector<unsigned char>& p) {
 	return pi;
 }
 
-std::vector<int> prepare_badcharacter_heuristic(const std::vector<unsigned char>& str) {
+std::vector<int> prepare_badcharacter_heuristic(const std::vector<SRC::uchar>& str) {
 	std::vector<int> result(1 << CHAR_BIT, str.size());
 	for (size_t i = 0; i < str.size(); i++)
 		result[str[i]] = i;
 	return result;
 }
  
-std::vector<int> prepare_goodsuffix_heuristic(const std::vector<unsigned char>& normal) {
-	std::vector<unsigned char> reversed(normal);
+std::vector<int> prepare_goodsuffix_heuristic(const std::vector<SRC::uchar>& normal) {
+	std::vector<SRC::uchar> reversed(normal);
 	std::reverse(reversed.begin(), reversed.end());
 	std::vector<short> prefix_reversed = compute_prefix_func(reversed);
 

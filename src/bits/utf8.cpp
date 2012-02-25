@@ -37,6 +37,7 @@
 #include <mosh/fcgi/bits/namespace.hpp>
 
 #include <src/u.hpp>
+#include <src/namespace.hpp>
 
 #ifdef UTF8_USE_MODU8
 #ifndef UTF8_USE_CESU8
@@ -145,10 +146,10 @@ uint32_t from_surrogate(Utf16_pair p) {
 }
 
 //! Check for the "trailinging byte" tag in the high 2 bits
-bool is_mb_cont(m::uchar ch) { return ((ch & 0xC0) == 0x80); /* 10xxxxxx */ }
+bool is_mb_cont(SRC::uchar ch) { return ((ch & 0xC0) == 0x80); /* 10xxxxxx */ }
 
 //! Get the non-tag bits of the lead byte
-m::uchar getch_leading(m::uchar ch, int inb) {
+SRC::uchar getch_leading(SRC::uchar ch, int inb) {
 	switch (inb) {
 	case 0:  return (ch);
 	case 1:  return (ch & 0x1F);
@@ -159,10 +160,10 @@ m::uchar getch_leading(m::uchar ch, int inb) {
 }
 
 //! Get the non-tag bits of a trailinging byte
-char getch_mb(m::uchar ch) { return (ch & 0x3F); }
+char getch_mb(SRC::uchar ch) { return (ch & 0x3F); }
 
 //! Get the number of continuation bytes needed to make a valid sequence
-int in_needbytes(m::uchar ch) {
+int in_needbytes(SRC::uchar ch) {
 	if (is_mb_cont(ch)) // !(10)
 		return -1;
 	if (ch <= 0x7F) // 0 (ASCII)
@@ -192,7 +193,7 @@ int out_needbytes(uint32_t wc) {
 }
 
 //! Return ch with length tagging bits applied
-m::uchar setch_leading(m::uchar ch, int shift) {
+SRC::uchar setch_leading(SRC::uchar ch, int shift) {
 	switch (shift) {
 	case 0:  return (ch);
 	case 1:  return (ch | 0xC0);
@@ -203,10 +204,10 @@ m::uchar setch_leading(m::uchar ch, int shift) {
 }
 
 //! Return ch, tagged as a UTF-8 continuation character
-m::uchar setch_mb(m::uchar ch) { return (0x80 | ch); }
+SRC::uchar setch_mb(SRC::uchar ch) { return (0x80 | ch); }
 
 //! Decode a single UTF-8 char
-uint32_t decode_u8_char(size_t mbc_count, const m::uchar* from) {
+uint32_t decode_u8_char(size_t mbc_count, const SRC::uchar* from) {
 	uint32_t cp = getch_leading(*from, mbc_count);
 	while (mbc_count > 0) {
 		if (!is_mb_cont(*++from)) 
@@ -219,12 +220,12 @@ uint32_t decode_u8_char(size_t mbc_count, const m::uchar* from) {
 }
 
 //! Encode a single code unit (equivalent to code point in UTF-32 mode)
-int encode_u8_char(wchar_t ch, m::uchar* to) {
+int encode_u8_char(wchar_t ch, SRC::uchar* to) {
 	int shift = out_needbytes(ch);
 	int shf = shift;
 	if (shift < 0)
 		return -1;
-	m::uchar* end = to + shift;
+	SRC::uchar* end = to + shift;
 	while (shift > 0) {
 		*end = setch_mb(ch & 0x3F);
 		ch >>= 6;
