@@ -114,7 +114,10 @@ void Manager<T>::push(protocol::Full_id id, protocol::Message message) {
 				std::shared_ptr<T>& request = requests[id];
 				request.reset(new T);
 				request->set(id, transceiver, body.role(), !body.keep_conn(),
-				             std::bind(&Manager::push, std::ref(*this), id, stdph::_1));
+						[&] (protocol::Message a1) {
+							this->push(id, a1);
+						}
+				);
 			} else {
 				return;
 			}

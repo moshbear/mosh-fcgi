@@ -68,7 +68,10 @@ public:
 	 * @param [in] fd File descriptor to listen on.
 	 */
 	Manager(int fd = 0)
-		: transceiver(fd, std::bind(&Manager::push, std::ref(*this), stdph::_1, stdph::_2)),
+		: transceiver(fd,
+				[&] (protocol::Full_id a1, protocol::Message a2) {
+					this->push(a1, a2);
+				}),
 		  asleep(false), do_stop(false), do_terminate(false) {
 		setup_signals();
 		instance = this;
