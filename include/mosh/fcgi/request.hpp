@@ -19,14 +19,9 @@
 * along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
-#ifdef MOSH_FCGI_USE_CGI
-#error "MOSH_FCGI_USE_CGI must be undefined in FastCGI (default) mode"
-#endif
-
 #ifndef MOSH_FCGI_REQUEST_HPP
 #define MOSH_FCGI_REQUEST_HPP
 
-#include <locale>
 #include <queue>
 #include <map>
 #include <string>
@@ -40,8 +35,6 @@
 #include <mosh/fcgi/protocol/message.hpp>
 #include <mosh/fcgi/exceptions.hpp>
 #include <mosh/fcgi/bits/block.hpp>
-#include <mosh/fcgi/bits/iconv.hpp>
-#include <mosh/fcgi/bits/iconv_cvt.hpp>
 #include <mosh/fcgi/transceiver.hpp>
 #include <mosh/fcgi/fcgistream.hpp>
 #include <mosh/fcgi/http/session.hpp>
@@ -58,10 +51,8 @@ MOSH_FCGI_BEGIN
  * At minimum, derivations of this class must define response().
  *
  * If you want to use UTF-8 encoding pass wchar_t as the template
- * argument, use setloc() to setup a UTF-8 locale and use wide
- * character unicode internally for everything. If you want to use
- * a 8bit character set encoding pass char as the template argument and
- * setloc() a locale with the corresponding character set.
+ * argument. If you want to manually use iconv or use raw bytes,
+ * then pass char or unsigned char as the template argument.
  *
  * @tparam char_type Character type for internal processing (wchar_t or char)
  * @tparam post_vec_type Vector type for storing file data
@@ -73,7 +64,6 @@ public:
 	//! Initializes what it can. set() must be called by Manager before the data is usable.
 	Request()
 	: state(protocol::Record_type::params) {
-		setloc(std::locale::classic());
 		out.exceptions(std::ios_base::badbit | std::ios_base::failbit | std::ios_base::eofbit);
 	}
 
@@ -87,17 +77,19 @@ protected:
 
 	/*! @brief Standard output stream to the client
 	 *
-	 * To dump data directly through the stream without it being code converted and bypassing
-	 * the stream buffer call Fcgistream::dump()
+	 * * To print UTF-8-encoded Unicode data, use operator&lt;&lt; with a @c wchar_t string
+	 * * To print a buffered byte stream, use operator&lt&lt; with a @char or @uchar string
+	 * * To dump data directly through the stream without buffering, call Fcgistream::dump().
 	 */
-	Fcgistream<char_type, std::char_traits<char_type>> out;
+	Fcgistream out;
 
 	/*! @brief Output stream to the HTTP server error log
 	 *
-	 * To dump data directly through the stream without it being code converted and bypassing
-	 * the stream buffer call Fcgistream::dump()
+	 * * To print UTF-8-encoded Unicode data, use operator&lt;&lt; with a @c wchar_t string
+	 * * To print a buffered byte stream, use operator&lt&lt; with a @char or @uchar string
+	 * * To dump data directly through the stream without buffering, call Fcgistream::dump().
 	 */
-	Fcgistream<char_type, std::char_traits<char_type>> err;
+	Fcgistream err;
 
 	/*! @brief Response generator
 	 *
@@ -121,7 +113,7 @@ protected:
 	 *
 	 * @param[in] bytes_received Amount of bytes received in this FastCGI record
 	 */
-	virtual bool in_handler(int bytes_received) { return true; }
+	virtual bool in_handler(unsigned bytes_received) { return true; }
 
 	/*! @brief Generate a filter data input response
 	 *
@@ -134,11 +126,8 @@ protected:
 	 *
 	 * @param[in] bytes_received Amount of bytes received in this FastCGI record
 	 */
-	virtual bool data_handler(int bytes_received) { return true; }
+	virtual bool data_handler(unsigned bytes_received) { return true; }
 	
-	//! The locale associated with the request. Should be set with setloc(), not directly.
-	std::locale loc;
-
 	/*! @brief The message associated with the current handler() call.
 	 *
 	 * This is only of use to the library user when a non FastCGI (type=0) Message is passed
@@ -147,22 +136,6 @@ protected:
 	 * @sa callback
 	 */
 	protocol::Message message;
-
-	/*! @brief Set the request's locale
-	 *
-	 * This function both sets loc to the locale passed to it and imbues the locale into the
-	 * out and err stream. The user should always call this function as opposed to setting the
-	 * locales directly is this functions insures the iconv code conversion is functioning properly.
-	 *
-	 * @param[in] loc New locale
-	 * @sa loc
-	 * @sa out
-	 */
-	void setloc(std::locale loc) {
-		loc = std::locale(loc, new Iconv_cvt<char_type, char>);
-		out.imbue(loc);
-		err.imbue(loc);
-	}
 
 	/*! @brief Callback function for dealings outside the mosh-fcgi library
 	 *
@@ -177,6 +150,7 @@ protected:
 	 *	and the raw castable data.
 	 */
 	std::function<void(protocol::Message)> callback;
+
 private:
 	//@{
 	//! A queue of messages to be handled by the request
@@ -206,7 +180,7 @@ private:
 			if (!message.type) {
 				aligned<sizeof(Header), Header> _header(static_cast<const void*>(message.data.get()));
 				Header& header = _header;
-				const char* body = message.data.get() + sizeof(Header);
+				const uchar* body = message.data.get() + sizeof(Header);
 				switch (header.type()) {
 				case Record_type::params: {
 					if (state != Record_type::params)
