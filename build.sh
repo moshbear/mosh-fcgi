@@ -5,5 +5,7 @@ cd include
 cd ..
 echo '**autogen**'
 ./autogen.sh
+echo '**configure**'
 ./configure CXX="ccache g++ -std=c++0x"
+echo '**make**'
 make
