@@ -32,7 +32,6 @@
 #include <mosh/fcgi/http/form.hpp>
 #include <mosh/fcgi/http/conv/converter.hpp>
 #include <mosh/fcgi/bits/u.hpp>
-#include <mosh/fcgi/bits/singleton.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
