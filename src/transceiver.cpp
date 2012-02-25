@@ -1,6 +1,6 @@
 //! @file transceiver.cpp Defines member functions for Transceiver
 /***************************************************************************
-* Copyright (C) 2011 m0shbear                                              *
+* Copyright (C) 2011-2 m0shbear                                            *
 *               2007 Eddie                                                 *
 *                                                                          *
 * This file is part of mosh-fcgi.                                          *
