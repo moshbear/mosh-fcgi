@@ -1,7 +1,6 @@
-// TODO: nt locking (look at VC11 <mutex> for hints)
 //! @file  mosh/fcgi/bits/rwlock.hpp Readers-writer lock
 /***************************************************************************
-* Copyright (C) 2011 m0shbear                                              *
+* Copyright (C) 2011-2 m0shbear                                            *
 *                                                                          *
 * This file is part of mosh-fcgi.                                          *
 *                                                                          *
@@ -46,24 +45,11 @@ MOSH_FCGI_BEGIN
  *  @note always requires use of upgrade_lock().
  */
 class Rw_lock {
-	static inline void throw_system_error(int e) {
-		throw std::system_error(std::error_code(e, std::generic_category()));
-	}
 public:
 	//! Create a new reader-writer lock
-	Rw_lock() {
-		// Initialize rw lock
-		{
-			int ret = pthread_rwlock_init(&lck, NULL);
-			if (ret != 0)
-				throw_system_error(ret);
-		}
-	}
+	Rw_lock();
 	//! Destroy an existing reader-writer lock
-	virtual ~Rw_lock() {
-		// Ignore error code because destructors shouldn't throw
-		pthread_rwlock_destroy(&lck);
-	}
+	virtual ~Rw_lock();
 
 	/*! @name Read locks
 	 */
@@ -71,30 +57,20 @@ public:
 	/*! @brief Acquire a read lock
 	 * @throws std::system_error if @c pthread_rwlock_rdlock's return value is non-zero
 	 */
-	void read_lock() {
-		int ret = pthread_rwlock_rdlock(&lck);
-		if (ret != 0)
-			throw_system_error(ret);
-	}
+	void read_lock();
 	/*! @brief Acquire a read lock
 	 * @see read_lock
 	 */
-	void lock() {
-		read_lock();
-	} 
+	void lock();
 	/*! @brief Try to acquire a read lock
 	 * @retval @c true if @c pthread_rwlock_tryrdlock's return value is zero
 	 * @retval @c false otherwise
 	 */
-	bool try_read_lock() noexcept {
-		return !pthread_rwlock_tryrdlock(&lck);
-	}
+	bool try_read_lock() noexcept;
 	/*! @brief Try to acquire a read lock
 	 * @see try_read_lock
 	 */
-	bool try_lock() noexcept {
-		return try_read_lock();
-	}
+	bool try_lock() noexcept;
 	//@}
 
 	/*! @name Write locks
@@ -103,34 +79,22 @@ public:
 	/*! @brief Acquire a write lock
 	 * @throws std::system_error if @c pthread_rwlock_wrlock's return value is non-zero
 	 */
-	void write_lock() {
-		int ret = pthread_rwlock_wrlock(&lck);
-		if (ret != 0)
-			throw_system_error(ret);
-	}
+	void write_lock();
 	/*! @brief Try to acquire a write lock
 	 * @retval @c true if @c pthread_rwlock_trywrlock's return value is zero
 	 * @retval @c false otherwise
 	 */
-	bool try_write_lock() noexcept {
-		return !pthread_rwlock_trywrlock(&lck);
-	}
+	bool try_write_lock() noexcept;
 	//@}
 	
 	//! Release a read or write lock
-	void unlock() noexcept {
-		pthread_rwlock_unlock(&lck);
-	}
+	void unlock() noexcept;
 
 	/*! @brief Upgrade a read lock to a write lock
 	 * @sa unlock
 	 * @sa write_lock
 	 */
-	void upgrade_lock() {
-		std::lock_guard<std::mutex> up_lk(up_lock);
-		unlock();
-		write_lock();
-	}
+	void upgrade_lock();
 	
 	//! Get the native handle (i.e. a pointer to the internal pthread_rwlock)
 	auto native_handle() noexcept -> pthread_rwlock_t* {
