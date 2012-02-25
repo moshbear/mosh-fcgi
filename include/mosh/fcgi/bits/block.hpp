@@ -1,6 +1,6 @@
 //! @file  mosh/fcgi/bits/block.hpp  Defines the (transceiver's) Block class
 /***************************************************************************
-* Copyright (C) 2011 m0shbear                                              *
+* Copyright (C) 2011-2 m0shbear                                            *
 *               2007 Eddie                                                 *
 *                                                                          *
 * This file is part of mosh-fcgi.                                          *
@@ -24,6 +24,7 @@
 #define MOSH_FCGI_BLOCK_HPP
 
 #include <cstddef>
+#include <mosh/fcgi/bits/types.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -39,7 +40,7 @@ struct Block {
 	 * @param[in] data Pointer to start of memory location
 	 * @param[in] size Size in bytes of memory location
 	 */
-	Block(char* data, size_t size): data(data), size(size) { }
+	Block(uchar* data, size_t size): data(data), size(size) { }
 	//! Copies pointer and size, not data
 	Block(const Block& block): data(block.data), size(block.size) { }
 	Block(Block& block) {
@@ -55,7 +56,7 @@ struct Block {
 		return *this;
 	}
 	//! Pointer to start of memory location
-	char* data;
+	uchar* data;
 	//! Size in bytes of memory location
 	size_t size;
 };
