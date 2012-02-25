@@ -34,7 +34,7 @@
 #include <vector>
 
 extern "C" {
-// dir check and getpid
+// getpid
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
@@ -42,7 +42,7 @@ extern "C" {
 
 #include <mosh/fcgi/bits/u.hpp>
 #include <mosh/fcgi/bits/cmp.hpp>
-#include <mosh/fcgi/boyer_moore.hpp>
+#include <mosh/fcgi/bits/boyer_moore.hpp>
 #ifdef MOSH_FCGI_USE_HYBRID_VECTOR
 #define VECOPS_HV
 #include <hybrid_vector>
@@ -216,7 +216,7 @@ public:
 	Entry(const std::basic_string<char_type>& name, value_type&& value = value_type())
 	: base_type(Type::form_entry, name)
 	{
-		add_value(value);
+		add_value(std::move(value));
 	}
 	/*! @brief Create a form entry with a given name and value
 	 * @param[in] name entry name
@@ -225,7 +225,8 @@ public:
 	Entry(const std::basic_string<char_type>& name, const value_type& value)
 	: base_type(Type::form_entry, name)
 	{
-		add_value(value);
+		value_type v(value);
+		add_value(std::move(v));
 	}
 	//! Move ctor
 	Entry(this_type&& e)
@@ -376,7 +377,6 @@ public:
 			mode = Mode::entry;
 		} else {
 			mode = Mode::file;
-			actual_filename = ""; // leave uninitialized
 		}
 	}
 
@@ -394,7 +394,6 @@ public:
 			_data = std::move(mpe._data);
 		} else {
 			mode = Mode::file;
-			actual_filename = std::move(mpe.actual_filename);
 			file = std::move(mpe.file);
 		}
 	}
@@ -414,8 +413,9 @@ public:
 	 * @param[in] k key
 	 * @param[in] v value
 	 */
-	void add_header(std::string&& k, std::string& v) {
-		headers.insert(std::make_pair(std::move(k), std::move(v)));
+	void add_header(std::string&& k, std::string&& v) {
+		std::pair<std::string, std::string> p(std::move(k), std::move(v));
+		headers.insert(std::move(p));
 	}
 
 	/*! @brief Add data
@@ -447,9 +447,8 @@ public:
 	 */
 	void append_binary(const uchar* s, const uchar* e) {
 		require_file_mode();
-		if (actual_filename.empty()) {
-			actual_filename = make_filename();
-			file = Tempfile(make_filename);
+		if (!file) {
+			file = Tempfile(make_filename());
 		}
 		file.write(s, e - s);
 	}
@@ -458,7 +457,7 @@ public:
 	std::fstream::off_type filesize() const {
 
 		require_file_mode();
-		if (!actual_filename.empty())
+		if (file)
 			return file.filesize();
 		else
 			return 0;
@@ -469,7 +468,7 @@ public:
 	
 	const std::string& disk_filename() const {
 		require_file_mode();
-		return actual_filename;
+		return file.filename();
 	}
 	const value_type& data() const {
 		require_entry_mode();
@@ -497,7 +496,6 @@ public:
 				_data = std::move(mpe._data);
 				break;
 			case Mode::file:
-				actual_filename = std::move(mpe.actual_filename);
 				file = std::move(mpe.file);
 				break;
 			}
@@ -551,7 +549,6 @@ protected:
 private:
 	value_type _data;
 	Tempfile file;
-	std::string actual_filename;
 	Mode mode;
 	// Make file persistent (no unlink in dtor)
 	mutable bool f_persist;
