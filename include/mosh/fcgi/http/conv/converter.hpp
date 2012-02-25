@@ -21,7 +21,8 @@
 #ifndef MOSH_FCGI_HTTP_CONV_CONVERTER_HPP
 #define MOSH_FCGI_HTTP_CONV_CONVERTER_HPP
 
-#include <mosh/fcgi/bits/types.hpp>
+#include <string>
+#include <mosh/fcgi/bits/u.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -37,7 +38,7 @@ struct Converter {
 	 * @param[in] in_next On return, this points to the first untranslated character
 	 * @return decoded input
 	 */
-	virtual u_string in(const uchar* in, const uchar* in_end, const uchar*& in_next) const = 0;
+	virtual u_string in(const char* in, const char* in_end, const char*& in_next) const = 0;
 	/*! @brief Encode a string.
 	 *
 	 * @param[in] in Start of decoded data
@@ -45,7 +46,7 @@ struct Converter {
 	 * @param[in] in_next On return, this points to the first untranslated character
 	 * @return encoded input
 	 */
-	virtual u_string out(const uchar* in, const uchar* in_end, const uchar*& in_next) const = 0;
+	virtual std::string out(const uchar* in, const uchar* in_end, const uchar*& in_next) const = 0;
 	
 };
 
