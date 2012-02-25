@@ -11,6 +11,7 @@ AC_PROG_INSTALL
 AC_PROG_LIBTOOL
 
 BOOST_XPRESSIVE
+BOOST_THREADS
 
 PKG_CHECK_MODULES([NSS], [nss], [have_nss=yes],
 	[AC_SEARCH_LIBS([HASH_Create], [nss nss3],
@@ -38,14 +39,6 @@ AC_COMPILE_CHECK([c++11 range-based for], , [ int foo[2] = {0, 1}; for (auto& ba
 AC_MSG_NOTICE([checking for library features])
 AC_COMPILE_CHECK([<cstdint>], [#include <cstdint>], , [AC_MSG_NOTICE([yes])], [AC_MSG_ERROR([no <cstdint>])])
 AC_COMPILE_CHECK([c++11 smart pointer], [#include <memory>], [ std::unique_ptr<void> p; std::shared_ptr<void> q; ], [AC_MSG_NOTICE([working])],[AC_MSG_ERROR([no unique_ptr])])
-AC_COMPILE_CHECK([c++11 <mutex>::call_once], [#include <mutex>], [ std::once_flag o; ], [AC_MSG_NOTICE([working])], [AC_MSG_ERROR([no <mutex>])])
-AC_COMPILE_CHECK([c++11 iostream], [#include <iostream>
-					#include <fstream>
-					#include <utility>],
-				[ std::ifstream a; std::ifstream b; b = std::move(a); ],
-				[AC_DEFINE([HAVE_CXX11_IOSTREAM], [1], [Define if std::iostream and related classes are C++11-compliant])],
-				[AC_MSG_NOTICE([not compliant; using smart_ptr workaround])]
-		)
 AC_COMPILE_CHECK([c++11 <mutex>::call_once], [#include <mutex>], [ std::once_flag o; ], [AC_MSG_NOTICE([working])], [AC_MSG_ERROR([no <mutex>])])
 AC_COMPILE_CHECK([<poll.h>], [#include <poll.h>], ,
 		[	AC_MSG_NOTICE([yes])
