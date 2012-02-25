@@ -24,6 +24,7 @@
 #include <initializer_list>
 #include <map>
 #include <ostream>
+#include <sstream>
 #include <stdexcept>
 #include <utility>
 #include <vector>
