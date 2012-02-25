@@ -1,6 +1,6 @@
 //! @file  mosh/fcgi/bits/types.hpp Common types
 /***************************************************************************
-* Copyright (C) 2011 m0shbear                                              *
+* Copyright (C) 2011-2 m0shbear                                            *
 *                                                                          *
 * This file is part of mosh-fcgi.                                          *
 *                                                                          *
