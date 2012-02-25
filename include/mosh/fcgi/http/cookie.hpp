@@ -149,9 +149,6 @@ private:
 	static std::initializer_list<bool> bool_args_default;
 };
 
-std::initializer_list<int>  Cookie::int_args_default = { 0 };
-std::initializer_list<bool> Cookie::bool_args_default = { false, true, false };
-
 }
 
 MOSH_FCGI_END
