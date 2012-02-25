@@ -1,4 +1,4 @@
-//! @file  mosh/fcgi/bits/array_deleter.hpp Array deleter (for std::shared_ptr, unique_ptr)
+//! @file  src/array_deleter.hpp Array deleter (for std::shared_ptr, unique_ptr)
 /***************************************************************************
 * Copyright (C) 2011 m0shbear                                              *
 *                                                                          *
@@ -18,12 +18,12 @@
 * along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
-#ifndef MOSH_FCGI_ARRAY_DELETER_HPP
-#define MOSH_FCGI_ARRAY_DELETER_HPP
+#ifndef SRC_ARRAY_DELETER_HPP
+#define SRC_ARRAY_DELETER_HPP
 
-#include <mosh/fcgi/bits/namespace.hpp>
+#include <src/namespace.hpp>
 
-MOSH_FCGI_BEGIN
+SRC_BEGIN
 
 //! A %Deleter for T[]
 template <typename T>
@@ -33,6 +33,6 @@ struct Array_deleter {
 	}
 };
 
-MOSH_FCGI_END
+SRC_END
 
 #endif
