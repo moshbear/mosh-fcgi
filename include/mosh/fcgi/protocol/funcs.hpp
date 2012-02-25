@@ -42,7 +42,7 @@ namespace protocol {
 	 * @return The number of bytes consumed
 	 * @retval -1 Record body too small
 	 */
-	ssize_t process_param_header(const uchar* data, size_t data_size, std::pair<std::string, std::string>& result);
+	ssize_t process_param_record(const uchar* data, size_t data_size, std::pair<std::string, std::string>& result);
 
 	/*! @brief Reply to a FastCGI GET_VALUES record
 	 *
