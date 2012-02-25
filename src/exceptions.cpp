@@ -45,8 +45,8 @@ MOSH_FCGI::exceptions::Record_out_of_order::Record_out_of_order(MOSH_FCGI::proto
 	: Request(id_), expected_record(expected_record_), recieved_record(recieved_record_)
 {
 	std::stringstream sstr;
-	sstr << "Error: Parameter of type " << protocol::record_type_labels[static_cast<unsigned>(recieved_record)]
-		<< " when type " << protocol::record_type_labels[static_cast<unsigned>(expected_record)]
+	sstr << "Error: Parameter of type " << protocol::record_type_labels[static_cast<size_t>(recieved_record)]
+		<< " when type " << protocol::record_type_labels[static_cast<size_t>(expected_record)]
 		<< " was expected in request #" << id.fcgi_id << " of file descriptor #" << id.fd;
 	msg = sstr.str();
 }
