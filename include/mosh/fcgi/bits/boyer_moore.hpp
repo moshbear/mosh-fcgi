@@ -126,7 +126,7 @@ public:
 	 * @return pointer to first match or 0 if search string was not found
 	 */
 	inline const char* search(const char* haystack, size_t haystack_len) const {
-		return search(reinterpret_cast<const uchar*>(haystack), haystack_len);
+		return reinterpret_cast<const char*>(search(reinterpret_cast<const uchar*>(haystack), haystack_len));
 	}
 	/*! @brief Search a string for the search string.
 	 * @pre haystack is null-terminated
