@@ -33,27 +33,29 @@ typedef unsigned char uchar;
 //! Typedef for a string of unsigned chars
 typedef std::basic_string<uchar> u_string;
 
-/*! @brief Adds or removes sign attributes from a class
+/*! @name sign_cast 
+ *  @brief Adds or removes sign attributes from a class
  *
- * Similar to how const_cast adds or removes cv-qualification from a class, this function adds or removes
- * sign attributes from a class.
+ *  Similar to how const_cast adds or removes cv-qualification from a class, this function adds or removes
+ *  sign attributes from a class.
  *
- * @note This function is restricted to pointer and reference types, and will not convert between
- * @note types that have differing cv-qualifiers.
- * @note
- * @note Unless @c MOSH_FCGI_SIGN_CAST_NO_CHAR_RESTRICT is defined, this function will only accept
- * @note pointers and references to ((un?signed)? char.
+ *  @note This function is restricted to pointer and reference types, and will not convert between
+ *  @note types that have differing cv-qualifiers.
+ *  @note
+ *  @note Unless @c MOSH_FCGI_SIGN_CAST_NO_CHAR_RESTRICT is defined, this function will only accept
+ *  @note pointers and references to ((un?signed)? char.
  *
- * @tparam To destination type
- * @tparam From source type ( inferred from @c expr )
- * @param expr Expression
- *
+ *  @tparam To destination type
+ *  @tparam From source type ( inferred from @c expr )
+ *  @param expr Expression
+ *  @{
  */
+//! Adds or removes sign attributes from a a class (pointer version)
 template <typename To, typename From>
 typename
 std::enable_if<(
 		// Check that both To and From are pointers
-		(std::is_pointer<To>::value && std::is_pointer<From>::value
+		std::is_pointer<To>::value && std::is_pointer<From>::value
 			// Assert that both To and From have the same sign-punned type
 			&& std::is_same<typename std::make_unsigned<typename std::remove_pointer<To>::type>::type, 
 					typename std::make_unsigned<typename std::remove_pointer<From>::type>::type
@@ -66,10 +68,19 @@ std::enable_if<(
 						>::type>::type
 					>::value
 #endif
-		)
-		||
+	),
+	To
+>::type sign_cast(From expr) {
+	return reinterpret_cast<To>(expr);
+}
+#if 0
+//! Adds or removes sign attributes from a class (reference version)
+template <typename To, typename From>
+typename
+std::enable_if<(
 		// Check that both To and From are references
-		(std::is_reference<To>::value && std::is_reference<From>::value
+		std::is_reference<To>::value && std::is_reference<From>::value
+		&& !std::is_pointer<typename std::remove_reference<To>::type>::value && !std::is_pointer<typename std::remove_reference<From>::type>::value
 			// Assert that both To and From have the same sign-punned type
 			&& std::is_same<typename std::make_unsigned<typename std::remove_reference<To>::type>::type, 
 					typename std::make_unsigned<typename std::remove_reference<From>::type>::type
@@ -82,13 +93,13 @@ std::enable_if<(
 						>::type>::type
 					>::value
 #endif
-		)
 	),
 	To
 >::type sign_cast(From expr) {
 	return reinterpret_cast<To>(expr);
 }
-			
+#endif
+//@}			
 
 MOSH_FCGI_END
 
