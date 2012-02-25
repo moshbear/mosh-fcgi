@@ -8,14 +8,14 @@
 #include <cstring>
 #include <boost/xpressive/xpressive.hpp>
 #include <mosh/fcgi/protocol/funcs.hpp>
-#include <mosh/fcgi/bits/singleton.hpp>
 #include <mosh/fcgi/bits/u.hpp>
 #include <mosh/fcgi/bits/boyer_moore.hpp>
 #include <mosh/fcgi/http/form.hpp>
 #include <mosh/fcgi/http/cookie.hpp>
 #include <mosh/fcgi/http/conv/url.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
-
+#include <src/singleton.hpp>
+#include <src/namespace.hpp>
 namespace {
 
 // Initialize the regex cache
@@ -71,9 +71,9 @@ struct Mp_regex_cache {
 };
 
 struct _si {
-static MOSH_FCGI::Singleton<Regex_cache> _rc;
-static MOSH_FCGI::Singleton<Ue_regex_cache> _u_rc;
-static MOSH_FCGI::Singleton<Mp_regex_cache> _m_rc;
+static SRC::Singleton<Regex_cache> _rc;
+static SRC::Singleton<Ue_regex_cache> _u_rc;
+static SRC::Singleton<Mp_regex_cache> _m_rc;
 };
 
 Regex_cache& rc() { return _si::_rc.instance(); }

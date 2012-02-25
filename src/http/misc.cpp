@@ -35,14 +35,17 @@ extern "C" {
 }
 
 #include <mosh/fcgi/http/misc.hpp>
-#include <mosh/fcgi/bits/singleton.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
+#include <src/singleton.hpp>
+#include <src/namespace.hpp>
 
 namespace {
 
 // string cache
 // functions as contextually last-used buffer
-struct tts_lu : public MOSH_FCGI::Singleton<tts_lu> {
+
+struct tts_lu : public SRC::Singleton<tts_lu> {
+
 	
 	// strftime %a, %A
 	int dayofweek;
