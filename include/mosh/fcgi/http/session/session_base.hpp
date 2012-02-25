@@ -1,8 +1,6 @@
-// TODO: add complete cookie parsing support
-
 //! @file  mosh/fcgi/http/session/session_base.hpp HTTP Session base class
 /***************************************************************************
-* Copyright (C) 2011 m0shbear						   *
+* Copyright (C) 2011-2 m0shbear						   *
 *									   *
 * This file is part of mosh-fcgi.					   *
 *									   *
@@ -30,11 +28,11 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <mosh/fcgi/http/cookie.hpp>
 #include <mosh/fcgi/http/form.hpp>
 #include <mosh/fcgi/http/conv/converter.hpp>
+#include <mosh/fcgi/bits/u.hpp>
 #include <mosh/fcgi/bits/singleton.hpp>
-#include <mosh/fcgi/bits/iconv.hpp>
-#include <mosh/fcgi/bits/iconv_gs.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -47,21 +45,25 @@ namespace http {
 template <typename char_type>
 class Session_base {
 protected:
-	// Without these, readability would suffer HARD
+	// Without these, readability would suffer hard
 	typedef typename std::basic_string<char_type> T_string;
+	//! Type alias for cookie entry
+	typedef typename form::Entry<char, Cookie> Cookie_v;
 	//! Type alias for application/x-www-formurl-encoded entry
 	typedef typename form::Entry<char_type> Multi_v;
 	//! Type alias for std::map<T_string, Multi_v>
 	typedef typename std::map<T_string, Multi_v> Kv;
-private:
-	struct regex_cache;
+	//! Type alias for std::map<string. Cookie_v>
+	typedef typename std::map<std::string, Cookie_v> Cookie_kv;
 public:
 	//! Environment variable list
 	std::map<std::string, std::string> envs;
 	//! GETs
 	Kv gets;
 	//! (multi-)set of cookies
-	Kv cookies;
+	Cookie_kv cookies;
+	//! Global cookie options
+	Cookie cookies_g;
 	
 	/*! @brief Parses FastCGI parameter data into the data structure
 	 *
@@ -72,15 +74,13 @@ public:
 	 * @param[in] data Pointer to the first byte of parameter data
 	 * @param[in] size Size of data in bytes
 	 */
-	void fill(const char* data, size_t size);
+	void fill(const uchar* data, size_t size);
 		
 protected:
-	//! A buffer for internal use by any of fill*
-	std::string xbuf;
-	//! Buffer for to_unicode()
-	std::string ubuf;
+	//! Byte buffer
+	u_string bbuf;
 
-	Session_base () { }
+	Session_base ()  { }
 
 	/*! @name Initialize post data in derived class.
 	 */
@@ -88,50 +88,48 @@ protected:
 	virtual bool init_ue() = 0;
 	virtual bool init_mp(const std::string& mp_bound) = 0;
 	//@}
-	
-	//! Get the charset setter
-	Iconv::_s_smartptr_u_ic_state<char_type> charset() { return Iconv::_s_smartptr_u_ic_state<char_type>(ic); }
 
-	/*! @name Convert input to unicode
+	/*! @name Convert UTF-8 data to Unicode
+	 *
+	 * @note This function simply returns the contents of
+	 * @note ubuf is the char_type template argument is set to @c char.
+	 *
+	 * In any case, the contents of ubuf are either partially or totally cleared.
 	 */
 	//@{
-	std::basic_string<char_type> to_unicode();
-	//! Iconv state handle
-	std::unique_ptr<Iconv::IC_state> ic;
+	//! Unicode buffer
+	u_string ubuf;
+	//! Convert the contents of ubuf to Unicode
+	std::basic_string<char_type> to_unicode() {
+		return to_unicode(this->ubuf);
+	}
+	//! Convert the contents of ubuf to Unicode
+	static std::basic_string<char_type> to_unicode(u_string const&);
+	//! Convert the contents of ubuf to Unicode
+	static std::basic_string<char_type> to_unicode(u_string&);
 	//@}
 
 
 	/*! @name Decode encoded data using a converter
 	 */
 	//@{
-	std::string process_encoded_data();
+	//! Encoded data buffer
+	std::string ebuf;
+	//! Decode the contents of ebuf
+	u_string process_encoded_data();
 	//! Converter handle
 	std::unique_ptr<Converter> conv;
 	//@}
 	
-
-	/*! @brief Get an instance of the regex cache.
-	 *
-	 * On first invocation, the regex_cache constructor is called,
-	 * which ensures that we have to compile the regexes only once.
-	 * With the singleton method, we defer regex compilation to when
-	 * multipart parsing actually begins.
-	 * @returns an instance of the regex cache
-	 */
-	regex_cache& rc() {
-		return S_rc.instance();
-	}
 private:
 	/*! @brief Atomically parse a packet of application/x-www-formurl-encoded data without buffering
+	 * @note Expects ASCII string data; use @c reinterpret_cast<const char*> if needed
 	 * @param[in] data pointer to contents 
 	 * @param size length of contents
 	 * @param[out] dest ref to destination
 	 * @param val_sep value separator
 	 */
-	void fill_ue_oneshot(const char* data, size_t size, Kv& dest, char val_sep = '&');
-	
-	//! Http::Environment<T,V> regex cache
-	static Singleton<regex_cache> S_rc;
+	void fill_ue_oneshot(const char* data, size_t size, Kv& dest);
 };
 
 }

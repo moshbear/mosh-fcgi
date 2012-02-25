@@ -26,6 +26,7 @@
 #include <string>
 #include <vector>
 #include <mosh/fcgi/http/session/session.hpp>
+#include <mosh/fcgi/bits/u.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -37,7 +38,7 @@ namespace http {
  * @tparam post_val_type Value type for POST entries
  * @tparam data_val_type Value type for data_buffer (only applicable when ROLE == ROLE_FILTER)
  */
-template <typename char_type, typename post_val_type = std::basic_string<char>, typename data_val_type = std::vector<char>>
+template <typename char_type, typename post_val_type = std::basic_string<char>, typename data_val_type = std::vector<uchar>>
 class Fcgi_session : public virtual Session <char_type, post_val_type>
 {
 public:
@@ -52,7 +53,7 @@ public:
 	 * @param[in] data Pointer to the first byte of data
 	 * @param[in] size Size of data in bytes
 	 */
-	void fill_data(const char* data, size_t size) {
+	void fill_data(const uchar* data, size_t size) {
 		std::copy(data, data + size, std::back_inserter(data_buffer));
 	}
 };

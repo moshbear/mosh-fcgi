@@ -1,6 +1,6 @@
 //! @file  mosh/fcgi/http/session/session.hpp HTTP Session
 /***************************************************************************
-* Copyright (C) 2011 m0shbear						   *
+* Copyright (C) 2011-2 m0shbear						   *
 *									   *
 * This file is part of mosh-fcgi.					   *
 *									   *
@@ -21,11 +21,14 @@
 #ifndef MOSH_FCGI_HTTP_SESSION_SESSION_HPP
 #define MOSH_FCGI_HTTP_SESSION_SESSION_HPP
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
+#include <stdexcept>
 #include <mosh/fcgi/http/form.hpp>
 #include <mosh/fcgi/http/session/session_base.hpp>
+#include <mosh/fcgi/bits/u.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -62,7 +65,6 @@ private:
 	 */
 	//@{
 	struct Ue_type;
-	struct Ue_regex_cache;
 	std::unique_ptr<Ue_type> ue_vars;
 	//@}
 	
@@ -70,13 +72,13 @@ private:
 	 */
 	//@{
 	struct Mp_type;
-	struct Mp_regex_cache;
 	std::unique_ptr<Mp_type> mp_vars;
 	//@}
 	
 public:
 	//! Default constructor	
-	Session() { }
+	Session() {
+	}
 	
 	virtual ~Session() { }
 
@@ -84,12 +86,11 @@ public:
 	 * @param[in] data Pointer to the first byte of post data
 	 * @param[in] size Size of data in bytes
 	 */
-	void fill_post(const char* data, size_t size);
-
+	void fill_post(const uchar* data, size_t size);
 protected:
-	//! Prepare this % Session for @c application/x-www-formurl-encoded POSTDATA
+	//! Prepare this %Session for @c application/x-www-formurl-encoded POSTDATA
 	bool init_ue();
-	/*! @brief Prepare this % Session for @c multipart/form-data POSTDATA
+	/*! @brief Prepare this %Session for @c multipart/form-data POSTDATA
 	 *  @param[in] mp_bound The value of attribute boundary in env[CONTENT_TYPE]
 	 */
 	bool init_mp(const std::string& mp_bound);
@@ -106,7 +107,7 @@ private:
 	 * @param[in] data pointer to data
 	 * @param size length of data
 	 */
-	void fill_mp(const char* data, size_t size);
+	void fill_mp(const uchar* data, size_t size);
 
 	/*! @brief Fill a multipart/mixed entry
 	 * @remark This function is marked private because it relies on preconditions which
@@ -114,16 +115,8 @@ private:
 	 * @param[in] data pointer to data
 	 * @param size length of data
 	 */
-	void fill_mm(const char* data, size_t size);
+	void fill_mm(const uchar* data, size_t size);
 	//@}
-
-	/*! @brief Convert a RFC 822 header into a std::map
-	 * This reads the RFC 822 header in a buffer and returns the result in std::map form.
-	 * Words (in the key portion) are capitalized across headers.
-	 * @param[in] buf the buffer
-	 * @returns the contents of the buffer in a std::map format
-	 */
-	std::map<std::string, std::string> mp_read_header(const std::string& buf) const;
 	 
 };
 
