@@ -25,6 +25,7 @@
 #include <mosh/fcgi/http/misc.hpp>
 #include <mosh/fcgi/http/header.hpp>
 #include <mosh/fcgi/html/element.hpp>
+#include <mosh/fcgi/html/element/s.hpp>
 #include <mosh/fcgi/html/element/ws.hpp>
 
 // I like to have an independent error log file to keep track of exceptions while debugging.
@@ -67,17 +68,17 @@ class HelloWorld: public MOSH_FCGI::Request<wchar_t> {
 		// dump ASCII data directly to the stream.
 		// Note: header::operator string() automatically does proper encoding wrt
 		// 	line endings, including \r\n\r\n termination
-		out.dump(header::content_type("text/html", "utf-8"));
+		out << header::content_type("text/html", "utf-8");
 
 		// Here we use the html renderer imported from my fork of mosh-cgi
-		out << ws::html_begin();
-		out << ws::head({
-				ws::meta({
-					ws::P("http-equiv", L"Content-Type"),
-					ws::P("content", L"text/html"),
-					ws::P("charset", L"utf-8")
+		out << s::html_begin();
+		out << s::head({
+				s::meta({
+					s::P("http-equiv", "Content-Type"),
+					s::P("content", "text/html"),
+					s::P("charset", "utf-8")
 				}),
-				ws::title(L"mosh-fcgi: Hello World in UTF-8")
+				s::title("mosh-fcgi: Hello World in UTF-8")
 			});
 		out << ws::body({
 			L"English: Hello World", ws::br,
@@ -87,11 +88,11 @@ class HelloWorld: public MOSH_FCGI::Request<wchar_t> {
 			L"Japanese: 今日は世界", ws::br,
 			L"Runic English?: ᚺᛖᛚᛟ ᚹᛟᛉᛚᛞ", ws::br
 		});
-		out << ws::html_end;
+		out << s::html_end;
 		
 		// There is also a stream setup for error output. Anything sent here will go
 		// to your server's error log. We'll send something there for fun.
-		err << L"Hello, error.log from utf8-test";
+		err << "Hello, error.log from utf8-test";
 
 		// Always return true if you are done. This will let httpd know we are done
 		// and the manager will destroy the request and free it's resources.

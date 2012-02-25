@@ -143,19 +143,19 @@ class Echo: public Request<wchar_t> {
 		// Print a header with a set cookie
 		// Note: Cookie data must be ASCII. Q-encoding or url-encoding can be used, but results
 		// 	are implementation definded.
-		out.dump(http::header::content_type("text/html", "utf-8") + http::Cookie({"lang", "ru"}));
+		out << (http::header::content_type("text/html", "utf-8") + http::Cookie("lang", "ru"));
 
-		out << ws::html_begin();
-		out << ws::head({
-				ws::meta({
-					ws::P("http-equiv", L"Content-Type"),
-					ws::P("content", L"text/html"),
-					ws::P("charset", L"utf-8")
+		out << s::html_begin();
+		out << s::head({
+				s::meta({
+					s::P("http-equiv", "Content-Type"),
+					s::P("content", "text/html"),
+					s::P("charset", "utf-8")
 				}),
-				ws::title(L"mosh-fcgi: Echo in UTF-8")
+				s::title("mosh-fcgi: Echo in UTF-8")
 			});
-		out << ws::body_begin();
-		out << ws::h1(L"Session Parameters");
+		out << s::body_begin();
+		out << s::h1(L"Session Parameters");
 	
 		// Print env vars
 		{
@@ -166,12 +166,13 @@ class Echo: public Request<wchar_t> {
 			}
 			// To avoid the overhead of converting to unicode, then back to UTF-8, we
 			// just dump the ascii data as-is
-			out.dump(s::p(ul));
+			out << s::p(ul);
+
 		}
 	
 		// Print GETs (i.e. parsed QUERY_STRING)
 		if (!session.gets.empty()) {
-			out.dump(s::h1("GETs (decoded QUERY_STRING)").to_string() + s::br.to_string() + "\r\n");
+			out << s::h1("GETs (decoded QUERY_STRING)") << s::br << "\r\n";
 			ws::Element ul = ws::ul();
 			for (auto& g : session.gets) {
 				if (!g.second.is_scalar_value()) {
@@ -189,7 +190,7 @@ class Echo: public Request<wchar_t> {
 		}
 		// Print POSTDATA
 		if (!session.posts.empty()) {
-			out.dump(s::h1("POSTs").to_string() + s::br.to_string() + "\r\n");
+			out << s::h1("POSTs") << s::br << "\r\n";
 			ws::Element ul = ws::ul();
 			for (auto& p : session.posts) {
 				if (!p.second.is_scalar_value()) {
@@ -205,7 +206,7 @@ class Echo: public Request<wchar_t> {
 			out << ul << ws::br << L"\r\n";
 		}
 		if (!session.mm_posts.empty()) {
-			out.dump(s::h1("POST files (multipart/mixed)").to_string() + s::br.to_string() + "\r\n");
+			out << s::h1("POST files (multipart/mixed)") << s::br << "\r\n";
 			ws::Element ul = ws::ul();
 			for (auto& mm : session.mm_posts) {
 				if (!mm.second.is_scalar_value()) {
@@ -218,9 +219,9 @@ class Echo: public Request<wchar_t> {
 				} else 
 					ul += ws::li(ws::b(mm.first)) + dump_mm(mm.second.value());
 			}
-			out << ul << ws::br << L"\r\n";
+			out << ul << s::br << L"\r\n";
 		}
-		out << ws::body_end << ws::html_end;
+		out << s::body_end << s::html_end;
 
 		// Always return true if you are done. This will let http know we are done
 		// and the manager will destroy the request and free it's resources.
