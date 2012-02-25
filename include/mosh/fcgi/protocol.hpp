@@ -31,7 +31,7 @@
 #include <mosh/fcgi/protocol/types.hpp>
 // protocol constants
 #include <mosh/fcgi/protocol/vars.hpp>
-// prototype for process_param_header
+// prototype for process_*
 #include <mosh/fcgi/protocol/funcs.hpp>
 
 // protocol::Full_id
@@ -44,8 +44,6 @@
 #include <mosh/fcgi/protocol/unknown_type.hpp>
 // protocol::End_request
 #include <mosh/fcgi/protocol/end_request.hpp>
-// protocol::Management_reply<int, int, int>
-#include <mosh/fcgi/protocol/management_reply.hpp>
 // protocol::Message
 #include <mosh/fcgi/protocol/message.hpp>
 // protocol::_(gs?|s)_*
