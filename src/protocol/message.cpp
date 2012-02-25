@@ -1,7 +1,6 @@
-//! @file  mosh/fcgi/protocol/message.hpp mosh-fcgi message
+//! @file  protocol/message.hpp mosh-fcgi message
 /***************************************************************************
-* Copyright (C) 2011 m0shbear                                              *
-*               2007 Eddie                                                 *
+* Copyright (C) 2012 m0shbear                                              *
 *                                                                          *
 * This file is part of mosh-fcgi.                                          *
 *                                                                          *
@@ -19,42 +18,18 @@
 * along with mosh-fcgi.  If not, see <http://www.gnu.org/licenses/>.       *
 ****************************************************************************/
 
-
-#ifndef MOSH_FCGI_PROTOCOL_MESSAGE_HPP
-#define MOSH_FCGI_PROTOCOL_MESSAGE_HPP
-
-#include <cstddef>
-#include <memory>
-#include <mosh/fcgi/bits/types.hpp>
+#include <mosh/fcgi/protocol/message.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
+#include <src/array_deleter.hpp>
+#include <src/namespace.hpp>
 
 MOSH_FCGI_BEGIN
 
 namespace protocol {
 
-	/*! @brief Data structure used to pass messages within the mosh-fcgi task management system
-	 *
-	 * This data structure is crucial to all operation in the FastCGI library as all
-	 * data passed to requests must be encapsulated in this data structure. A type value
-	 * of 0 means that the message is a FastCGI record and will be processed at a low
-	 * level by the library. Any other type value and the message will be passed up to
-	 * the user to be processed. The data may contain any data that can be casted to/from
-	 * a raw character array. The size obviously represents the exact size of the data
-	 * section.
-	 */
-	struct Message {
-		//! Type of message. A 0 means FastCGI record. Anything else is open.
-		unsigned type;
-		//! Size of the data section.
-		size_t size;
-		//! Pointer to the raw data being passed along with the message.
-		std::shared_ptr<uchar> data;
-		//! Default constructor. Initializes data's Deleter.
-		Message();
-	};
+Message::Message() : data(0, SRC::Array_deleter<uchar>()) { }
+
 }
 
 
 MOSH_FCGI_END
-
-#endif
