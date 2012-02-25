@@ -61,9 +61,9 @@ namespace protocol {
 	//! Defines the types of records within the FastCGI protocol
 	enum class Record_type : uint8_t
 		{ invalid = 0, //!< Default value
-		  /*! @name FastCGI application records
-		   */
-		  //@{
+		  
+		  /* Application records */
+
 		  /*! @brief FastCGI start request
 		   *
 		   * Sent by the Web server to start a request.
@@ -84,9 +84,9 @@ namespace protocol {
 		  end_request,
 		  //! @brief FastCGI per-request environment variables
 		  params,
-		  /*! @name FastCGI byte streams
-		   */
-		  //@{
+		  
+		  /* Byte streams */
+
 		  //! FastCGI stdin 
 		  in,
 		  //! FastCGI stdout 
@@ -95,11 +95,9 @@ namespace protocol {
 		  err, 
 		  //! FastCGI filter data 
 		  data,
-		  //@}
-		  //@}
-		  /*! @name FastCGI management records
-		   */
-		  //@{
+		  
+		  /* Management records */
+		  
 		  /*! @brief Management record query for specific variables
 		   *
 		   * Currently defined:
@@ -114,7 +112,6 @@ namespace protocol {
 		  /*! Management record unknown type 
 		   */
 		  unknown_type, 
-		  //@}
 		};
 	
 	//! Defines the possible roles a FastCGI application may play
@@ -152,7 +149,7 @@ namespace protocol {
 	  /*! Rejecting a new request because the the Web server has specified a
 	   *  role that is unknown to the application.
 	   */
-	  unknown_role
+	  unknown_role,
 	};
 
 	/*! @brief Data structure used as the header for FastCGI records
@@ -187,23 +184,6 @@ namespace protocol {
 	 * because of a problem.
 	 */
 	class End_request;
-
-	/*! @brief Used for the reply of FastCGI management records of type get_values
-	 * 
-	 * This class template is an efficient tool for replying to get_values management
-	 * records. The structure represents a complete record (body+header) of a name-value pair to be
-	 * sent as a reply to a management value query. The templating allows the structure
-	 * to be exactly the size that is needed so it can be casted to raw data and transmitted
-	 * as is. Note that the name and value lengths are left as single bytes so they are limited
-	 * in range from 0-127.
-	 *
-	 * @tparam name_len Length of name in bytes (0-127). Null terminator not included.
-	 * @tparam value_len Length of value in bytes (0-127). Null terminator not included.
-	 * @tparam padding_len Length of padding at the end of the record. This is needed to keep
-	 * the record size a multiple of chunkSize.
-	 */
-	template <uint8_t name_len, uint8_t value_len, uint8_t padding_len>
-	struct Management_reply;
 
 	/*! @brief Data structure used to pass messages within the mosh-fcgi task management system
 	 *
