@@ -27,6 +27,10 @@
 #include <cstdint>
 #include <cstring>
 #include <ios>
+#include <stdexcept>
+#include <streambuf>
+#include <string>
+#include <mosh/fcgi/bits/u.hpp>
 #include <mosh/fcgi/bits/block.hpp>
 #include <mosh/fcgi/protocol/types.hpp>
 #include <mosh/fcgi/protocol/full_id.hpp>
@@ -37,6 +41,159 @@
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
+
+class Fcgistream::Fcgibuf: public std::basic_streambuf<uchar> {
+public:
+	Fcgibuf() : dump_ptr(0), dump_size(0) {
+		setp(buffer, buffer + buff_size);
+	}
+	/*! @brief After construction constructor
+	 * Sets FastCGI related member data necessary for operation of the
+	 * stream buffer.
+	 *
+	 * @param[in] id Complete ID associated with the request
+	 * @param[in] transceiver Transceiver object to use for transmission
+	 * @param[in] type Type of output stream (err or out)
+	 */
+	void set(protocol::Full_id id, Transceiver& transceiver, protocol::Record_type type) {
+		this->id = id;
+		this->transceiver = &transceiver;
+		this->type = type;
+	}
+		virtual ~Fcgibuf() {
+		try {
+			sync();
+		} catch (...) { } }
+		
+		// Unbuffered send data
+		void dump(const uchar* data, size_t size) {
+			dump_ptr = data;
+			dump_size = size;
+			sync();
+		}
+
+private:
+	typedef typename std::basic_streambuf<uchar>::int_type int_type;
+	typedef typename std::basic_streambuf<uchar>::traits_type traits_type;
+	typedef typename std::basic_streambuf<uchar>::char_type char_type;
+	
+	int_type overflow(int_type c = traits_type::eof()) {
+		if (empty_buffer() < 0)
+			return traits_type::eof();
+		if (!traits_type::eq_int_type(c, traits_type::eof()))
+			return sputc(c);
+		else
+			return traits_type::not_eof(c);
+	}
+		int sync() {
+		return empty_buffer();
+	}
+		std::streamsize xsputn(const uchar* s, std::streamsize n);
+	//! Pointer to the data that needs to be transmitted upon flush
+	const uchar* dump_ptr;
+	//! Size of the data pointed to be dump_ptr
+	size_t dump_size;
+		//! Code converts, packages and transmits all data in the stream buffer along with the dump data
+	int empty_buffer();
+		//! Transceiver object to use for transmission
+	Transceiver* transceiver;
+	//! Complete ID associated with the request
+	protocol::Full_id id;
+	//! Type of output stream (err or out)
+	protocol::Record_type type;
+	//! Size of the internal stream buffer
+	static const size_t buff_size = 8192;
+	//! The buffer
+	uchar buffer[buff_size];
+};
+
+Fcgistream::Fcgistream() : std::basic_ostream<uchar>(), pbuf(new Fcgibuf) {
+	this->rdbuf(pbuf.get());
+}
+
+void Fcgistream::set(protocol::Full_id id, Transceiver& transceiver, protocol::Record_type type) {
+	pbuf->set(id, transceiver, type);
+}
+
+void Fcgistream::dump(const uchar* data, size_t size) {
+	pbuf->dump(data, size);
+}
+
+void Fcgistream::dump(const char* data, size_t size) {
+	pbuf->dump(reinterpret_cast<const uchar*>(data), size);
+}
+
+void Fcgistream::dump(u_string const& str) {
+	pbuf->dump(str.data(), str.size());
+}
+
+void Fcgistream::dump(std::string const& str) {
+	pbuf->dump(reinterpret_cast<const uchar*>(str.data()), str.size());
+}
+
+void Fcgistream::dump(std::basic_istream<char>& stream) {
+	std::array<char, 32768> buffer;
+
+	while (stream.good()) {
+		stream.read(buffer.data(), buffer.size());
+		dump(sign_cast<uchar*>(buffer.data()), stream.gcount());
+	}
+}
+
+void Fcgistream::dump(std::basic_istream<uchar>& stream) {
+	std::array<uchar, 32768> buffer;
+
+	while (stream.good()) {
+		stream.read(buffer.data(), buffer.size());
+		dump(buffer.data(), stream.gcount());
+	}
+}
+
+Fcgistream& operator << (Fcgistream& os, std::string const& s) {
+	os.rdbuf()->sputn(reinterpret_cast<const unsigned char *>(s.data()), s.size());
+	return os;
+}
+
+Fcgistream& operator << (Fcgistream& os, u_string const& us) {
+	os.rdbuf()->sputn(us.data(), us.size());
+	return os;
+}
+
+Fcgistream& operator << (Fcgistream& os, std::wstring const& ws) {
+	const wchar_t* w_begin = ws.data();
+	const wchar_t* w_end = ws.data() + ws.size();
+	std::array<uchar, 32768> buffer;
+	uchar* s_next;
+	while (w_begin != w_end) {
+		if (utf8_out(w_begin, w_end, w_begin, buffer.data(), buffer.data() + 32768, s_next) < 0)
+			throw std::invalid_argument("Fcgistream::operator<<(Fcgistream&, std::wstring const&): EILSEQ");
+		os.rdbuf()->sputn(buffer.data(), std::distance(buffer.data(), s_next));
+	}
+	return os;
+}
+
+Fcgistream& operator << (Fcgistream& os, const char* s) {
+	os.rdbuf()->sputn(sign_cast<const uchar*>(s), std::char_traits<char>::length(s));
+	return os;
+}
+
+Fcgistream& operator << (Fcgistream& os, const uchar* s) {
+	os.rdbuf()->sputn(s, std::char_traits<char>::length(sign_cast<const char*>(s)));
+	return os;
+}
+
+Fcgistream& operator << (Fcgistream& os, const wchar_t* ws) {
+	const wchar_t* w_begin = ws;
+	const wchar_t* w_end = ws + std::char_traits<wchar_t>::length(ws);
+	std::array<uchar, 32768> buffer;
+	uchar* s_next;
+	while (w_begin != w_end) {
+		if (utf8_out(w_begin, w_end, w_begin, buffer.data(), buffer.data() + 32768, s_next) < 0)
+			throw std::invalid_argument("Fcgistream::operator<<(Fcgistream&, std::wstring const&): EILSEQ");
+		os.rdbuf()->sputn(buffer.data(), std::distance(buffer.data(), s_next));
+	}
+	return os;
+}
 
 int Fcgistream::Fcgibuf::empty_buffer() {
 	using namespace std;
@@ -55,7 +212,8 @@ int Fcgistream::Fcgibuf::empty_buffer() {
 		Block data_block(transceiver->request_write(wanted_size));
 		data_block.size = (data_block.size / chunk_size) * chunk_size;
 		locale loc = this->getloc();
-		char* to_next = data_block.data + sizeof(Header);
+		uchar* to_next = data_block.data + sizeof(Header);
+
 		if (count) {
 			size_t cnt = min(data_block.size - sizeof(Header), count);
 			memcpy(data_block.data + sizeof(Header), p_stream_pos, cnt);
@@ -68,7 +226,7 @@ int Fcgistream::Fcgibuf::empty_buffer() {
 		dump_size -= dumped_size;
 		uint16_t content_length = to_next - data_block.data + dumped_size - sizeof(Header);
 		uint8_t content_remainder = content_length % chunk_size;
-		Header& header = *(Header*)data_block.data;
+		Header& header = *reinterpret_cast<Header*>(data_block.data);
 		header.version() = version;
 		header.type() = type;
 		header.request_id() = id.fcgi_id;
@@ -95,39 +253,6 @@ std::streamsize Fcgistream::Fcgibuf::xsputn(const uchar* s, std::streamsize n)
 	}
 
 	return n;
-}
-
-void Fcgistream::dump(std::basic_istream<char>& stream)
-{
-	std::array<char, 32768> buffer;
-
-	while (stream.good()) {
-		stream.read(buffer, buffer.size());
-		dump(buffer, stream.gcount());
-	}
-}
-
-void Fcgistream::dump(std::basic_istream<uchar>& stream)
-{
-	std::array<uchar, 32768> buffer;
-
-	while (stream.good()) {
-		stream.read(buffer, buffer.size());
-		dump(buffer, stream.gcount());
-	}
-}
-
-Fcgistream& operator << (Fcgistream& os, std::wstring const& ws) {
-	const wchar_t* w_begin = ws.begin();
-	const wchar_t* w_end = ws.end();
-	std::array<uchar, 32768> buffer;
-	char *s_next;
-	while (w_begin != w_end) {
-		if (utf8_out(w_begin, w_end, w_begin, buffer, buffer + 32768, s_next) < 0)
-			throw std::invalid_argument("Fcgistream::operator<<(Fcgistream&, std::wstring const&): EILSEQ");
-		os.write(buffer, std::distance(buffer, s_next);
-	}
-	return os;
 }
 
 MOSH_FCGI_END
