@@ -25,54 +25,44 @@
 #include <map>
 #include <string>
 #include <vector>
-extern "C" {
-#include <nspr/prtypes.h>
-#include <nss/hasht.h>
-#include <nss/sechash.h>
-}
 #include <mosh/fcgi/bits/types.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
 
-namespace hash {
-
+class Hash {
+	void* handle;
+public:
+	Hash();
+	virtual ~Hash();
+	void update(const uchar* data, size_t len);
+	std::vector<uchar> finalize();
+};
+	
 template <typename T>
-void hash(HASHContext* h, const std::basic_string<T>&s) {
-	HASH_Update(h, reinterpret_cast<const uchar*>(s.data()), s.size() * sizeof(T));
+void hash_update(Hash& h, const std::basic_string<T>&s) {
+	h.update(reinterpret_cast<const uchar*>(s.data()), s.size() * sizeof(T));
 }
 
-void hash(HASHContext* h, const void* p, size_t len) {
-	HASH_Update(h, reinterpret_cast<const uchar*>(p), len);
-}
+void hash_update(Hash& h, const void* p, size_t len);
 
 template <typename T1, typename T2>
-void hash(HASHContext* h, const std::map<std::basic_string<T1>, std::basic_string<T2>>& m) {
+void hash_update(Hash& h, const std::map<std::basic_string<T1>, std::basic_string<T2>>& m) {
 	for (const auto& it : m) {
-		hash(h, it.first);
-		hash(h, it.second);
+		hash_update(h, it.first);
+		hash_update(h, it.second);
 	}
 }
 
-std::vector<uchar> hash_finalize(HASHContext* h) {
-	std::vector<uchar> v(HASH_ResultLenContext(h));
-	unsigned vlen;
-	HASH_End(h, v.data(), &vlen, HASH_ResultLenContext(h));
-	v.resize(vlen);
-	return v;
-}
-	
 template <typename T>
 std::vector<uchar> hash(const T& t) {
-	HASHContext* c = HASH_Create(HASH_AlgSHA1);
-	hash(c, t);
-	auto v = hash_finalize(c);
-	HASH_Destroy(c);
+	Hash c;
+	hash_update(c, t);
+	auto v = c.finalize();
 	return v;
 }
 
 
-}
 
 MOSH_FCGI_END
 
