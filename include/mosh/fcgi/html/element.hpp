@@ -29,6 +29,7 @@
 #include <stdexcept>
 #include <ostream>
 #include <type_traits>
+#include <boost/lexical_cast.hpp>
 #include <mosh/fcgi/html/html_doctype.hpp>
 #include <mosh/fcgi/bits/popcount.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
@@ -40,7 +41,6 @@ namespace html {
 
 //! HTML element classes
 namespace element {
-
 
 //! Enumeration for encoding type
 namespace Type {
@@ -67,6 +67,12 @@ namespace Type {
 	_throw_:
 		throw std::invalid_argument("MOSH_FCGI::html::element::Type");
 	}		
+}
+
+//! Wrapper for boost::lexical_cast<string>
+template <typename ct>
+std::basic_string<ct> from_pcchar(const char* s) {
+	return boost::lexical_cast<std::basic_string<ct>>(s);
 }
 
 //! An HTML element
@@ -333,6 +339,7 @@ protected:
 
 	//! Element type
 	unsigned type;
+
 private:
 	//! Element name
 	string name;
@@ -528,8 +535,8 @@ public:
 	: Element<charT>(type_), doctype(html_doctype::html_doctype<charT>(type_)), xml_attributes()
 	{
 		if (is_xhtml()) {
-			this->xml_attributes["version"] = "1";
-			this->attributes["xmlns"] = "http://www.w3.org/1999/xhtml";
+			this->xml_attributes.insert({ from_pcchar<charT>("version"), from_pcchar<charT>("1") });
+			this->attributes.insert({ from_pcchar<charT>("xmlns"), from_pcchar<charT>("http://www.w3.org/1999/xhtml") });
 		}
 	}
 
@@ -675,10 +682,10 @@ protected:
 	 */
 	virtual bool attribute_addition_hook(const attribute& _a) {
 		if (is_xhtml()) {
-			if (_a.first == "lang") { // make use of lang attribute XHTML-conforming
-				this->attributes["xml:lang"] = _a.second;
+			if (_a.first == from_pcchar<charT>("lang")) { // make use of lang attribute XHTML-conforming
+				this->attributes.insert({ from_pcchar<charT>("xml:lang"), _a.second });
 			}
-			if (!_a.first.compare(0, 4, "xml=")) {
+			if (!_a.first.compare(0, 4, from_pcchar<charT>("xml="))) {
 				this->xml_attributes.insert(std::make_pair(_a.first.substr(4), _a.second));
 				return false;
 			}
@@ -723,7 +730,7 @@ struct HTML_end {
 	}
 
 	virtual operator std::basic_string<charT> () const {
-		return "</html>";
+		return from_pcchar<charT>("</html>");
 	}
 };
 
@@ -856,7 +863,7 @@ struct Body_end {
 	}
 
 	virtual operator std::basic_string<charT> () const {
-		return "</body>";
+		return from_pcchar<charT>("</body>");
 	}
 };
 

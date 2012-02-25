@@ -134,7 +134,7 @@ public:
 	 */
 	operator string() const {
 		std::basic_stringstream<charT> ss;
-		ss << "<?xml":
+		ss << "<?xml";
 		for (const auto& at : attributes) {
 			ss << ' ' << at.first << "=\"" << at.second << '"';
 		}
