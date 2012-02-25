@@ -20,7 +20,7 @@
 #ifndef MOSH_FCGI_HTTP_HELPERS_XSENDFILE_HPP
 #define MOSH_FCGI_HTTP_HELPERS_XSENDFILE_HPP
 
-#include <mosh/fcgi/bits/types.hpp>
+#include <string>
 #include <mosh/fcgi/http/helpers/helper.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
@@ -41,7 +41,7 @@ namespace xsendfile {
  *  @param[in] nginx nginx mode (X-Accel-Redirect)
  *  @return { !nginx ? "X-SendFile" : "X-Accel-Redirect", loc }
  */
-Helper::header_pair print_xsendfile(const ustring& loc, unsigned is_nginx = 0);
+Helper::header_pair print_xsendfile(const std::string& loc, unsigned is_nginx = 0);
 
 //! Create a helper consisting of redirection generators
 Helper helper();
