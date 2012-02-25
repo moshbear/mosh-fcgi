@@ -90,10 +90,11 @@ struct Mp_regex_cache {
 	virtual ~Mp_regex_cache() { }
 };
 
+// wrap the singletons in a struct to avoid default initialiazation
 struct _si {
-static SRC::Singleton<Regex_cache> _rc;
-static SRC::Singleton<Ue_regex_cache> _u_rc;
-static SRC::Singleton<Mp_regex_cache> _m_rc;
+	static SRC::Singleton<Regex_cache> _rc;
+	static SRC::Singleton<Ue_regex_cache> _u_rc;
+	static SRC::Singleton<Mp_regex_cache> _m_rc;
 };
 
 Regex_cache& rc() { return _si::_rc.instance(); }
