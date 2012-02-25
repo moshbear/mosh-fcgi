@@ -1,16 +1,16 @@
-//! @file  mosh/fcgi/bits/singleton.hpp Singleton<T> declaration
-// Copyright © 2011 m0shbear <andrey@moshbear.net>
+//! @file  src/singleton.hpp Singleton<T> declaration
+// Copyright © 2011-2 m0shbear <andrey@moshbear.net>
 // Distributed under the Boost Software License, Version 1.0. (See accompany-
 // ing file LICENSE10.txt or copy at http://www.boost.org/LICENSE10.txt)
 //
-#ifndef MOSH_FCGI_SINGLETON_HPP
-#define MOSH_FCGI_SINGLETON_HPP
+#ifndef SRC_SINGLETON_HPP
+#define SRC_SINGLETON_HPP
 
 #include <mutex>
 #include <memory>
-#include <mosh/fcgi/bits/namespace.hpp>
+#include <src/namespace.hpp>
 
-MOSH_FCGI_BEGIN
+SRC_BEGIN
 
 /*! @brief A singleton class.
  *
@@ -48,11 +48,11 @@ private:
 	const Singleton<T>& operator = (Singleton<T>&&) = delete; // NonMoveAssignable
 };
 
-MOSH_FCGI_END
+SRC_END
 
 // Initialize at compile-time to sane values
-template<class T> std::unique_ptr<T> MOSH_FCGI::Singleton<T>::t(nullptr);
-template<class T> std::once_flag MOSH_FCGI::Singleton<T>::flag;
+template<class T> std::unique_ptr<T> SRC::Singleton<T>::t(nullptr);
+template<class T> std::once_flag SRC::Singleton<T>::flag;
 
 
 #endif
