@@ -41,7 +41,7 @@ namespace response {
  *  @sa status_helper
  */
 Helper::header_pair print_response(const std::string& ver, unsigned code) {
-	std::basic_stringstream ss;
+	std::stringstream ss;
 	ss << "HTTP/" << ver;
 	ss << ' ' << code;
 	ss << ' ' << status_helper::get_string(code);

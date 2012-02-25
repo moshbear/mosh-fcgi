@@ -23,9 +23,11 @@
 #include <mosh/fcgi/bits/namespace.hpp>
 
 namespace {
-	MOSH_FCGI::http::helpers::Helper::header_pair print_xsf(const std::string& loc) {
+	MOSH_FCGI::http::Helper::header_pair print_xsf(const std::string& loc) {
 		return MOSH_FCGI::http::helpers::xsendfile::print_xsendfile(loc, 0);
 	}
+}
+
 MOSH_FCGI_BEGIN
 
 namespace http {

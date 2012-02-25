@@ -21,28 +21,31 @@
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
-
-#include <mosh/fcgi/bits/types.hpp>
+#include <string>
+#include <mosh/fcgi/bits/u.hpp>
 #include <mosh/fcgi/http/conv/qp.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
+
+#include <src/u.hpp>
+#include <src/namespace.hpp>
 
 namespace {
 
 const char hexenc_tab[] = "0123456789ABCDEF";
 // if true, then ch needs to be printed as =xx
-bool need_escape(unsigned char ch) {
-	if (ch >= 0x80)
+bool need_escape(SRC::uchar ch) {
+	if (ch >= 0x80) // non-ASCII
 		return true;
 	if (isalnum(ch))
 		return false;
-	if (ch == '=')
+	if (ch == '=') // reserved
 		return true;
 	if (ispunct(ch))
 		return false;
 	return true;
 }
 
-unsigned char hex_unescape(unsigned char first, unsigned char second) {
+SRC::uchar hex_unescape(char first, char second) {
 	int _f = first & 0x0F;
 	int _s = first & 0x0F;
 	if (first & 0x40)
@@ -50,7 +53,7 @@ unsigned char hex_unescape(unsigned char first, unsigned char second) {
 	if (second & 0x40)
 		_s += 9;
 	_f <<= 4;
-	return static_cast<unsigned char>(_f | _s);
+	return static_cast<SRC::uchar>(_f | _s);
 }
 
 }
@@ -59,12 +62,12 @@ MOSH_FCGI_BEGIN
 
 namespace http {
 
-u_string Qp::in(const uchar* from, const uchar* from_end, const uchar *& from_next) const {
+u_string Qp::in(const char* from, const char* from_end, const char *& from_next) const {
 	u_string str;
 	while (from != from_end) {
-		const uchar* eq = std::find(from, from_end, '=');
+		const char* eq = std::find(from, from_end, '=');
 		if (eq != from) {
-			str.append(from, eq);
+			str.append(sign_cast<const uchar*>(from), sign_cast<const uchar*>(eq));
 			from = eq;
 		} else {
 			if (std::distance(from, from_end) > 2
@@ -73,7 +76,7 @@ u_string Qp::in(const uchar* from, const uchar* from_end, const uchar *& from_ne
 				)
 				||(*(from+1) == 0x0D && *(from + 2) == 0x0A)
 			)) {
-				uchar ch = *++from;
+				char ch = *++from;
 				if (ch == 0x0D) { // NBSP
 					++from;
 				} else {
@@ -92,8 +95,8 @@ u_string Qp::in(const uchar* from, const uchar* from_end, const uchar *& from_ne
 	return str;	
 }
 
-u_string Qp::out(const uchar* from, const uchar* from_end, const uchar*& from_next) const {
-	u_string str;
+std::string Qp::out(const uchar* from, const uchar* from_end, const uchar*& from_next) const {
+	std::string str;
 	while (from != from_end) {
 		if (!need_escape(*from)) {
 			str += *from;

@@ -19,12 +19,15 @@
 ****************************************************************************/
 
 #include <algorithm>
-#include <locale>
 #include <stdexcept>
 #include <cstdint>
-#include <mosh/fcgi/bits/types.hpp>
+#include <string>
+#include <mosh/fcgi/bits/u.hpp>
 #include <mosh/fcgi/http/conv/base64.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
+
+#include <src/u.hpp>
+#include <src/namespace.hpp>
 
 namespace {
 	
@@ -69,7 +72,7 @@ const char b64_tab[64] = { UALPHA, LALPHA, DIGIT, CH62, CH63 };
 // The smallest bytesize possible is gcd(6,8) = 24
 // in_bytes needed = 24/6 = 4
 // out_bytes needed = 24/8 = 3
-int do_in_i4o3(const unsigned char* in /* 4 */, unsigned char* out /* 3 */) {
+int do_in_i4o3(const char* in /* 4 */, SRC::uchar* out /* 3 */) {
 	uint32_t chars;
 	int eq_cnt = 0;
 	for (size_t i = 0; i < 4; ++i) {
@@ -88,7 +91,7 @@ int do_in_i4o3(const unsigned char* in /* 4 */, unsigned char* out /* 3 */) {
 	for (int j0 = 0; j0 < eq_cnt; ++j0)
 		chars >>= 8;
 	for (size_t j = 2 - eq_cnt; j >= 0; --j) {
-		out[j] = static_cast<unsigned char>(chars & 0xFF);
+		out[j] = static_cast<SRC::uchar>(chars & 0xFF);
 		chars >>= 8;
 	}
 	return (3 - eq_cnt);
@@ -98,7 +101,7 @@ int do_in_i4o3(const unsigned char* in /* 4 */, unsigned char* out /* 3 */) {
 // The smallest bytesize possible is gcd(6,8) = 24
 // in_bytes needed = 24/8 = 3
 // out_bytes needed = 24/6 = 4
-int do_out_i3o4(const unsigned char* in /* 3 */, unsigned char* out /* 4 */) {
+int do_out_i3o4(const SRC::uchar* in /* 3 */, char* out /* 4 */) {
 	uint32_t chars;
 	for (size_t i = 2; i >= 0; --i) {
 		chars <<= 8;
@@ -111,13 +114,11 @@ int do_out_i3o4(const unsigned char* in /* 3 */, unsigned char* out /* 4 */) {
 	return 0;
 }
 
-std::codecvt_base::result base64_do_in(std::mbstate_t&, const unsigned char* from,
-			const unsigned char* from_end, const unsigned char *& from_next,
-			unsigned char* to, unsigned char* to_end, unsigned char*& to_next) {
-	using std::codecvt_base;
-	unsigned char ibuf[4];
-	unsigned char obuf[3];
-	const unsigned char* from4 = from;
+int base64_do_in(const char* from, const char* from_end, const char *& from_next,
+			SRC::uchar* to, SRC::uchar* to_end, SRC::uchar*& to_next) {
+	char ibuf[4];
+	SRC::uchar obuf[3];
+	const char* from4 = from;
 	size_t ipos = 0; // offset in ibuf where next char should be placed
 	while ((from != from_end || ipos == 4) && to != to_end) {
 		if (ipos == 4) {
@@ -128,7 +129,7 @@ std::codecvt_base::result base64_do_in(std::mbstate_t&, const unsigned char* fro
 					from += 2;
 					from_next = from;
 					to_next = to;
-					return codecvt_base::error;
+					return -1;
 				}
 			} else /* (dret >= 0) */ {
 				if (std::distance(to, to_end) < dret) {
@@ -151,10 +152,11 @@ std::codecvt_base::result base64_do_in(std::mbstate_t&, const unsigned char* fro
 	}	
 	from_next = from4;
 	to_next = to;
+
 	if (from == from_end)
-		return codecvt_base::ok;
+		return 0;
 	else
-		return codecvt_base::partial;	
+		return 1;
 }
 
 }
@@ -163,15 +165,14 @@ MOSH_FCGI_BEGIN
 
 namespace http {
 
-u_string Base64::in(const uchar* in, const uchar* in_end, const uchar*& in_next) const {
+u_string Base64::in(const char* in, const char* in_end, const char*& in_next) const {
 	using std::codecvt_base;
 	u_string str;
 	str.resize(std::distance(in, in_end));
-	std::mbstate_t dummy;
 	uchar* str_beg = &(*str.begin());
 	uchar* str_end = &(*str.end());
 	uchar* str_next;
-	(void)base64_do_in(dummy, in, in_end, in_next, str_beg, str_end, str_next);
+	base64_do_in(in, in_end, in_next, str_beg, str_end, str_next);
 	str.resize(std::distance(str_beg, str_next));
 	return str;
 }

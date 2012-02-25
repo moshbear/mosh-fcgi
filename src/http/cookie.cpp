@@ -94,12 +94,12 @@ Cookie::Cookie(std::initializer_list<std::string> string_args,
 //! Compare for equality
 bool Cookie::operator == (const Cookie& cookie) const {
 	return (this == &cookie) ||
-		(ci_equality(name, cookie.name)
-		&& ci_equality(value, cookie.value)
-		&& ci_equality(comment, cookie.comment)
-		&& ci_equality(domain, cookie.domain)
+		(ci_cmp(name, cookie.name, Cmp_test::eq)
+		&& ci_cmp(value, cookie.value, Cmp_test::eq)
+		&& ci_cmp(comment, cookie.comment, Cmp_test::eq)
+		&& ci_cmp(domain, cookie.domain, Cmp_test::eq)
 		&& max_age == cookie.max_age
-		&& ci_equality(path, cookie.path)
+		&& ci_cmp(path, cookie.path, Cmp_test::eq)
 		&& secure == cookie.secure
 		&& removed == cookie.removed
 		&& http_only == cookie.http_only);
@@ -134,6 +134,9 @@ Cookie::operator std::pair<std::string, std::string> () const {
 	ss << "; Version=\"1\"";
 	return std::make_pair("Set-Cookie", ss.str());
 }
+
+std::initializer_list<int>  Cookie::int_args_default = { 0 };
+std::initializer_list<bool> Cookie::bool_args_default = { false, true, false };
 
 } // http
 

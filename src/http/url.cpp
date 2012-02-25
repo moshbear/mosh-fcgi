@@ -20,16 +20,19 @@
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
-
-#include <mosh/fcgi/bits/types.hpp>
+#include <string>
+#include <mosh/fcgi/bits/u.hpp>
 #include <mosh/fcgi/http/conv/url.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
+
+#include <src/u.hpp>
+#include <src/namespace.hpp>
 
 namespace {
 
 const char hexenc_tab[] = "0123456789ABCDEF";
 // if true, then ch needs to be printed as %xx
-bool need_escape(unsigned char ch) {
+bool need_escape(SRC::uchar ch) {
 	if (isalnum(ch))
 		return false;
 	switch (ch) {
@@ -37,14 +40,14 @@ bool need_escape(unsigned char ch) {
 	case '~':
 	case '.':
 	case '-':
-	case ' ':
+	case ' ': // escaped with '+' later on
 		return false;
 	default:
 		return true;
 	}
 }
 
-unsigned char hex_unescape(unsigned char first, unsigned char second) {
+SRC::uchar hex_unescape(char first, char second) {
 	int _f = first & 0x0F;
 	int _s = first & 0x0F;
 	if (first & 0x40)
@@ -52,7 +55,7 @@ unsigned char hex_unescape(unsigned char first, unsigned char second) {
 	if (second & 0x40)
 		_s += 9;
 	_f <<= 4;
-	return static_cast<unsigned char>(_f | _s);
+	return static_cast<SRC::uchar>(_f | _s);
 }
 
 }
@@ -61,13 +64,13 @@ MOSH_FCGI_BEGIN
 
 namespace http {
 
-u_string Url::in(const uchar*from, const uchar* from_end, const uchar *& from_next) const {
+u_string Url::in(const char*from, const char* from_end, const char*& from_next) const {
 	u_string str;
 	while (from != from_end) {
 		const char* pct = std::find(from, from_end, '%');
 		if (pct != from) {
 			size_t _n = str.size();
-			str.append(from, pct);
+			str.append(sign_cast<const uchar*>(from), sign_cast<const uchar*>(pct));
 			std::replace_if(str.begin() + _n, str.end(), [=] (uchar ch) { return ch == '+'; }, ' ');
 			from = pct;
 		} else {
@@ -88,11 +91,11 @@ u_string Url::in(const uchar*from, const uchar* from_end, const uchar *& from_ne
 
 }
 
-u_string Url::out(const uchar* from, const uchar* from_end, const uchar*& from_next) const {
-	u_string str;
+std::string Url::out(const uchar* from, const uchar* from_end, const uchar*& from_next) const {
+	std::string str;
 	while (from != from_end) {
 		if (!need_escape(*from)) {
-			str += (*from == ' ') ? '+' : *from;
+			str += ([](uchar ch) { return ch == ' ' ? '+' : ch; })(*from);
 		} else {
 			uchar cf = *from;
 			str += '%';

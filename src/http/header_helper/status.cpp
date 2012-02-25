@@ -40,7 +40,7 @@ namespace status {
  *  @sa status_helper
  */
 Helper::header_pair print_status (unsigned st) {
-	std::basic_stringstream ss;
+	std::stringstream ss;
 	ss << st;
 	ss << " " + status_helper::get_string(st);
 	return { std::make_pair("Status", ss.str()) };
