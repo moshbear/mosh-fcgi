@@ -24,10 +24,26 @@
 #include <sstream>
 #include <stdexcept>
 #include <utility>
+#include <cctype>
 #include <mosh/fcgi/http/cookie.hpp>
 #include <mosh/fcgi/http/misc.hpp>
-#include <mosh/fcgi/bits/ci_strcomp.hpp>
+#include <mosh/fcgi/bits/cmp.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
+
+namespace {
+
+int ci_charcmp(char ch1, char ch2, MOSH_FCGI::Cmp_test test) {
+	return MOSH_FCGI::cmp(std::tolower(ch1), std::tolower(ch2), test);
+}
+
+bool ci_cmp(std::string const& s1, std::string const& s2, MOSH_FCGI::Cmp_test op = MOSH_FCGI::Cmp_test::eq)
+{
+	return MOSH_FCGI::range_cmp(s1, s2, op, ci_charcmp);
+}
+
+
+}
+
 
 MOSH_FCGI_BEGIN
 
