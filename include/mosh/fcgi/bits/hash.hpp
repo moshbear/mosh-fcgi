@@ -30,12 +30,17 @@
 
 MOSH_FCGI_BEGIN
 
+//! A generic hasher class
 class Hash {
 	void* handle;
 public:
+	//! Hash initiale
 	Hash();
+	//! Hash destroy
 	virtual ~Hash();
+	//! Hash update
 	void update(const uchar* data, size_t len);
+	//! Hash finalize
 	std::vector<uchar> finalize();
 };
 	

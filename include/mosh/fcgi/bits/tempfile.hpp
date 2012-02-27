@@ -34,8 +34,8 @@
 MOSH_FCGI_BEGIN
 
 /*! @brief An object representing a temporary file. 
- *  @warn Is not a subclass of std::ofstream, so iostream stuff
- *  @warn is unimplemented.
+ *  @warning Is not a subclass of std::ofstream, so iostream stuff
+ *  @warning is unimplemented.
  */
 class Tempfile {
 public:
