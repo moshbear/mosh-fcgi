@@ -49,7 +49,7 @@ enum class Cmp_test {
  * @tparam T type of object (implicit)
  */
 template <typename T>
-bool cmp(T&& o1, T&& o2, Cmp_test test) {
+bool cmp(T const& o1, T const& o2, Cmp_test test) {
 	switch (test) {
 	case Cmp_test::eq: return (o1 == o2);
 	case Cmp_test::ne: return (o1 != o2);
@@ -62,9 +62,7 @@ bool cmp(T&& o1, T&& o2, Cmp_test test) {
 }
 
 //! @brief Specialization for @c boolean
-template<> bool cmp(const bool& o1, const bool& o2, Cmp_test test) {
-	return cmp(o1 ? 1 : 0, o2 ? 1 : 0, test);
-}
+extern template bool cmp<bool>(const bool& o1, const bool& o2, Cmp_test test);
 //@}
 		
 /*! @name range_cmp
@@ -123,7 +121,7 @@ bool range_cmp(InputIterator _1_Begin, InputIterator _1_End, InputIterator _2_Be
  * @return the value of range_cmp(_1.begin(), _1.end(), _2.begin(), _2.end(), test)
  */
 template <class Iterable>
-bool range_cmp(Iterable&& _1, Iterable&& _2, Cmp_test test) {
+bool range_cmp(Iterable const& _1, Iterable const& _2, Cmp_test test) {
 	return range_cmp(_1.begin(), _1.end(), _2.begin(), _2.end(), test);
 }
 
@@ -136,7 +134,7 @@ bool range_cmp(Iterable&& _1, Iterable&& _2, Cmp_test test) {
  * @return the value of range_cmp(_1.begin(), _1.end(), _2.begin(), _2.end(), test, comp)
  */
 template <class Iterable, class My_cmp>
-bool range_cmp(Iterable&& _1, Iterable&& _2, Cmp_test test, My_cmp comp) {
+bool range_cmp(Iterable const& _1, Iterable const& _2, Cmp_test test, My_cmp comp) {
 	return range_cmp(_1.begin(), _1.end(), _2.begin(), _2.end(), test, comp);
 }
 
@@ -149,7 +147,7 @@ bool range_cmp(Iterable&& _1, Iterable&& _2, Cmp_test test, My_cmp comp) {
  * @return the value of range_cmp(_1.begin(), _1.end(), _2.begin(), _2.end(), test)
  */
 template <class Iterable>
-bool range_cmp(Iterable&& _1, Iterable&& _2, size_t n, Cmp_test test) {
+bool range_cmp(Iterable const& _1, Iterable const& _2, size_t n, Cmp_test test) {
 	return range_cmp(_1.begin(), iterator_plus_n(_1.begin(), _1.end(), n),
 			 _2.begin(), iterator_plus_n(_2.begin(), _2.end(), n),
 			 test);
@@ -165,7 +163,7 @@ bool range_cmp(Iterable&& _1, Iterable&& _2, size_t n, Cmp_test test) {
  * @return the value of range_cmp(_1.begin(), _1.end(), _2.begin(), _2.end(), test, comp)
  */
 template <class Iterable, class My_cmp>
-bool range_cmp(Iterable&& _1, Iterable&& _2, size_t n, Cmp_test test, My_cmp comp) {
+bool range_cmp(Iterable const& _1, Iterable const& _2, size_t n, Cmp_test test, My_cmp comp) {
 	return range_cmp(_1.begin(), iterator_plus_n(_1.begin(), _1.end(), n),
 			 _2.begin(), iterator_plus_n(_2.begin(), _2.end(), n),
 			 test, comp);
