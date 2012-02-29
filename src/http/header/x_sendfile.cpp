@@ -1,4 +1,4 @@
-//! @file  mosh/fcgi/http/helpers/redirect.hpp HTTP redirection
+//! @file  http/header_helper/x_sendfile.cpp - X-Sendfile
 /* 
  *  Copyright (C) 2011 m0shbear
  *
@@ -17,43 +17,46 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
  */
 
-#ifndef MOSH_FCGI_HTTP_HELPERS_REDIRECT_HPP
-#define MOSH_FCGI_HTTP_HELPERS_REDIRECT_HPP
-
+#include <memory>
+#include <stdexcept>
 #include <string>
-#include <mosh/fcgi/http/helpers/helper.hpp>
+#include <utility>
+#include <mosh/fcgi/http/header/helper.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
+#include <src/http/header_default.hpp>
+#include <src/namespace.hpp>
 
-MOSH_FCGI_BEGIN
+namespace {
 
-namespace http {
+std::string xsf_string(unsigned i) {
+	switch (i) {
+	case 0: return "X-Sendfile"; // normal
+	case 1: return "X-Accel-Redirect"; // nginx
+	default:;
+	}
+	throw std::invalid_argument("xsf string not found");
+}
 
-//! Header helpers
-namespace helpers {
+struct xsf : public virtual MOSH_FCGI::http::header::Helper {
+	Helper::header_pair operator()(std::string const& loc) {
+		return (*this)(loc, 0);
+	}
+	Helper::header_pair operator()(std::string const& loc, unsigned compat) {
+		return { std::make_pair(xsf_string(compat), loc) };
+	}
+};
 
-//! HTTP redirect headers
-namespace redirect {
+}
 	
-/*! @brief Generate a redirection header
- *  @param[in] code HTTP status code (must be 3xx)
- *  @param[in] loc new location
- *  @return { { "Status", "xxx <msg>" }, { "Location", "<new location>" } }
- *  @throw std::invalid_argument code is not 3xx
- *  @throw std::invalid_argument code is not valid 3xx
- *  @sa status
- */
-Helper::header_pair print_redir(unsigned code, const std::string& loc);
+SRC_BEGIN
 
-//! Create a helper consisting of redirection generators
-Helper helper();
+namespace http { namespace header {
 
+Helper_smartptr x_sendfile() {
+	return Helper_smartptr(new xsf);
 }
 
-}
+} }
 
-}
-
-MOSH_FCGI_END
-
-#endif
+SRC_END
 

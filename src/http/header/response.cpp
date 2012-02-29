@@ -1,4 +1,4 @@
-//! @file  mosh/fcgi/http/helpers/status_helper.hpp String lookup for HTTP status codes
+//! @file http/header_helper/response.cpp - HTTP response
 /* 
  *  Copyright (C) 2011 m0shbear
  *
@@ -17,36 +17,42 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
  */
 
-#ifndef MOSH_FCGI_HTTP_HELPERS_STATUS_HELPER_HPP
-#define MOSH_FCGI_HTTP_HELPERS_STATUS_HELPER_HPP
-
+#include <memory>
+#include <sstream>
 #include <string>
+#include <utility>
+#include <mosh/fcgi/http/header/helper.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
+#include <src/http/header_default.hpp>
+#include <src/namespace.hpp>
 
-MOSH_FCGI_BEGIN
+namespace {
 
-namespace http {
+SRC::http::header::Helper_smartptr status;
 
-//! Header helpers
-namespace helpers {
-
-//! HTTP status lookup
-namespace status_helper {
-	
-/*! @brief Get the corresponding status string for a given code
- *  @param[in] st HTTP status code
- *  @return the corresponding status string
- *  @throw std::invalid_argument if the status code is invalid
- */
-std::string get_string (unsigned st);
-
-}
+struct response : public virtual MOSH_FCGI::http::header::Helper {
+	Helper::header_pair operator()(unsigned ver, unsigned code) {
+		if (!status)
+			status = SRC::http::header::status();
+		std::stringstream ss;
+		ss << "HTTP/" << ((ver & 0xFF00) >> 8) << '.' << (ver & 0x00FF);
+		ss << ' ' << (*status)(code)[0].second;
+		return { std::make_pair("@@http_response@@", ss.str()) };
+	}
+};
 
 }
 
+
+SRC_BEGIN
+
+namespace http { namespace header {
+
+Helper_smartptr response() {
+	return Helper_smartptr(new ::response);
 }
 
-MOSH_FCGI_END
+} }
 
-#endif
+SRC_END
 

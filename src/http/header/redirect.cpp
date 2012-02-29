@@ -1,4 +1,4 @@
-//! @file  mosh/fcgi/http/helpers/x_sendfile.hpp Header for X-SendFile
+//! @file http/header_helper/redirect.cpp - HTTP redirection
 /* 
  *  Copyright (C) 2011 m0shbear
  *
@@ -17,42 +17,42 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
  */
 
-#ifndef MOSH_FCGI_HTTP_HELPERS_XSENDFILE_HPP
-#define MOSH_FCGI_HTTP_HELPERS_XSENDFILE_HPP
-
-#include <string>
-#include <mosh/fcgi/http/helpers/helper.hpp>
+#include <memory>
+#include <stdexcept>
+#include <string> 
+#include <mosh/fcgi/http/header/helper.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
+#include <src/http/header_default.hpp>
+#include <src/namespace.hpp>
 
-MOSH_FCGI_BEGIN
+namespace {
 
-namespace http {
+SRC::http::header::Helper_smartptr status;
 
-//! Header helpers
-namespace helpers {
-
-//! HTTP X-Sendfile headers
-namespace xsendfile {
-
-// Note: is_nginx is unsigned instead of bool so that function signatures for (string,numeric) match
-
-/*! @brief Generate a X-Sendfile header
- *  @param[in] loc Location
- *  @param[in] nginx nginx mode (X-Accel-Redirect)
- *  @return { !nginx ? "X-SendFile" : "X-Accel-Redirect", loc }
- */
-Helper::header_pair print_xsendfile(const std::string& loc, unsigned is_nginx = 0);
-
-//! Create a helper consisting of redirection generators
-Helper helper();
+struct redir : public virtual MOSH_FCGI::http::header::Helper {
+	Helper::header_pair operator()(unsigned code, std::string const& loc) {
+		if ((code / 100) != 3) {
+			throw std::invalid_argument("http_code must be 3xx (redirection-related)");
+		}
+		if (!status)
+			status = SRC::http::header::status();
+		Helper::header_pair _st = (*status)(code);
+		_st.push_back({"Location", loc});
+		return _st;
+	}
+};
 
 }
 
+SRC_BEGIN
+
+namespace http { namespace header {
+
+Helper_smartptr redirect() {
+	return Helper_smartptr(new redir);
 }
 
-}
+} }
 
-MOSH_FCGI_END
-
-#endif
+SRC_END
 

@@ -1,4 +1,4 @@
-//! @file http/header_helper/redirect.cpp - HTTP redirection
+//! @file http/header_helper/content_type.cpp - Content-Type
 /* 
  *  Copyright (C) 2011 m0shbear
  *
@@ -17,42 +17,42 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
  */
 
-#include <stdexcept>
-#include <string> 
-#include <mosh/fcgi/http/helpers/helper.hpp>
-#include <mosh/fcgi/http/helpers/redirect.hpp>
-#include <mosh/fcgi/http/helpers/status.hpp>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+#include <mosh/fcgi/http/header/helper.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
+#include <src/http/header_default.hpp>
+#include <src/namespace.hpp>
 
-MOSH_FCGI_BEGIN
+namespace {
 
-namespace http {
-
-namespace helpers {
-
-//! HTTP redirect headers
-namespace redirect {
-	
-Helper::header_pair print_redir(unsigned code, const std::string& loc) {
-	if ((code / 100) != 3) {
-		throw std::invalid_argument("http_code must be 3xx (redirection-related)");
+struct ct : public virtual MOSH_FCGI::http::header::Helper {
+	Helper::header_pair operator()(std::string const& ctype) {
+		return { std::make_pair("Content-Type", ctype) };
 	}
-	Helper::header_pair _st = status::print_status(code);
-	_st.push_back({"Location", loc});
-	return _st;
+	Helper::header_pair operator()(std::string const& ctype, std::string const& cset) {
+		if (cset.empty())
+			return (*this)(ctype);
+		return { std::make_pair("Content-Type", ctype + "; charset=" + cset + "\r\n") };
+	}
+
+	virtual ~ct() { }
+};
+
+}
+	
+SRC_BEGIN
+
+namespace http { namespace header {
+
+
+Helper_smartptr content_type() {
+	return Helper_smartptr(new ct);
 }
 
-Helper helper() {
-	Helper h;
-	h.do_u_s = print_redir;
-	return h;
-}
+} }
 
-} // redirect
-
-} // helpers
-
-} // http
-
-MOSH_FCGI_END
+SRC_END
 
