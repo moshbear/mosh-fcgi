@@ -124,7 +124,7 @@ private:
 Fcgistream& operator << (Fcgistream& os, std::string const& s);
 /*! @brief Print a string to a Fcgistream
  *  @param os The stream to print to
- *  @param[in] s The string to print
+ *  @param[in] us The string to print
  *  @return os
  */
 Fcgistream& operator << (Fcgistream& os, u_string const& us);
@@ -139,22 +139,18 @@ Fcgistream& operator << (Fcgistream& os, u_string const& us);
 Fcgistream& operator << (Fcgistream& os, std::wstring const& ws);
 /*! @brief Print a string to a Fcgistream
  *
- *  This function converts the wide string to a UTF-8 byte stream, then prints
- *  it.
  *  @param os The stream to print to
- *  @param[in] ws The string to print
+ *  @param[in] s The string to print
  *  @return os
  */
 Fcgistream& operator << (Fcgistream& os, const char* s);
 /*! @brief Print a string to a Fcgistream
  *
- *  This function converts the wide string to a UTF-8 byte stream, then prints
- *  it.
  *  @param os The stream to print to
- *  @param[in] ws The string to print
+ *  @param[in] us The string to print
  *  @return os
  */
-Fcgistream& operator << (Fcgistream& os, const uchar* s);
+Fcgistream& operator << (Fcgistream& os, const uchar* us);
 /*! @brief Print a string to a Fcgistream
  *
  *  This function converts the wide string to a UTF-8 byte stream, then prints

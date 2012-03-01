@@ -78,7 +78,7 @@ protected:
 	/*! @brief Standard output stream to the client
 	 *
 	 * * To print UTF-8-encoded Unicode data, use operator&lt;&lt; with a @c wchar_t string
-	 * * To print a buffered byte stream, use operator&lt&lt; with a @char or @uchar string
+	 * * To print a buffered byte stream, use operator&lt&lt; with a @c char or @c uchar string
 	 * * To dump data directly through the stream without buffering, call Fcgistream::dump().
 	 */
 	Fcgistream out;
@@ -86,7 +86,7 @@ protected:
 	/*! @brief Output stream to the HTTP server error log
 	 *
 	 * * To print UTF-8-encoded Unicode data, use operator&lt;&lt; with a @c wchar_t string
-	 * * To print a buffered byte stream, use operator&lt&lt; with a @char or @uchar string
+	 * * To print a buffered byte stream, use operator&lt&lt; with a @c char or @c uchar string
 	 * * To dump data directly through the stream without buffering, call Fcgistream::dump().
 	 */
 	Fcgistream err;
