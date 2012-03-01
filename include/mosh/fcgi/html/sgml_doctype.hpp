@@ -20,9 +20,10 @@
 #ifndef MOSH_FCGI_HTML_SGML_DOCTYPE_HPP
 #define MOSH_FCGI_HTML_SGML_DOCTYPE_HPP
 
+#include <ostream>
+#include <sstream>
 #include <string>
 #include <stdexcept>
-#include <mosh/fcgi/bits/t_string.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
@@ -76,17 +77,25 @@ public:
 	operator string() const {
 		switch (type) {
 		case Declaration_identifier::_system:
-			return wide_string<charT>("SYSTEM \"") + quoted1 + wide_char<charT>('"');
+			return ([&quoted1] () {
+					std::basic_stringstream<charT> ss;
+					ss << "SYSTEM \"";
+					ss << quoted1;
+					ss << '"';
+					return ss.str();
+				})();
 		case Declaration_identifier::_public:
-			return wide_string<charT>("PUBLIC \"") + quoted1
-				+ wide_string<charT>("\" \"") + quoted2 + wide_char<charT>('"');
+			return ([&quoted1, &quoted2] () {
+					std::basic_stringstream<charT> ss;
+					ss << "PUBLIC \"";
+					ss << quoted1;
+					ss << "\" \"";
+					ss << quoted2;
+					ss << '"';
+					return ss.str();
+				})();
 		}
 		return string();
-	}
-	
-	//! Convert to C-string
-	operator const charT* () const {
-		return this->template operator std::basic_string<charT>().c_str();
 	}
 private:
 	//! DTD type
@@ -97,6 +106,12 @@ private:
 	string quoted2;
 };
 
+//! Print to ostream
+template <typename charT>
+std::basic_ostream<charT>& operator << (std::basic_ostream<charT>& os, External_doctype_identifier<charT> const& e) {
+	os << static_cast<std::basic_string<charT>>(e);
+	return os;
+}
 		
 //! Doctype declaration
 template <class charT>
@@ -153,18 +168,17 @@ public:
 
 	//! Convert to string
 	operator string () const {
-		string s = name	+ wide_char<charT>(' ') + external;
+		std::basic_stringstream<charT> ss;
+		ss << name;
+		ss << ' ';
+		ss << external;
 		if (!internal.empty()) {
-			s += wide_string<charT>(" [\r\n")
-				+ internal + wide_string<charT>("\n] ");
+			ss << "[\r\n";
+			ss << internal;
+			ss << "\r\n] ";
 		}
-		s += wide_string<charT>(" >\r\n");
-		return s;
-	}
-	
-	//! Convert to C-string
-	operator const charT* () const {
-		return this->template operator std::basic_string<charT>().c_str();
+		ss << " >\r\n";
+		return ss.str();
 	}
 
 private:
@@ -188,6 +202,13 @@ Doctype_declaration<charT> operator + (Doctype_declaration<charT> && _d, const s
 	Doctype_declaration<charT> d(std::move(_d));
 	d += s;
 	return std::move(d);
+}
+
+//! Print to ostream
+template <typename charT>
+std::basic_ostream<charT>& operator << (std::basic_ostream<charT>& os, Doctype_declaration<charT> const& d) {
+	os << static_cast<std::basic_string<charT>>(d);
+	return os;
 }
 
 }
