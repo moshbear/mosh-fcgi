@@ -12,6 +12,7 @@ AM_CPPFLAGS = $(BOOST_CPPFLAGS) -Iinclude
 
 # mosh-fcgi core
 FCGI_FILES = 	bits/boyer_moore.cpp \
+		bits/cmp.hpp \
 		bits/hash.cpp \
 		bits/rwlock.cpp \
 		bits/tempfile.cpp \
@@ -29,15 +30,17 @@ FCGI_HTTP_FILES = 	http/misc.cpp \
 			http/base64.cpp \
 			http/qp.cpp \
 			http/session.cpp \
+			http/session-timpl.cpp \
 			http/url.cpp
 
 # mosh-fcgi http handling imported from mosh-cgi
-FCGI_HTTP_FILES_2 = 	http/header_helper/content_type.cpp \
-			http/header_helper/redirect.cpp \
-			http/header_helper/response.cpp \
-			http/header_helper/status.cpp \
-			http/header_helper/status_helper.cpp \
-			http/header_helper/x_sendfile.cpp \
+FCGI_HTTP_FILES_2 = 	http/header/header.cpp \
+			http/header/helper.cpp \
+			http/header/content_type.cpp \
+			http/header/redirect.cpp \
+			http/header/response.cpp \
+			http/header/status.cpp \
+			http/header/x_sendfile.cpp \
 			http/cookie.cpp
 
 # mosh-fcgi html handling imported from mosh-cgi
