@@ -33,7 +33,6 @@
 #include <vector>
 #include <cstring>
 #include <mosh/fcgi/http/conv/converter.hpp>
-#include <mosh/fcgi/bits/utf8.hpp>
 #include <mosh/fcgi/http/form.hpp>
 #include <mosh/fcgi/bits/u.hpp>
 #include <mosh/fcgi/http/session/funcs.hpp>
@@ -46,64 +45,24 @@ namespace http {
 
 namespace stdph = std::placeholders;
 
-/* The following conditions must be met for an instantiation of Session_base<T>::to_unicode():
- * 1) It must clear ubuf, partially or completely
- * 2) It must return std::basic_string<T>
- * 3) If it makes use of any (new) state buffers, e.g. iconv state, it must not limit the
- * 	possible instatiations. That is, if the original code compiles with T = char, wchar_t, uchar, and int,
- * 	then the new code must also compile with T = char, wchar_t, uchar, and int.
- */
-template <>
-std::string Session_base<char>::to_unicode(u_string& u) {
-	std::string _s(sign_cast<const char*>(u.data()), sign_cast<const char*>(u.data()) + u.size());
-	u.clear();
-	return _s;
-}
+extern template
+std::string Session_base<char>::to_unicode(u_string& u);
 
-template <>
-u_string Session_base<uchar>::to_unicode(u_string& u) {
-	u_string _s;
-	_s.swap(u); // std::move would also work
-	return _s;
-}
+extern template
+u_string Session_base<uchar>::to_unicode(u_string& u);
 
-template <>
-std::wstring Session_base<wchar_t>::to_unicode(u_string& u) {
-	std::wstring ret;
-	wchar_t* t_next;
-	ret.resize(u.size());
-	const uchar* f_next;
-	
-	utf8_in(u.data(), u.data() + u.size(), f_next, &(*ret.begin()), &(*ret.end()), t_next);
-	u.erase(0, f_next - u.data());
-	ret.resize(t_next - ret.data());
-	return ret;
-}
+extern template
+std::wstring Session_base<wchar_t>::to_unicode(u_string& u);
 
 // Const versions
-template <>
-std::string Session_base<char>::to_unicode(u_string const& u) {
-	std::string _s(sign_cast<const char*>(u.data()), sign_cast<const char*>(u.data()) + u.size());
-	return _s;
-}
+extern template
+std::string Session_base<char>::to_unicode(u_string const& u);
 
-template <>
-u_string Session_base<uchar>::to_unicode(u_string const& u) {
-	u_string _s(u);
-	return _s;
-}
+extern template
+u_string Session_base<uchar>::to_unicode(u_string const& u);
 
-template <>
-std::wstring Session_base<wchar_t>::to_unicode(u_string const& u) {
-	std::wstring ret;
-	wchar_t* t_next;
-	ret.resize(u.size());
-	const uchar* f_next;
-	
-	utf8_in(u.data(), u.data() + u.size(), f_next, &(*ret.begin()), &(*ret.end()), t_next);
-	ret.resize(t_next - ret.data());
-	return ret;
-}
+extern template
+std::wstring Session_base<wchar_t>::to_unicode(u_string const& u);
 
 template<typename ct>
 u_string Session_base<ct>::process_encoded_data() {
