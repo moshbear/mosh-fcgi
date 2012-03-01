@@ -1,4 +1,4 @@
-/*! @file utf8.cpp - UTF-8 encoder/decoder
+/*! @file bits/utf8.cpp - UTF-8 encoder/decoder
  *
  * A UTF-8 encoder/decoder which can encode/decode non-BMP UTF-16 code points.
  *
@@ -30,12 +30,11 @@
 #include <cstdint>
 #include <cerrno>
 #include <exception>
-#include <mosh/fcgi/bits/u.hpp>
 #include <mosh/fcgi/bits/iterator_plus_n.hpp>
 #include <mosh/fcgi/bits/iterator_range_check.hpp>
-#include <mosh/fcgi/bits/utf8.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
+#include <src/utf8.hpp>
 #include <src/u.hpp>
 #include <src/namespace.hpp>
 
@@ -239,7 +238,7 @@ int encode_u8_char(wchar_t ch, SRC::uchar* to) {
 
 }
 
-MOSH_FCGI_BEGIN
+SRC_BEGIN
 
 int utf8_in(const uchar* from, const uchar* from_end, const uchar *& from_next,
 			wchar_t* to, wchar_t* to_end, wchar_t*& to_next) 
@@ -253,7 +252,7 @@ int utf8_in(const uchar* from, const uchar* from_end, const uchar *& from_next,
 		if (shift < 0)
 			goto e_ilseq;
 		// is there enough src bytes?
-		if (!iterator_range_check(from, from_end, shift + 1))
+		if (!MOSH_FCGI::iterator_range_check(from, from_end, shift + 1))
 			break;
 		break;
 		Utf16_pair p;
@@ -270,7 +269,7 @@ int utf8_in(const uchar* from, const uchar* from_end, const uchar *& from_next,
 			p.leading = cp;
 			if (in_needbytes(*(from + 3)) != 2)
 				goto e_ilseq;
-			if (!iterator_range_check(from, from_end, 6)) {
+			if (!MOSH_FCGI::iterator_range_check(from, from_end, 6)) {
 				break;
 			}
 			uint32_t cp2 = decode_u8_char(2, from + 3);
@@ -281,7 +280,7 @@ int utf8_in(const uchar* from, const uchar* from_end, const uchar *& from_next,
 				goto e_ilseq;
 			switch (my_utf) {
 			case Native_utf::_16:
-				if (!iterator_range_check(to, to_end, 2))
+				if (!MOSH_FCGI::iterator_range_check(to, to_end, 2))
 					goto break_loop;
 				*to = p.leading;
 				*++to = p.trailing;
@@ -299,10 +298,10 @@ int utf8_in(const uchar* from, const uchar* from_end, const uchar *& from_next,
 			// is there enough dst wchars?
 			if ((my_utf == Native_utf::_16) && (shift == 3)) {
 				// is there enough room in dst for a surrogate pair?
-				if (!iterator_range_check(to, to_end, 2))
+				if (!MOSH_FCGI::iterator_range_check(to, to_end, 2))
 					break;
 			} else {
-				if (!iterator_range_check(to, to_end, 1))
+				if (!MOSH_FCGI::iterator_range_check(to, to_end, 1))
 					break;
 			}
 			if (my_utf == Native_utf::_16) {
@@ -345,11 +344,11 @@ int utf8_out(const wchar_t* from, const wchar_t* from_end, const wchar_t *& from
 			case Native_utf::_16:
 				switch (is_surrogate(*from)) {
 				case Surrogate_id::leading:
-					if (!iterator_range_check(from, from_end, 2))
+					if (!MOSH_FCGI::iterator_range_check(from, from_end, 2))
 						goto break_loop;
 					if (is_surrogate(*(from + 1)) != Surrogate_id::trailing)
 						goto e_ilseq; 
-					if (!iterator_range_check(to, to_end, shift = 6))
+					if (!MOSH_FCGI::iterator_range_check(to, to_end, shift = 6))
 						goto break_loop;
 					p.leading = *from;
 					p.trailing = *++from;
@@ -359,7 +358,7 @@ int utf8_out(const wchar_t* from, const wchar_t* from_end, const wchar_t *& from
 				case Surrogate_id::trailing:
 					goto e_ilseq; 
 				case Surrogate_id::neither:
-					if (!iterator_range_check(to, to_end, shift = out_needbytes(*from)))
+					if (!MOSH_FCGI::iterator_range_check(to, to_end, shift = out_needbytes(*from)))
 						goto break_loop;
 					encode_u8_char(*from, to);
 					break;
@@ -370,12 +369,12 @@ int utf8_out(const wchar_t* from, const wchar_t* from_end, const wchar_t *& from
 				if (p.state == Utf16_pair::state_t::err) 
 					goto e_ilseq;
 				if ((*from) > 0xFFFF) {
-					if (!iterator_range_check(to, to_end, shift = 6))
+					if (!MOSH_FCGI::iterator_range_check(to, to_end, shift = 6))
 						goto break_loop;
 					encode_u8_char(p.leading, to);
 					encode_u8_char(p.trailing, to + 3);
 				} else {
-					if (!iterator_range_check(to, to_end, shift = out_needbytes(*from)))
+					if (!MOSH_FCGI::iterator_range_check(to, to_end, shift = out_needbytes(*from)))
 						goto break_loop;
 					encode_u8_char(*from, to);
 				}
@@ -388,7 +387,7 @@ int utf8_out(const wchar_t* from, const wchar_t* from_end, const wchar_t *& from
 			case Native_utf::_16:
 				switch (is_surrogate(*from)) {
 				case Surrogate_id::leading:
-					if (!iterator_range_check(from, from_end, 2))
+					if (!MOSH_FCGI::iterator_range_check(from, from_end, 2))
 						goto break_loop;
 					if (is_surrogate(*(from + 1)) != Surrogate_id::trailing)
 						goto e_ilseq;
@@ -397,14 +396,14 @@ int utf8_out(const wchar_t* from, const wchar_t* from_end, const wchar_t *& from
 					p.trailing = *++from;
 					cp = from_surrogate(p);
 
-					if (!iterator_range_check(to, to_end, shift = out_needbytes(cp)))
+					if (!MOSH_FCGI::iterator_range_check(to, to_end, shift = out_needbytes(cp)))
 						goto break_loop;
 					encode_u8_char(cp, to);
 					break;
 				case Surrogate_id::trailing:
 					goto e_ilseq;
 				case Surrogate_id::neither:
-					if (!iterator_range_check(to, to_end, shift = out_needbytes(*from)))
+					if (!MOSH_FCGI::iterator_range_check(to, to_end, shift = out_needbytes(*from)))
 						goto break_loop;
 					encode_u8_char(*from, to);
 					break;
@@ -413,7 +412,7 @@ int utf8_out(const wchar_t* from, const wchar_t* from_end, const wchar_t *& from
 			case Native_utf::_32:
 				if (is_surrogate(*from) != Surrogate_id::neither)
 					goto e_ilseq;
-				if (!iterator_range_check(to, to_end, shift = out_needbytes(*from)))
+				if (!MOSH_FCGI::iterator_range_check(to, to_end, shift = out_needbytes(*from)))
 					goto break_loop;
 				encode_u8_char(*from, to);
 				break;
@@ -423,7 +422,7 @@ int utf8_out(const wchar_t* from, const wchar_t* from_end, const wchar_t *& from
 		}
 
 		++from;
-		to = iterator_plus_n(to, to_end, shift);
+		to = MOSH_FCGI::iterator_plus_n(to, to_end, shift);
 	}
 break_loop:
 	from_next = from;
@@ -448,7 +447,7 @@ ssize_t utf8_length(const uchar* from, const uchar* from_end, std::size_t limit)
 		if (shift < 0)
 			goto e_ilseq;
 		// is there enough src bytes?
-		if (!iterator_range_check(from, from_end, shift + 1))
+		if (!MOSH_FCGI::iterator_range_check(from, from_end, shift + 1))
 			break;
 		break;
 		Utf16_pair p;
@@ -465,7 +464,7 @@ ssize_t utf8_length(const uchar* from, const uchar* from_end, std::size_t limit)
 			p.leading = cp;
 			if (in_needbytes(*(from + 3)) != 2)
 				goto e_ilseq;
-			if (!iterator_range_check(from, from_end, 6)) {
+			if (!MOSH_FCGI::iterator_range_check(from, from_end, 6)) {
 				break;
 			}
 			uint32_t cp2 = decode_u8_char(2, from + 3);
@@ -512,4 +511,4 @@ e_ilseq:
 	return -EILSEQ;
 }
 
-MOSH_FCGI_END
+SRC_END
