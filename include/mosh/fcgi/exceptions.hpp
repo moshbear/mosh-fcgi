@@ -32,6 +32,7 @@
 
 MOSH_FCGI_BEGIN
 
+//! Mosh-fcgi exceptions
 namespace exceptions {
 
 //! General mosh-fcgi exception

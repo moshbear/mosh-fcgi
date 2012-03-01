@@ -32,6 +32,8 @@
 MOSH_FCGI_BEGIN
 
 namespace http {
+
+//! Session-related stuff
 namespace session {
 
 /*! @brief Process url-encoded data
