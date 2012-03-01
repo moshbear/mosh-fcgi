@@ -37,8 +37,9 @@
 #include <mosh/fcgi/protocol/header.hpp>
 #include <mosh/fcgi/protocol/vars.hpp>
 #include <mosh/fcgi/fcgistream.hpp>
-#include <mosh/fcgi/bits/utf8.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
+#include <src/utf8.hpp>
+#include <src/namespace.hpp>
 
 MOSH_FCGI_BEGIN
 
@@ -165,7 +166,7 @@ Fcgistream& operator << (Fcgistream& os, std::wstring const& ws) {
 	std::array<uchar, 32768> buffer;
 	uchar* s_next;
 	while (w_begin != w_end) {
-		if (utf8_out(w_begin, w_end, w_begin, buffer.data(), buffer.data() + 32768, s_next) < 0)
+		if (SRC::utf8_out(w_begin, w_end, w_begin, buffer.data(), buffer.data() + 32768, s_next) < 0)
 			throw std::invalid_argument("Fcgistream::operator<<(Fcgistream&, std::wstring const&): EILSEQ");
 		os.rdbuf()->sputn(buffer.data(), std::distance(buffer.data(), s_next));
 	}
@@ -188,7 +189,7 @@ Fcgistream& operator << (Fcgistream& os, const wchar_t* ws) {
 	std::array<uchar, 32768> buffer;
 	uchar* s_next;
 	while (w_begin != w_end) {
-		if (utf8_out(w_begin, w_end, w_begin, buffer.data(), buffer.data() + 32768, s_next) < 0)
+		if (SRC::utf8_out(w_begin, w_end, w_begin, buffer.data(), buffer.data() + 32768, s_next) < 0)
 			throw std::invalid_argument("Fcgistream::operator<<(Fcgistream&, std::wstring const&): EILSEQ");
 		os.rdbuf()->sputn(buffer.data(), std::distance(buffer.data(), s_next));
 	}
