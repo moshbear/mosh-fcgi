@@ -117,6 +117,7 @@ std::map<std::string, std::string> read_mime_header(std::string const& buf) {
 MOSH_FCGI_BEGIN
 
 namespace http {
+
 namespace session {
 
 ssize_t process_urlencoded_kv(const char* data, size_t size, u_string& k, u_string& v) {
@@ -314,8 +315,8 @@ void do_headers(std::string const& buf,
 		h_func(h.first, h.second);
 }
 
-
 }
+
 }
 
 MOSH_FCGI_END
