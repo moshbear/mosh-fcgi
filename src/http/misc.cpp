@@ -1,6 +1,6 @@
 //! @file http/misc.cpp - HTTP miscellany
-/*!*************************************************************************
-* Copyright (C) 2011 m0shbear                                              *
+/***************************************************************************
+* Copyright (C) 2011-2 m0shbear                                            *
 *                                                                          *
 * This file is part of mosh-fcgi.                                          *
 *                                                                          *
@@ -57,18 +57,7 @@ struct tts_lu : public SRC::Singleton<tts_lu> {
 	std::shared_ptr<std::string> f_month;
 };
 
-}
-
-MOSH_FCGI_BEGIN
-
-namespace http {
-
-std::string time_to_string(const std::string& fmt, int add_seconds) {
-	struct timeval tv;
-	gettimeofday(&tv, 0);
-	tv.tv_sec += add_seconds;
-	struct tm tm;
-	gmtime_r(&tv.tv_sec, &tm);	
+std::string x_time_to_string(const std::string& fmt, const struct tm& tm, unsigned tv_usec = 0) {
 	std::stringstream ss;
 	bool hit_pct = false;
 	char strft_buf[64];
@@ -143,7 +132,7 @@ std::string time_to_string(const std::string& fmt, int add_seconds) {
 			break;
 		case 'f':
 			if (hit_pct) {
-				ss << _print_(6, '0', tv.tv_usec);
+				ss << _print_(6, '0', tv_usec);
 				hit_pct = false;
 			} else
 				ss << ch;
@@ -189,6 +178,30 @@ std::string time_to_string(const std::string& fmt, int add_seconds) {
 		};
 	}
 	return ss.str();
+}
+
+
+}
+
+MOSH_FCGI_BEGIN
+
+namespace http {
+
+std::string time_to_string(const std::string& fmt, int add_seconds) {
+	struct timeval tv;
+	gettimeofday(&tv, 0);
+	tv.tv_sec += add_seconds;
+	return time_to_string(fmt, tv);
+}
+
+std::string time_to_string(const std::string& fmt, const struct timeval& tv) {
+	struct tm tm;
+	gmtime_r(&tv.tv_sec, &tm);
+	return x_time_to_string(fmt, tm, tv.tv_usec);
+}
+
+std::string time_to_string(const std::string& fmt, const struct tm& tm) {
+	return x_time_to_string(fmt, tm, 0);
 }
 
 std::string hostname() {

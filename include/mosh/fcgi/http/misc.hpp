@@ -1,6 +1,6 @@
 //! @file  mosh/fcgi/http/misc.hpp Non-templated miscellany for http
-/*!*************************************************************************
-* Copyright (C) 2011 m0shbear                                              *
+/***************************************************************************
+* Copyright (C) 2011-2 m0shbear                                            *
 *                                                                          *
 * This file is part of mosh-cgi.                                           *
 *                                                                          *
@@ -23,10 +23,13 @@
 #define MOSH_FCGI_HTTP_MISC_HPP
 
 #include <string>
+extern "C" {
+#include <time.h>
+#include <sys/time.h>
+}
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
-
 
 namespace http {
 
@@ -44,15 +47,28 @@ namespace http {
  *  	<tr><td>%M</td><td>Minute (00-60)</td></tr>
  *  	<tr><td>%S</td><td>Second (00-60)</td></tr>
  *  	<tr><td>%Y</td><td>Year (0000-9999)</td></tr>
- *  	<tr><td>%</td><td>Literal %</td></tr>
+ *  	<tr><td>%%</td><td>Literal %</td></tr>
  *  </table>
  *
  *  While not 100% complete, it does everything I need it to do.
- *
+ *  //@{
+ */
+/*! @brief Absolute time version
+ *  @param[in] fmt format string
+ *  @param[in] tm absolute calendar time
+ */
+std::string time_to_string(const std::string& fmt, const struct tm& tv);
+/*! @brief Absolute time version
+ *  @param[in] fmt format string
+ *  @param[in] tv absolute timeval
+ */
+std::string time_to_string(const std::string& fmt, const struct timeval& tv);
+/*! @brief Relative (to now) time version
  *  @param[in] fmt format string
  *  @param[in] add_seconds time offset, in seconds
  */
 std::string time_to_string(const std::string& fmt, int add_seconds = 0);
+//@}
 
 //! Gets the current hostname
 std::string hostname();
