@@ -51,7 +51,7 @@ namespace protocol {
 		: fcgi_id(fcgi_id), fd(fd)
 		{ }
 
-		Full_id(uint32_t f)
+		Full_id(uint64_t f)
 		: full(f)
 		{ }
 
