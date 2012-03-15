@@ -55,10 +55,13 @@ public:
 	 */
 	bool handler();
 
+	//@{
 	//! Interface to Buffer::request_write()
 	Block request_write(size_t size);
 	//! Interface to Buffer::secure_write()
 	void secure_write(size_t size, protocol::Full_id id, bool kill);
+	//@}
+	
 	//! Constructor
 	/*!
 	 * Construct a transceiver object based on an initial file descriptor to listen on and
@@ -68,11 +71,15 @@ public:
 	 * @param[in] send_message Function to call to pass messages to requests
 	 */
 	Transceiver(int fd, std::function<void(protocol::Full_id, protocol::Message)> send_message);
+
+	virtual ~Transceiver();
+	//@{
 	//! Blocks until there is data to receive or a call to wake() is made
 	void sleep();
 
 	//! Forces a wakeup from a call to sleep()
 	void wake();
+	//@}
 
 private:
 	//! %Buffer type for receiving FastCGI records
@@ -90,7 +97,7 @@ private:
 	std::unique_ptr<Buffer> pbuf;
 	
 	//! Function to call to pass messages to requests
-	std::function<void(protocol::Full_id, protocol::Message)> send_message;
+	std::function<void (protocol::Full_id, protocol::Message)> send_message;
 
 	//! poll() file descriptors container
 	std::vector<pollfd> poll_fds;
