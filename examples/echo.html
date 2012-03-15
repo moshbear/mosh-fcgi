@@ -1,0 +1,15 @@
+<html >
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<title>UTF-8 Echo Form</title>
+	</head>
+	<body>
+		<form action="echo.fcgi?var1=testing&amp;var2=tested&amp;var2=tester&amp;utf8GetVarTest=проверка&amp;道可道=非常道&amp;道可道=地之始" method="post" enctype="multipart/form-data" accept-charset="utf-8">
+			Name: <input type="text" name="aquí está el campo" value="Él está con un niño" /> <br />
+			File: <input type="file" name="aFile" /> <br />
+			<input type="hidden" name="非常名。無名天地之始。有名萬物之母" value="故有無相生，難易相成，長短相形" />
+			<input type="hidden" name="非常名。無名天地之始。有名萬物之母" value="是以聖人之治，虛其心" />
+			<input type="submit" name="submit" value="submit" />
+		</form>
+	</body>
+</html>
