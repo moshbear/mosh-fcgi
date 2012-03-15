@@ -47,6 +47,8 @@ struct Converter {
 	 * @return encoded input
 	 */
 	virtual std::string out(const uchar* in, const uchar* in_end, const uchar*& in_next) const = 0;
+
+	virtual void reset() { }
 	
 };
 
