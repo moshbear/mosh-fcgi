@@ -202,7 +202,7 @@ ssize_t process_cookies(const char* data, size_t size, std::map<std::string, for
 	return std::distance(data_end, sep_v);
 } 
 
-void do_fill(u_string& buf, std::map<std::string, std::string>& env,
+void do_param(std::pair<std::string, std::string> const& p,
 		std::function<bool ()> ue_init,
 		std::function<bool (std::string)> mp_init,
 		std::function<void (const char*, size_t)> do_gets,
@@ -211,38 +211,30 @@ void do_fill(u_string& buf, std::map<std::string, std::string>& env,
 	if ((!ue_init) || (!mp_init) || (!do_gets) || (!do_cookies))
 		throw std::invalid_argument("Undefined functors");
 	
-	while (buf.size()) {
-		std::pair<std::string, std::string> params;
-		ssize_t to_erase = protocol::process_param_record(buf.data(), buf.size(), params);
-		if (to_erase == -1)
-			return;
-		buf.erase(0, to_erase);
-		env.insert(params);
-		//this->charset() = "";
-		std::string& k = params.first;
-		std::string& v = params.second;
-		if (k == "CONTENT_TYPE") {
-			if (v.size()) {
-				std::string formT("application/x-www-formurl-encoded");
-				std::string mpT("multipart/form-data");
-				if (!v.compare(0, formT.size(), formT)) {
-					if (!ue_init())
-						throw std::runtime_error("session_base->init_ue");
-				} else if (!v.compare(0, mpT.size(), mpT)) {
-					xpr::smatch m;
-					if (xpr::regex_search(v, m, rc().boundary)) {
-						if (!mp_init("--" + m.str(1)))
-							throw std::runtime_error("session_base->init_mp");
-					}
-				} else {
-					throw std::runtime_error("Bad Content-type");
+	std::string const& k = p.first;
+	std::string const& v = p.second;
+	//this->charset() = "";
+	if (k == "CONTENT_TYPE") {
+		if (v.size()) {
+			std::string formT("application/x-www-formurl-encoded");
+			std::string mpT("multipart/form-data");
+			if (!v.compare(0, formT.size(), formT)) {
+				if (!ue_init())
+					throw std::runtime_error("session_base->init_ue");
+			} else if (!v.compare(0, mpT.size(), mpT)) {
+				xpr::smatch m;
+				if (xpr::regex_search(v, m, rc().boundary)) {
+					if (!mp_init("--" + m.str(1)))
+						throw std::runtime_error("session_base->init_mp");
 				}
+			} else {
+				throw std::runtime_error("Bad Content-type");
 			}
-		} else if (k == "QUERY_STRING") {	
-			do_gets(sign_cast<const char*>(v.data()), v.size());
-		} else if (k == "HTTP_COOKIE") {
-			do_cookies(sign_cast<const char*>(v.data()), v.size());
 		}
+	} else if (k == "QUERY_STRING") {	
+		do_gets(sign_cast<const char*>(v.data()), v.size());
+	} else if (k == "HTTP_COOKIE") {
+		do_cookies(sign_cast<const char*>(v.data()), v.size());
 	}
 }
 

@@ -19,6 +19,7 @@ FCGI_FILES = 	bits/boyer_moore.cpp \
 		bits/utf8.cpp \
 		exceptions.cpp \
 		fcgistream.cpp \
+		manager.cpp \
 		protocol/funcs.cpp \
 		protocol/message.cpp \
 		protocol/vars.cpp \

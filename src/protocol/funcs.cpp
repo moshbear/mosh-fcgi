@@ -37,25 +37,18 @@ extern "C" {
 #include <mosh/fcgi/bits/aligned.hpp>
 #include <mosh/fcgi/bits/types.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
+#include <src/protocol.hpp>
+#include <src/u.hpp>
+#include <src/namespace.hpp>
 
-namespace {
-
-/*! @brief A list of recognized management parameters.
- *
- * Used by process_gv().
- */
-const std::map<std::string, std::string> management_params = {
-		{ "FCGI_MAX_CONNS", "10" }, 
-		{ "FCGI_MAX_REQS",  "50" },
-		{ "FCGI_MPXS_CONNS", "1" }
-	};
+SRC_BEGIN
 
 /*! @brief Convert a name-value pair to a PARAM record.
  *
  * Used by process_gv().
  */
-MOSH_FCGI::u_string make_param_record(std::pair<std::string, std::string> const& param) {
-	MOSH_FCGI::u_string buf;
+u_string make_param_record(std::pair<std::string, std::string> const& param) {
+	u_string buf;
 	uint32_t nbuf;
 	size_t off = 0;
 
@@ -91,7 +84,7 @@ MOSH_FCGI::u_string make_param_record(std::pair<std::string, std::string> const&
 	return buf;
 }
 	
-}
+SRC_END
 
 MOSH_FCGI_BEGIN
 
@@ -140,31 +133,6 @@ ssize_t process_param_record(const uchar* data, size_t data_size, std::pair<std:
 	}
 err_len:
 	return -1;
-}
-
-u_string process_gv(const uchar* data, size_t data_len) {
-	std::queue<std::string> queue;
-
-	while (data_len > 0) {
-		std::pair<std::string, std::string> params;
-		ssize_t to_erase = process_param_record(data, data_len, params);
-		if (to_erase == -1)
-			break;
-		data += to_erase;
-		data_len -= to_erase;
-		queue.push(std::move(params.first));
-	}
-	
-	u_string res;
-
-	while (!queue.empty()) {
-		std::map<std::string, std::string>::const_iterator p = management_params.find(queue.front());
-		if (p != management_params.end()) 
-			res += make_param_record(*p);
-		queue.pop();
-	}
-	return res;
-
 }
 
 }
