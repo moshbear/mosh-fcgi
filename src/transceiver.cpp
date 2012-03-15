@@ -367,4 +367,6 @@ Transceiver::Transceiver(int fd_, std::function<void(protocol::Full_id, protocol
 	poll_fds[1].fd = wakeup_fd_in;
 }
 
+Transceiver::~Transceiver() { }
+
 MOSH_FCGI_END
