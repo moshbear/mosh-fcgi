@@ -23,6 +23,7 @@ FCGI_FILES = 	bits/boyer_moore.cpp \
 		protocol/funcs.cpp \
 		protocol/message.cpp \
 		protocol/vars.cpp \
+		request.cpp \
 		transceiver.cpp
 
 # mosh-fcgi http handling

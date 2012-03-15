@@ -44,6 +44,8 @@
 
 namespace {
 
+}
+
 MOSH_FCGI_BEGIN
 
 Request_base::Request_base()
@@ -182,7 +184,7 @@ u_string Request_base::dump() const {
 	ss << "Transceiver: " << "\r\n";
 	ss << "Role: " << ([=](protocol::Role r) {
 				switch (r) {
-				case procotol::Role::invalid: return "<invalid>";
+				case protocol::Role::invalid: return "<invalid>";
 				case protocol::Role::responder: return "RESPONDER";
 				case protocol::Role::authorizer: return "AUTHORIZER";
 				case protocol::Role::filter: return "FILTER";

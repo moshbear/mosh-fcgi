@@ -43,15 +43,6 @@ namespace protocol {
 	 * @retval -1 Record body too small
 	 */
 	ssize_t process_param_record(const uchar* data, size_t data_size, std::pair<std::string, std::string>& result);
-
-	/*! @brief Reply to a FastCGI GET_VALUES record
-	 *
-	 * @param[in] data Start of record body
-	 * @param[in] data_len Value of record's content_length field
-	 * @return A FastCGI GET_VALUES_RESULT record
-	 */
-	u_string process_gv(const uchar* data, size_t data_len);
-
 }
 
 MOSH_FCGI_END
