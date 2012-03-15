@@ -44,6 +44,7 @@ MOSH_FCGI_BEGIN
 class Fcgistream : public std::basic_ostream<uchar> {
 public:
 	Fcgistream();
+	virtual ~Fcgistream();
 	//! Arguments passed directly to Fcgibuf::set()
 	void set(protocol::Full_id id, Transceiver& transceiver, protocol::Record_type type);
 	//! 

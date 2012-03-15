@@ -112,6 +112,9 @@ Fcgistream::Fcgistream() : std::basic_ostream<uchar>(), pbuf(new Fcgibuf) {
 	this->rdbuf(pbuf.get());
 }
 
+Fcgistream::~Fcgistream() {
+}
+
 void Fcgistream::set(protocol::Full_id id, Transceiver& transceiver, protocol::Record_type type) {
 	pbuf->set(id, transceiver, type);
 }
