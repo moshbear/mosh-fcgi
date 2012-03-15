@@ -64,16 +64,15 @@ ssize_t process_urlencoded_kv(const char* data, size_t size, u_string& k, u_stri
  */
 ssize_t process_cookies(const char* data, size_t size, std::map<std::string, form::Entry<char, Cookie>>& kv, Cookie& g);
 
-/*! @brief Parse a FCGI_PARAMS record
+/*! @brief Parse a FastCGI parameter
  * 
- * @param[in,out] buf Data buffer (note: erases data from the beginning as needed)
- * @param[out] env Map of environment variables
+ * @param[in] p Parameter
  * @param ue_init Functor for url-encoded initialization
  * @param mp_init Functor for multipart-mixed initialization
  * @param do_gets Functor for QUERY_STRING (i.e. GETs) initialization
  * @param do_cookies Functor for cookies initialization
  */
-void do_fill(u_string& buf, std::map<std::string, std::string>& env,
+void do_param(std::pair<std::string, std::string> const& p,
 		std::function<bool ()> ue_init,
 		std::function<bool (std::string)> mp_init,
 		std::function<void (const char*, size_t)> do_gets,

@@ -188,7 +188,7 @@ void Session<ct, pt>::fill_mp(const uchar* data, size_t size) {
 					if (a1)
 						this->mp_vars->mm_vars.stop_parsing = false;
 				},
-				[&] (std::string const& a1) { cur_entry.ct_encoding = a1; },
+				[&] (std::string const& a1) { cur_entry.cte_decoder = get_conv(a1); },
 				[&] (std::string const& a1, std::string const& a2) {
 					if (!a1.compare("Content-Type"))
 						cur_entry.content_type = a2;

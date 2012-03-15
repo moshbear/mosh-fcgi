@@ -55,8 +55,6 @@ protected:
 	//! Type alias for std::map<string. Cookie_v>
 	typedef typename std::map<std::string, Cookie_v> Cookie_kv;
 public:
-	//! Environment variable list
-	std::map<std::string, std::string> envs;
 	//! GETs
 	Kv gets;
 	//! (multi-)set of cookies
@@ -64,21 +62,13 @@ public:
 	//! Global cookie options
 	Cookie cookies_g;
 	
-	/*! @brief Parses FastCGI parameter data into the data structure
+	/*! @brief Parse a FastCGI parameter into the data structure
 	 *
-	 * This function will take the body of a FastCGI parameter record and parse
-	 * the data into the data structure. data should equal the first character of
-	 * the records body with size being it's content length.
-	 *
-	 * @param[in] data Pointer to the first byte of parameter data
-	 * @param[in] size Size of data in bytes
+	 *  @param[in] p Parameter
 	 */
-	void fill(const uchar* data, size_t size);
-		
-protected:
-	//! Byte buffer
-	u_string bbuf;
+	void parse_param(std::pair<std::string, std::string> const& p);
 
+protected:
 	Session_base ()  { }
 
 	/*! @name Initialize post data in derived class.

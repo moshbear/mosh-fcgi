@@ -1,6 +1,6 @@
 //! @file  mosh/fcgi/request.hpp Defines the MOSH_FCGI::Request class
 /***************************************************************************
-* Copyright (C) 2011 m0shbear                                              *
+* Copyright (C) 2011-2 m0shbear                                            *
 *               2007 Eddie                                                 *
 *                                                                          *
 * This file is part of mosh-fcgi.                                          *
@@ -27,54 +27,48 @@
 #include <string>
 #include <mutex>
 #include <functional>
+#include <vector>
 
 #include <mosh/fcgi/protocol/types.hpp>
 #include <mosh/fcgi/protocol/vars.hpp>
 #include <mosh/fcgi/protocol/full_id.hpp>
-#include <mosh/fcgi/protocol/end_request.hpp>
 #include <mosh/fcgi/protocol/message.hpp>
-#include <mosh/fcgi/exceptions.hpp>
-#include <mosh/fcgi/bits/block.hpp>
 #include <mosh/fcgi/transceiver.hpp>
 #include <mosh/fcgi/fcgistream.hpp>
 #include <mosh/fcgi/http/session.hpp>
+#include <mosh/fcgi/bits/locked.hpp>
+#include <mosh/fcgi/bits/u.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
 MOSH_FCGI_BEGIN
 
-/*! @brief %Request handling class
+/*! @brief %Request handling class for POST-less requests 
  *
- * Derivations of this class will handle requests. This
- * includes building the session data, processing post/get data,
- * fetching data (files, database), and producing a response.
- * Once all client data is organized, response() will be called.
- * At minimum, derivations of this class must define response().
+ * Derivations of this class will handle requests, namely interpreting
+ * parameter K-Vs, IN records (POSTDATA), and FCGI_DATA (FILTERDATA)
+ * records; processing the interpreted data; and producing a response.
  *
- * If you want to use UTF-8 encoding pass wchar_t as the template
- * argument. If you want to manually use iconv or use raw bytes,
- * then pass char or unsigned char as the template argument.
+ * If you're writing an Authorizer, this is the Request that you want to derive.
  *
- * @tparam char_type Character type for internal processing (wchar_t or char)
- * @tparam post_vec_type Vector type for storing file data
- * @tparam data_vec_type Vector type for storing DATA stream (when role == Role::filter)
+ * The following virtual methods are defined:
+ * * params_handler() - When parameter parsing is complete, this function is
+ * 	called to push the parameter list to the handler
+ * * in_handler() - When an IN record is received, this function is called
+ * 	to interpret the POSTDATA
+ * * data_handler() - When a DATA record is received, this function is called
+ * 	to interpret the FILTERDATA
+ * * [pure] response() - When all the client data is received _or_ a non-FCGI message
+ * 	is received, this function is called to process and produce a response
+ *	or process the received message
+ *
  */
-template <class char_type, typename post_val_type = std::basic_string<char_type>, typename data_buf_type = std::vector<char>>
-class Request {
+class Request_base {
 public:
 	//! Initializes what it can. set() must be called by Manager before the data is usable.
-	Request()
-	: state(protocol::Record_type::params) {
-		out.exceptions(std::ios_base::badbit | std::ios_base::failbit | std::ios_base::eofbit);
-	}
+	Request_base();
+	virtual ~Request_base();
 
 protected:
-	//! Structure containing all FastCGI HTTP session data
-	http::Fcgi_session<char_type, post_val_type, data_buf_type> session;
-
-	// To dump data into the stream without it being code converted and bypassing the stream buffer
-	// call Fcgistream::dump(char* data, size_t size)
-	// or Fcgistream::dump(std::basicistream<char>& stream)
-
 	/*! @brief Standard output stream to the client
 	 *
 	 * * To print UTF-8-encoded Unicode data, use operator&lt;&lt; with a @c wchar_t string
@@ -101,32 +95,12 @@ protected:
 	 * @sa callback
 	 */
 	virtual bool response() = 0;
-
-	/*! @brief Generate a data input response
-	 *
-	 * This function exists should the library user wish to do something like generate a partial response based on
-	 * bytes received from the client. The function is called by handler() every time a FastCGI IN record is received.
-	 * The function has no access to the data, but knows exactly how much was received based on the value that was passed.
-	 * Note this value represents the amount of data received in the individual record, not the total amount received in
-	 * the session. If the library user wishes to have such a value they would have to keep a tally of all size values
-	 * passed.
-	 *
-	 * @param[in] bytes_received Amount of bytes received in this FastCGI record
-	 */
-	virtual bool in_handler(unsigned bytes_received) { return true; }
-
-	/*! @brief Generate a filter data input response
-	 *
-	 * This function exists should the library user wish to do something like generate a partial response based on
-	 * bytes received from the client. The function is called by handler() every time a FastCGI DATA record is received.
-	 * The function has no access to the data, but knows exactly how much was received based on the value that was passed.
-	 * Note this value represents the amount of data received in the individual record, not the total amount received in
-	 * the session. If the library user wishes to have such a value they would have to keep a tally of all size values
-	 * passed.
-	 *
-	 * @param[in] bytes_received Amount of bytes received in this FastCGI record
-	 */
-	virtual bool data_handler(unsigned bytes_received) { return true; }
+	//! Handler for parsed PARAMS
+	virtual bool params_handler(std::pair<std::string, std::string> const& param) { return true; }
+	//! Handler for POSTDATA
+	virtual void in_handler(const uchar* data, size_t len) { }
+	//! Handler for FCGI_DATA
+	virtual void data_handler(const uchar* data, size_t len) { }
 	
 	/*! @brief The message associated with the current handler() call.
 	 *
@@ -150,103 +124,17 @@ protected:
 	 *	and the raw castable data.
 	 */
 	std::function<void(protocol::Message)> callback;
+	//! Request parameters
+	std::map<std::string, std::string> envs;
 
-private:
-	//@{
-	//! A queue of messages to be handled by the request
-	std::queue<protocol::Message> messages;
-	//! Mutex for messages
-	std::mutex messages_lock;
-	//@}
-
-	/*! @brief Request Handler
-	 *
-	 * This function is called by Manager::handler() to handle messages destined for the request.
-	 * It deals with FastCGI messages (type=0) while passing all other messages off to response().
-	 *
-	 * @return Boolean value indicating completion (true means complete)
-	 * @sa callback
+	//! Dump FastCGI request parameters to string
+	/*! @note Does not dump message or envs
 	 */
-	bool handler() {
-		using namespace protocol;
-		using namespace std;
-
-		try {
-			{
-				std::lock_guard<std::mutex> lock(messages_lock);
-				message = messages.front();
-				messages.pop();
-			}
-			if (!message.type) {
-				aligned<sizeof(Header), Header> _header(static_cast<const void*>(message.data.get()));
-				Header& header = _header;
-				const uchar* body = message.data.get() + sizeof(Header);
-				switch (header.type()) {
-				case Record_type::params: {
-					if (state != Record_type::params)
-						throw exceptions::Record_out_of_order(id, state, Record_type::params);
-					if (header.content_length() == 0) {
-						if (role == Role::authorizer) {
-							state = Record_type::out;
-							if (response()) {
-								complete(0);
-								return true;
-							}
-							break;
-						}
-						state = Record_type::in;
-						break;
-					}
-					session.fill(body, header.content_length());
-				} break;
-				case Record_type::in: {
-					if (state != Record_type::in)
-						throw exceptions::Record_out_of_order(id, state, Record_type::in);
-					if (header.content_length() == 0) {
-						if (role == Role::filter) {
-							state = Record_type::data;
-							break;
-						}
-						state = Record_type::out;
-						if (response()) {
-							complete(0);
-							return true;
-						}
-						break;
-					}
-					session.fill_post(body, header.content_length());
-					in_handler(header.content_length());
-				} break;
-				case Record_type::data: {
-					if (state != Record_type::data)
-						throw exceptions::Record_out_of_order(id, state, Record_type::data);
-					if (header.content_length() == 0) {
-						state = Record_type::out;
-						if (response()) {
-							complete(0);
-							return true;
-						}
-					}
-					session.fill_data(body, header.content_length());
-					data_handler(header.content_length());
-				} break;
-				case Record_type::abort_request:
-					return true;
-				default:;
-				}
-			} else if (response()) {
-				complete(0);
-				return true;
-			}
-		} catch (std::exception& e) {
-			err << e.what() << std::endl;
-			complete(1);
-			return true;
-		}
-		return false;
-	}
-
-	template <typename T> friend class Manager;
+	u_string dump() const;
+private:
+	friend class Manager;
+	//! A queue of messages to be handled by the request
+	Mutexed<std::queue<protocol::Message>> messages;
 	//! Pointer to the transceiver object that will send data to the other side
 	Transceiver* transceiver;
 	//! The role that the other side expects this request to play
@@ -257,23 +145,22 @@ private:
 	bool kill_con;
 	//! What the request is current doing
 	protocol::Record_type state;
-	//! Generates an ENDREQUEST FastCGI record
-	void complete(int app_status) {
-		using namespace protocol;
-		out.flush();
-		err.flush();
+	//! Param buffer
+	u_string pbuf;
 
-		Header hdr(version, Record_type::end_request, id.fcgi_id, sizeof(End_request), 0);
-		End_request ereq(app_status, Protocol_status::request_complete);
-
-		Block buffer(transceiver->request_write(sizeof(Header) + sizeof(End_request)));
-
-		memcpy(buffer.data, &hdr, sizeof(Header));
-		memcpy(buffer.data + sizeof(Header), &ereq, sizeof(End_request));
-
-		transceiver->secure_write(sizeof(Header) + sizeof(End_request), id, kill_con);
-	}
-
+	/*! @brief Request Handler
+	 *
+	 * This function is called by Manager::handler() to handle messages destined for the request.
+	 * It deals with FastCGI messages (type=0) while passing all other messages off to response().
+	 *
+	 * @return Boolean value indicating completion (true means complete)
+	 * @sa callback
+	 */
+	bool handler();
+	
+	//! Generates an END_REQUEST FastCGI record
+	void complete(int app_status);
+	
 	/*! @brief Set's up the request with the data it needs.
 	 *
 	 * This function is an "after-the-fact" constructor that build vital initial data for the request.
@@ -285,16 +172,99 @@ private:
 	 * @param[in] callback Callback function capable of passing messages to the request
 	 */
 	void set(protocol::Full_id id, Transceiver& transceiver, protocol::Role role, bool kill_con,
-			std::function<void(protocol::Message)> callback)
-	{
-		this->kill_con = kill_con;
-		this->id = id;
-		this->transceiver = &transceiver;
-		this->role = role;
-		this->callback = callback;
+			std::function<void(protocol::Message)> callback);
 
-		err.set(id, transceiver, protocol::Record_type::err);
-		out.set(id, transceiver, protocol::Record_type::out);
+	//! Fill params
+	void fill_params();
+};
+
+
+
+/*! @brief %Request handling with rudimentary buffering
+ *
+ * Request_base with buffered IN and DATA.
+ *
+ * @tparam Post_buf Vector type for storing IN stream
+ * @tparam Data_buf Vector type for storing DATA stream (when role == Role::filter)
+ *
+ * @see Request_base
+ */
+template <typename Post_buf = std::vector<uchar>, typename Data_buf = std::vector<uchar>>
+class Request : public virtual Request_base {
+protected:
+	//! Handler for IN records
+	void in_handler(const uchar* data, size_t len) {
+		post_buf.reserve(post_buf.size() + len);
+		std::copy(data, data + len, std::back_inserter(post_buf));
+		in_handler(len);
+	}
+	//! Handler for DATA records
+	void data_handler(const uchar* data, size_t len) {
+		data_buf.reserve(data_buf.size() + len);
+		std::copy(data, data + len, std::back_inserter(data_buf));
+		data_handler(len);
+	}
+	
+	/*! @brief Generate a data input response
+	 *
+	 * This function exists should the library user wish to do something like generate a partial response based on
+	 * bytes received from the client. The function is called by handler() every time a FastCGI IN record is received.
+	 * The function has no access to the data, but knows exactly how much was received based on the value that was passed.
+	 * Note this value represents the amount of data received in the individual record, not the total amount received in
+	 * the session. If the library user wishes to have such a value they would have to keep a tally of all size values
+	 * passed.
+	 *
+	 * @param[in] bytes_received Amount of bytes received in this FastCGI record
+	 */
+	virtual void in_handler(size_t bytes_received) { }
+
+	/*! @brief Generate a filter data input response
+	 *
+	 * This function exists should the library user wish to do something like generate a partial response based on
+	 * bytes received from the client. The function is called by handler() every time a FastCGI DATA record is received.
+	 * The function has no access to the data, but knows exactly how much was received based on the value that was passed.
+	 * Note this value represents the amount of data received in the individual record, not the total amount received in
+	 * the session. If the library user wishes to have such a value they would have to keep a tally of all size values
+	 * passed.
+	 *
+	 * @param[in] bytes_received Amount of bytes received in this FastCGI record
+	 */
+	virtual void data_handler(size_t bytes_received) { }
+
+	//! IN buffer
+	Post_buf post_buf;
+	//! DATA buffer
+	Data_buf data_buf;
+};
+
+/*! @brief %Request handling class for HTTP forms
+ *
+ * If you want to use UTF-8 encoding pass wchar_t as the template
+ * argument. If you want to manually use iconv or use raw bytes,
+ * then pass char or unsigned char as the template argument.
+ *
+ * @tparam char_type Character type for internal processing (wchar_t or char)
+ * @tparam post_vec_type Vector type for storing file data
+ * @tparam data_vec_type Vector type for storing DATA stream (when role == Role::filter)
+ *
+ * @see Request
+ */
+template <class char_type, typename post_val_type = std::basic_string<char_type>, typename data_buf_type = std::vector<uchar>>
+class Form_request : public virtual Request<std::vector<uchar>, data_buf_type> {
+protected:
+	//! Structure containing all FastCGI HTTP session data
+	http::Session<char_type, post_val_type> session;
+	
+	//! Handler for parsed PARAMS
+	void params_handler(std::map<std::string, std::string> const& env) {
+		session.parse_param(env);
+		return true;
+	}
+
+	//! Handler for IN records
+	void in_handler(const uchar* data, size_t len) {
+		session.fill_post(data, len);
+		in_handler(len);
 	}
 };
 

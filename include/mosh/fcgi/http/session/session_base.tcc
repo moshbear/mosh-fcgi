@@ -83,15 +83,13 @@ u_string Session_base<ct>::process_encoded_data() {
 // fill_gets(QUERY_STRING) is called from here
 // Init of (ue|mp)_regex_cache too (instead of in ctor)
 template <class char_type>
-void Session_base<char_type>::fill(const uchar* data, size_t size) {
-	this->bbuf.append(data, data + size);
-	session::do_fill(this->bbuf, this->envs,
+void Session_base<char_type>::parse_param(std::pair<std::string, std::string> const&p) {
+	session::do_param(p,
 			[&] ()  { return this->ue_init(); },
 			[&] (std::string const& a1) { return this->mp_init(a1); },
 			[&] (const char* a1, size_t a2) { this->fill_ue_oneshot(a1, a2); },
 			[&] (const char* a1, size_t a2) { session::process_cookies(a1, a2, this->cookies, this->cookies_g); }
 	);
-
 }
 
 template <class char_type>
