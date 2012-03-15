@@ -1,6 +1,12 @@
-//! @file  mosh/fcgi/http/session.hpp Meta-include for session/*
+/*! @file  mosh/fcgi/http/session.hpp Meta-include for session
+ *
+ *  @note If you're not parsing any HTML form data (i.e. GETs,
+ *  @note multipart/form-data, or multipart/mixed), then don't include this header.
+ *  @note You won't be missing any functionality as the MIME-invariant parts have
+ *  @note been moved to Request_base and derivations thereof.
+ */
 /***************************************************************************
-* Copyright (C) 2011 m0shbear                                              *
+* Copyright (C) 2011-2 m0shbear                                            *
 *                                                                          *
 * This file is part of mosh-fcgi.                                          *
 *                                                                          *
@@ -28,8 +34,5 @@
 // MOSH_FCGI::http::Session<char_type, post_val_type>
 #include <mosh/fcgi/http/session/session.hpp>
 #include <mosh/fcgi/http/session/session.tcc>
-
-// MOSH_FCGI::http::Fcgi_session<char_type, post_val_type, data_val_type>
-#include <mosh/fcgi/http/session/fcgi_session.hpp>
 
 #endif
