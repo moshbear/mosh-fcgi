@@ -62,7 +62,10 @@ bool cmp(T const& o1, T const& o2, Cmp_test test) {
 }
 
 //! @brief Specialization for @c boolean
-extern template bool cmp<bool>(const bool& o1, const bool& o2, Cmp_test test);
+template<> inline bool cmp<bool>(const bool& o1, const bool& o2, Cmp_test test) {
+	return cmp(o1 ? 1 : 0, o2 ? 1 : 0, test);
+}
+
 //@}
 		
 /*! @name range_cmp
