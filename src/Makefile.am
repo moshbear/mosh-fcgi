@@ -12,7 +12,6 @@ AM_CPPFLAGS = $(BOOST_CPPFLAGS) -Iinclude
 
 # mosh-fcgi core
 FCGI_FILES = 	bits/boyer_moore.cpp \
-		bits/cmp.hpp \
 		bits/hash.cpp \
 		bits/rwlock.cpp \
 		bits/tempfile.cpp \
