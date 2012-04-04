@@ -280,18 +280,40 @@ namespace ws {
 	//! &lt;/body&gt;
 	const Body_end body_end;
 
-//@{
-//! @c wchar_t specialization of P
-std::pair<std::wstring, std::wstring>
-P(const std::wstring& s1, const std::wstring& s2) {
-	return element::P(s1, s2);
-}
-//! @c wchar_t specialization of P
-std::pair<std::wstring, std::wstring>
-P(std::wstring&& s1, std::wstring&& s2) {
-	return element::P(std::move(s1), std::move(s2));
-}
-//@}
+	//@{
+	//! @c wchar_t specialization of P
+	std::pair<std::wstring, std::wstring>
+	P(const std::wstring& s1, const std::wstring& s2) {
+		return element::P(s1, s2);
+	}
+	//! @c wchar_t specialization of P
+	std::pair<std::wstring, std::wstring>
+	P(std::wstring&& s1, std::wstring&& s2) {
+		return element::P(std::move(s1), std::move(s2));
+	}
+	//@}
+	//@{
+	//! @c wchar_t specialization of repeat
+	std::wstring repeat(Element const& e,
+			   std::initializer_list<Element::string> vals)
+	{
+		return element::repeat(e, vals);
+	}
+	//! @c wchar_t specialization of repeat
+	std::wstring repeat(Element const& e,
+			   Element::attribute const& attr,
+			   std::initializer_list<Element::string> vals)
+	{
+		return element::repeat(e, attr, vals);
+	}
+	//! @c wchar_t specialization of repeat
+	std::wstring repeat(Element const& e,
+			   std::initializer_list<Element::attribute> attrs,
+			   std::initializer_list<Element::string> vals)
+	{
+		return element::repeat(e, attrs, vals);	
+	}
+	//@}
 	
 }
 

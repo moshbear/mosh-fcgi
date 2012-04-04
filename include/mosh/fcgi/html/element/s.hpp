@@ -291,6 +291,28 @@ namespace s {
 		return element::P(std::move(s1), std::move(s2));
 	}
 	//@}
+	//@{
+	//! @c char specialization of repeat
+	std::string repeat(Element const& e,
+			   std::initializer_list<Element::string> vals)
+	{
+		return element::repeat(e, vals);
+	}
+	//! @c char specialization of repeat
+	std::string repeat(Element const& e,
+			   Element::attribute const& attr,
+			   std::initializer_list<Element::string> vals)
+	{
+		return element::repeat(e, attr, vals);
+	}
+	//! @c char specialization of repeat
+	std::string repeat(Element const& e,
+			   std::initializer_list<Element::attribute> attrs,
+			   std::initializer_list<Element::string> vals)
+	{
+		return element::repeat(e, attrs, vals);	
+	}
+	//@}
 }
 
 }

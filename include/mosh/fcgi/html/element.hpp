@@ -902,6 +902,55 @@ std::basic_string<T> S(const T (&s)[N]) {
 	return std::basic_string<T>(s, N);
 }
 
+/*! @name Repetition helpers
+ *  
+ *  A set of functions that repeat an element across a range of values, such that
+ *  @code
+ *  repeat(e, [a, ] { v_1, ..., v_i, ..., v_n }) => e([a, ] v_1) + ... + e([a, ] v_i) + ... e([a, ] v_n)
+ *  @endcode
+ *  The overloads are in place to specialize for the type of a, be it none, a pair, or a list of pairs.
+ *
+ *  @tparam T char type
+ *  @param e Element
+ *  @param attr Single attribute
+ *  @param attrs Attribute list
+ *  @param vals Values list
+ */
+//@{
+template <typename T>
+std::basic_string<T> repeat(Element<T> const& e,
+			    std::initializer_list<typename Element<T>::string> vals)
+{
+	std::basic_stringstream<T> ss;
+	for (const auto& v : vals) {
+		ss << e(v);
+	}
+	return ss.str();
+}
+template <typename T>
+std::basic_string<T> repeat(Element<T> const& e,
+			    typename Element<T>::attribute const& attr,
+			    std::initializer_list<typename Element<T>::string> vals)
+{
+	std::basic_stringstream<T> ss;
+	for (const auto& v : vals) {
+		ss << e(attr, v);
+	}
+	return ss.str();
+}
+template <typename T>
+std::basic_string<T> repeat(Element<T> const& e,
+			    std::initializer_list<typename Element<T>::attribute> attrs,
+			    std::initializer_list<typename Element<T>::string> vals)
+{
+	std::basic_stringstream<T> ss;
+	for (const auto& v : vals) {
+		ss << e(attrs, v);
+	}
+	return ss.str();
+}
+//@}
+
 }
 
 }
