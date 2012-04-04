@@ -27,6 +27,7 @@
 #include <set>
 #include <utility>
 #include <stdexcept>
+#include <vector>
 #include <ostream>
 #include <type_traits>
 #include <boost/lexical_cast.hpp>
@@ -85,6 +86,8 @@ public:
 	typedef typename std::pair<string, string> attribute;
 	//! Typedef for attribute lists
 	typedef typename std::map<string, string> attr_list;
+	//! Typedef for string lists
+	typedef typename std::vector<string> string_list;
 private:
 	typedef Element<charT> this_type;
 public:
@@ -157,9 +160,18 @@ public:
 	}
 
 	/*! @brief Create a copy of @c *this with given attribute(s).
-	 *  @param[in] _a-{} list of attributes
+	 *  @param[in] _a {}-list of attributes
 	 */
 	this_type operator () (std::initializer_list<attribute> _a) const {
+		this_type e(*this);
+		e += _a;
+		return e;
+	}
+	
+	/*! @brief Create a copy of @c *this with given attribute(s).
+	 *  @param[in] _a map of attribute
+	 */
+	this_type operator () (attr_list const& _a) const {
 		this_type e(*this);
 		e += _a;
 		return e;
@@ -178,6 +190,15 @@ public:
 	 *  @param[in] _v {}-list of values
 	 */
 	this_type operator () (std::initializer_list<string> _v) const {
+		this_type e(*this);
+		e += _v;
+		return e;
+	}
+
+	/*! @brief Create a copy of @c *this with given value(s).
+	 *  @param[in] _v vector of values
+	 */
+	this_type operator () (string_list const& _v) const {
 		this_type e(*this);
 		e += _v;
 		return e;
@@ -205,6 +226,17 @@ public:
 		return e;
 	}
 
+	/*! @brief Create a copy of @c this with a given attribute and value(s).
+	 *  @param[in] _a attribute
+	 *  @param[in] _v list of values
+	 */
+	this_type operator () (const attribute& _a, string_list const& _v) const {
+		this_type e(*this);
+		e += _a;
+		e += _v;
+		return e;
+	}
+
 	/*! @brief Create a copy of @c this with given attribute(s) and a value.
 	 *  @param[in] _a {}-list of attributes
 	 *  @param[in] _v value
@@ -216,11 +248,53 @@ public:
 		return e;
 	}
 
-	/*! @brief Add attribute(s) and value(s).
+	/*! @brief Create a copy of @c this with given attribute(s) and value(s).
 	 *  @param[in] _a {}-list of attributes
 	 *  @param[in] _v {}-list of values
 	 */
 	this_type operator () (std::initializer_list<attribute> _a, std::initializer_list<string> _v) const {
+		this_type e(*this);
+		e += _a;
+		e += _v;
+		return e;
+	}
+	/*! @brief Create a copy of @c this with given attribute(s) and value(s).
+	 *  @param[in] _a {}-list of attributes
+	 *  @param[in] _v list of values
+	 */
+	this_type operator () (std::initializer_list<attribute> _a, string_list const& _v) const {
+		this_type e(*this);
+		e += _a;
+		e += _v;
+		return e;
+	}
+	
+	/*! @brief Create a copy of @c this with given attribute(s) and a value.
+	 *  @param[in] _a map of attributes
+	 *  @param[in] _v value
+	 */
+	this_type operator () (attr_list const& _a, const string& _v) const {
+		this_type e(*this);
+		e += _a;
+		e += _v;
+		return e;
+	}
+
+	/*! @brief Create a copy of @c this with given attribute(s) and value(s).
+	 *  @param[in] _a list of attributes
+	 *  @param[in] _v {}-list of values
+	 */
+	this_type operator () (attr_list const& _a, std::initializer_list<string> _v) const {
+		this_type e(*this);
+		e += _a;
+		e += _v;
+		return e;
+	}
+	/*! @brief Create a copy of @c this with given attribute(s) and value(s).
+	 *  @param[in] _a list of attributes
+	 *  @param[in] _v list of values
+	 */
+	this_type operator () (attr_list const& _a, string_list const& _v) const {
 		this_type e(*this);
 		e += _a;
 		e += _v;
@@ -250,6 +324,17 @@ public:
 		return *this;
 	}
 
+	/*! @brief Add attribute(s).
+	 * @param[in] _a list of attributes
+	 */
+	this_type& operator += (attr_list const& _a) {
+		for (const auto& at : _a) {
+			if (this->attribute_addition_hook(at))
+				attributes.insert(at);
+		}
+		return *this;
+	}
+
 	/*! @brief Add a value.
 	 * @param[in] _v value
 	 */
@@ -263,6 +348,17 @@ public:
 	 * @param[in] _v {}-list of values
 	 */
 	this_type& operator += (std::initializer_list<string> _v) {
+		for (const auto& vv : _v) {
+			if (this->data_addition_hook(vv))
+				data += vv;
+		}
+		return *this;
+	}
+
+	/*! @brief Add value(s).
+	 * @param[in] _v list of values
+	 */
+	this_type& operator += (string_list const& _v) {
 		for (const auto& vv : _v) {
 			if (this->data_addition_hook(vv))
 				data += vv;
@@ -434,6 +530,31 @@ operator + (T&& _e, std::initializer_list<typename Element<charT>::attribute> _a
 	return std::move(e);
 }
 
+/*! @brief Concatenate attribute(s).
+ *  @param[in] _e element
+ *  @param[in] _a list of attributes
+ */
+template <typename charT, typename T>
+typename std::enable_if<std::is_base_of<Element<charT>, T>::value, T>::type
+operator + (T const& _e, typename Element<charT>::attr_list const& _a) {
+	T e(_e);
+	e += _a;
+	return e;
+}
+
+/*! @brief Concatenate attribute(s).
+ *  @param[in] _e element
+ *  @param[in] _a list of attributes
+ */
+template <typename charT, typename T>
+typename std::enable_if<std::is_base_of<Element<charT>, T>::value, T>::type
+operator + (T&& _e, typename Element<charT>::attr_list const& _a) {
+	T e(std::move(_e));
+	e += _a;
+	return std::move(e);
+}
+
+
 /*! @brief Concatenate a value.
  *  @param[in] _e element 
  *  @param[in] _v value
@@ -492,12 +613,35 @@ operator + (T&& _e, std::initializer_list<std::basic_string<charT>> _v) {
 	return std::move(e);
 }
 
+/*! @brief Concatenate value(s).
+ *  @param[in] _e element
+ *  @param[in] _v list of values
+ */
+template <typename charT, typename T>
+typename std::enable_if<std::is_base_of<Element<charT>, T>::value, T>::type
+operator + (T const& _e, typename Element<charT>::string_list const& _v) {
+	T e(_e);
+	e += _v;
+	return e;
+}
+
+/*! @brief Concatenate value(s).
+ *  @param[in] _e element
+ *  @param[in] _v list of values
+ */
+template <typename charT, typename T>
+typename std::enable_if<std::is_base_of<Element<charT>, T>::value, T>::type
+operator + (T&& _e, typename Element<charT>::string_list const& _v) {
+	T e(std::move(_e));
+	e += _v;
+	return std::move(e);
+}
+
 //@}
 
 /*! @brief Print to ostream
  *  @note This prints to template ostream, not std::ostream, so
- *  @note Element<T1> cannot print to std::basic_ostream<T2>, if T1 and T2
- *  @note aren't the same type.
+ *  @note Element<T1> cannot print to std::basic_ostream<T2>, if T1 != T2
  *  @param[in] os ostream
  *  @param[in] e element
  */
@@ -526,6 +670,8 @@ public:
 	typedef typename base_type::attribute attribute;
 	//! Typedef for attribute lists
 	typedef typename base_type::attr_list attr_list;
+	//! Typedef for string lists
+	typedef typename base_type::string_list string_list;
  
 	/*! @brief Create a new HTML start with a given type
 	 *  @param[in] type_ HTML type
@@ -561,7 +707,8 @@ public:
 	 * were appended to existing elements.
 	 */
 	//@{
-	//! @brief Create a copy of @c *this.
+	/*! @brief Create a copy of @c *this.
+	 */
 	this_type operator () () const {
 		return this_type(*this);
 	}
@@ -576,9 +723,18 @@ public:
 	}
 
 	/*! @brief Create a copy of @c *this with given attribute(s).
-	 *  @param[in] _a-{} list of attributes
+	 *  @param[in] _a {}-list of attributes
 	 */
 	this_type operator () (std::initializer_list<attribute> _a) const {
+		this_type e(*this);
+		e += _a;
+		return e;
+	}
+	
+	/*! @brief Create a copy of @c *this with given attribute(s).
+	 *  @param[in] _a map of attribute
+	 */
+	this_type operator () (attr_list const& _a) const {
 		this_type e(*this);
 		e += _a;
 		return e;
@@ -597,6 +753,15 @@ public:
 	 *  @param[in] _v {}-list of values
 	 */
 	this_type operator () (std::initializer_list<string> _v) const {
+		this_type e(*this);
+		e += _v;
+		return e;
+	}
+
+	/*! @brief Create a copy of @c *this with given value(s).
+	 *  @param[in] _v vector of values
+	 */
+	this_type operator () (string_list const& _v) const {
 		this_type e(*this);
 		e += _v;
 		return e;
@@ -624,6 +789,17 @@ public:
 		return e;
 	}
 
+	/*! @brief Create a copy of @c this with a given attribute and value(s).
+	 *  @param[in] _a attribute
+	 *  @param[in] _v list of values
+	 */
+	this_type operator () (const attribute& _a, string_list const& _v) const {
+		this_type e(*this);
+		e += _a;
+		e += _v;
+		return e;
+	}
+
 	/*! @brief Create a copy of @c this with given attribute(s) and a value.
 	 *  @param[in] _a {}-list of attributes
 	 *  @param[in] _v value
@@ -635,7 +811,7 @@ public:
 		return e;
 	}
 
-	/*! @brief Add attribute(s) and value(s).
+	/*! @brief Create a copy of @c this with given attribute(s) and value(s).
 	 *  @param[in] _a {}-list of attributes
 	 *  @param[in] _v {}-list of values
 	 */
@@ -645,8 +821,52 @@ public:
 		e += _v;
 		return e;
 	}
+
+	/*! @brief Create a copy of @c this with given attribute(s) and value(s).
+	 *  @param[in] _a {}-list of attributes
+	 *  @param[in] _v list of values
+	 */
+	this_type operator () (std::initializer_list<attribute> _a, string_list const& _v) const {
+		this_type e(*this);
+		e += _a;
+		e += _v;
+		return e;
+	}
+	
+	/*! @brief Create a copy of @c this with given attribute(s) and a value.
+	 *  @param[in] _a map of attributes
+	 *  @param[in] _v value
+	 */
+	this_type operator () (attr_list const& _a, const string& _v) const {
+		this_type e(*this);
+		e += _a;
+		e += _v;
+		return e;
+	}
+
+	/*! @brief Create a copy of @c this with given attribute(s) and value(s).
+	 *  @param[in] _a list of attributes
+	 *  @param[in] _v {}-list of values
+	 */
+	this_type operator () (attr_list const& _a, std::initializer_list<string> _v) const {
+		this_type e(*this);
+		e += _a;
+		e += _v;
+		return e;
+	}
+	/*! @brief Create a copy of @c this with given attribute(s) and value(s).
+	 *  @param[in] _a list of attributes
+	 *  @param[in] _v list of values
+	 */
+	this_type operator () (attr_list const& _a, string_list const& _v) const {
+		this_type e(*this);
+		e += _a;
+		e += _v;
+		return e;
+	}
 	//@}
-	/*! @brief Overrides ELement<T>::operator string () const.
+
+	/*! @brief Overrides Element<T>::operator string () const.
 	 *
 	 *  Renders all the necessary XML declarations and doctype preamble,
 	 *  followed by &lt;html&gt;.
@@ -816,6 +1036,15 @@ public:
 		e += _a;
 		return e;
 	}
+	
+	/*! @brief Create a copy of @c *this with given attribute(s).
+	 *  @param[in] _a list of attributes
+	 */
+	this_type operator () (attr_list const& _a) const {
+		this_type e(*this);
+		e += _a;
+		return e;
+	}
 	//@}
 private:
 	/* @name Unavailable operators
@@ -823,15 +1052,31 @@ private:
 	 * These overloaded operators are disabled for semantic reasons.
 	 */
 	//@{
+	// S
 	this_type operator () (const string&) const = delete;
+	// [S]
 	this_type operator () (std::initializer_list<string>) const  = delete;
+	this_type operator () (typename Element<charT>::string_list const&) const = delete;
+	// AS
 	this_type operator () (const attribute&, const string&) const = delete;
+	// A[S]
 	this_type operator () (const attribute&, std::initializer_list<string>) const = delete;
+	this_type operator () (const attribute&, typename Element<charT>::string_list const&) const = delete;
+	// [A]S
 	this_type operator () (std::initializer_list<attribute>, const string&) const = delete;
+	// [A][S]
 	this_type operator () (std::initializer_list<attribute>, std::initializer_list<string>) const = delete;
+	this_type operator () (std::initializer_list<attribute>, typename Element<charT>::string_list const&) const = delete;
+	// [A]S
+	this_type operator () (attr_list const& , const string&) const = delete;
+	// [A][S]
+	this_type operator () (attr_list const&, std::initializer_list<string>) const = delete;
+	this_type operator () (attr_list const&, typename Element<charT>::string_list const&) const = delete;
+
 
 	this_type& operator += (const string&) = delete;
 	this_type& operator += (std::initializer_list<string>) = delete;
+	this_type& operator += (typename Element<charT>::string_list const&) = delete;
 	//@}
 public:
 	//! Overrides Element<T>::operator string () const
@@ -929,8 +1174,29 @@ std::basic_string<T> repeat(Element<T> const& e,
 }
 template <typename T>
 std::basic_string<T> repeat(Element<T> const& e,
+			    typename Element<T>::string_list const& vals)
+{
+	std::basic_stringstream<T> ss;
+	for (const auto& v : vals) {
+		ss << e(v);
+	}
+	return ss.str();
+}
+template <typename T>
+std::basic_string<T> repeat(Element<T> const& e,
 			    typename Element<T>::attribute const& attr,
 			    std::initializer_list<typename Element<T>::string> vals)
+{
+	std::basic_stringstream<T> ss;
+	for (const auto& v : vals) {
+		ss << e(attr, v);
+	}
+	return ss.str();
+}
+template <typename T>
+std::basic_string<T> repeat(Element<T> const& e,
+			    typename Element<T>::attribute const& attr,
+			    typename Element<T>::string_list const& vals)
 {
 	std::basic_stringstream<T> ss;
 	for (const auto& v : vals) {
@@ -949,6 +1215,40 @@ std::basic_string<T> repeat(Element<T> const& e,
 	}
 	return ss.str();
 }
+template <typename T>
+std::basic_string<T> repeat(Element<T> const& e,
+			    std::initializer_list<typename Element<T>::attribute> attrs,
+			    typename Element<T>::string_list const& vals)
+{
+	std::basic_stringstream<T> ss;
+	for (const auto& v : vals) {
+		ss << e(attrs, v);
+	}
+	return ss.str();
+}
+template <typename T>
+std::basic_string<T> repeat(Element<T> const& e,
+			    typename Element<T>::attr_list const& attrs,
+			    std::initializer_list<typename Element<T>::string> vals)
+{
+	std::basic_stringstream<T> ss;
+	for (const auto& v : vals) {
+		ss << e(attrs, v);
+	}
+	return ss.str();
+}
+template <typename T>
+std::basic_string<T> repeat(Element<T> const& e,
+			    typename Element<T>::attr_list const& attrs,
+			    typename Element<T>::string_list const& vals)
+{
+	std::basic_stringstream<T> ss;
+	for (const auto& v : vals) {
+		ss << e(attrs, v);
+	}
+	return ss.str();
+}
+
 //@}
 
 }
