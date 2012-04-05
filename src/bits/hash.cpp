@@ -20,9 +20,7 @@
 
 #include <vector>
 extern "C" {
-#include <nspr/prtypes.h>
-#include <nss/hasht.h>
-#include <nss/sechash.h>
+#include "sha/sha1.h"
 }
 
 #include <mosh/fcgi/bits/u.hpp>
@@ -32,23 +30,20 @@ extern "C" {
 MOSH_FCGI_BEGIN
 
 Hash::Hash() {
-	handle = HASH_Create(HASH_AlgSHA1);
+	handle = sha1_new();
 }
 
 Hash::~Hash() {
-	HASH_Destroy(static_cast<HASHContext*>(handle));
+	sha1_destroy(static_cast<sha1_state*>(handle));
 }
 
 void Hash::update(const uchar* data, size_t len) {
-	HASH_Update(static_cast<HASHContext*>(handle), data, len);
+	sha1_process(static_cast<sha1_state*>(handle), data, len);
 }
 
 std::vector<uchar> Hash::finalize() {
-	std::vector<uchar> v(HASH_ResultLenContext(static_cast<HASHContext*>(handle)));
-	unsigned vlen;
-	HASH_End(static_cast<HASHContext*>(handle), v.data(), &vlen,
-			HASH_ResultLenContext(static_cast<HASHContext*>(handle)));
-	v.resize(vlen);
+	std::vector<uchar> v(20);
+	sha1_done(static_cast<sha1_state*>(handle), v.data());
 	return v;
 }
 

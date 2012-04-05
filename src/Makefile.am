@@ -7,13 +7,14 @@ DISTCLEANFILES = Makefile.in Makefile
 
 include $(top_srcdir)/include/headerlist
 
-INCLUDES = -I$(top_srcdir)/include $(NSS_CFLAGS)
+INCLUDES = -I$(top_srcdir)/include 
 AM_CPPFLAGS = $(BOOST_CPPFLAGS) -Iinclude
 
 # mosh-fcgi core
 FCGI_FILES = 	bits/boyer_moore.cpp \
 		bits/hash.cpp \
 		bits/rwlock.cpp \
+		bits/sha/sha1.c \
 		bits/tempfile.cpp \
 		bits/utf8.cpp \
 		exceptions.cpp \
@@ -49,7 +50,7 @@ FCGI_HTML_FILES =	html/html_doctype.cpp
 
 lib_LTLIBRARIES = libmosh_fcgi.la
 
-libmosh_fcgi_la_LDFLAGS = -version-info 0:7:0 $(NSS_LIBS) -lpthread -lboost_filesystem-mt $(BOOST_THREAD_LIBS)
+libmosh_fcgi_la_LDFLAGS = -version-info 0:7:0 -lpthread  $(BOOST_THREAD_LIBS)
 
 libmosh_fcgi_la_SOURCES = $(HEADER_LIST) $(FCGI_FILES) $(FCGI_HTTP_FILES) $(FCGI_HTTP_FILES_2) $(FCGI_HTML_FILES)
 
