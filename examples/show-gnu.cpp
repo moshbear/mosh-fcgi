@@ -96,19 +96,19 @@ class Show_gnu: public MOSH_FCGI::Request_base {
 		}
 
 		{
-			out << (http::header::content_type("image/png") + {
+			out << (http::header::content_type("image/png")
 				// First the modification time of the file
-				http::header::P("Last-Modified", ([](){
+				+ http::header::P("Last-Modified", ([&modTime](){
 									struct tm* _t = gmtime(&modTime);
 									std::unique_ptr<struct tm> t(new struct tm);
 									memcpy(t.get(), _t, sizeof(struct tm));
 									return http::time_to_string("%a, %d %b %Y %H:%M:%S GMT", *t);
-								})()),
+								})())
 				// Then a Etag. Note that the session.etag is an integer value. NOT an std::string.
-				http::header::P("Etag", boost::lexical_cast<std::string>(etag)),
+				+ http::header::P("Etag", boost::lexical_cast<std::string>(etag))
 				// Next the size
-				http::header::P("Content-Length", boost::lexical_cast<std::string>(fileSize)),
-			});
+				+ http::header::P("Content-Length", boost::lexical_cast<std::string>(fileSize))
+			);
 		}
 
 		/*
