@@ -28,15 +28,28 @@ extern "C" {
 #include <dirent.h>
 #include <unistd.h>
 }
-#include <boost/filesystem.hpp>
 
 #include <mosh/fcgi/bits/u.hpp>
 #include <mosh/fcgi/bits/tempfile.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 
-namespace fs = boost::filesystem;
-
 namespace {
+
+bool isdir(std::string const& path) {
+	struct stat sb;
+	if (stat(path.c_str(), &sb) == -1) {
+		int e = errno;
+		switch (e) {
+		case ENOENT:
+		case ENOTDIR:
+			return false;
+		default:
+			throw std::runtime_error(std::string("isdir: ") + strerror(errno));
+		}
+	}
+	return S_ISDIR(sb.st_mode);
+}
+
 
 void mkdir(std::string const& path) {
 	errno = 0;
@@ -47,11 +60,11 @@ void mkdir(std::string const& path) {
 	
 
 void mkdir_p(std::string path) {
-	if (fs::is_directory(path))
+	if (isdir(path))
 		return;
 	while (path.find('/') != path.rfind('/')) {
 		std::string p0 = path.substr(0, path.rfind('/'));
-		if (fs::is_directory(p0)) {
+		if (isdir(p0)) {
 			mkdir(path);
 		}
 		path = std::move(p0);
