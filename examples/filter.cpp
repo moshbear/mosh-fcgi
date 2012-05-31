@@ -1,5 +1,6 @@
 /***************************************************************************
-* Copyright (C) 2011 m0shbear                                              *
+* Copyright (C) 2011-2 m0shbear                                            *
+* Portions  (C) 2007 Eddie Carle                                           *
 *                                                                          *
 * This file is part of mosh-fcgi.                                          *
 *                                                                          *
@@ -20,17 +21,27 @@
 
 #include <fstream>
 
+#include <boost/lexical_cast.hpp>
 #include <mosh/fcgi/request.hpp>
 #include <mosh/fcgi/manager.hpp>
 #include <mosh/fcgi/http/header.hpp>
 #include <mosh/fcgi/http/misc.hpp>
-#include <mosh/fcgi/html/element.hpp>
-#include <mosh/fcgi/html/element/s.hpp>
+
+namespace {
+#ifndef UPLOAD_CPP
+const bool am_filter = true;
+const char* xname = "Filter";
+#else
+const bool am_filter = false;
+const char* xname = "Upload";
+#endif
+};
+
 
 using namespace MOSH_FCGI;
 
-// I like to have an independent error log file to keep track of exceptions while debugging.
-// You might want a different filename. I just picked this because everything has access there.
+
+// FastCGI-independent error log
 void error_log(const char* msg) {
 	using namespace std;
 	static ofstream error;
@@ -42,82 +53,125 @@ void error_log(const char* msg) {
 	error << '[' << MOSH_FCGI::http::time_to_string("%Y-%m-%d: %H:%M:%S") << "] " << msg << endl;
 }
 
-// Let's make our request handling class. It must do the following:
-// 1) Be derived from MOSH_FCGI::Request
-// 2) Define the virtual response() member function from MOSH_FCGI::Request()
-
-// First things first let's decide on what kind of character set we will use. Let's just
-// use good old ASCII this time. No high-bit or wide characters
-
-class Filter: public MOSH_FCGI::Request<char> {
+/*!
+ * We're not dealing with form data here, so there's no need to bother with Form_request.
+ * We also ignore the received data, so there's no need to bother with buffering.
+ * Hence, we derive from MOSH_FCGI::Request_base.
+ */
+class Filter: public MOSH_FCGI::Request_base {
 public:
 	
-	Filter(): doneHeader(false), in_tot(0), data_tot(0) {}
+	Filter(): done_header(false), recv_in(false), recv_data(false),
+		  in_tot(0), data_tot(0), in_expect(0), data_expect(0)
+	{ }
 private:
-	// We need to define a state variable so we know where we are when response() is called a second time.
-	bool doneHeader;
+	bool done_header;
+	bool recv_in;
+	bool recv_data; 
 
-	void doHeader() {
-		using namespace html::element;
-		
-		// We obviously only want to do our header once.
-		if (!doneHeader) {
-			out << http::header::content_type("text/html", "US-ASCII");
-			
-			out << s::html_begin()
-			    << s::head({
-					s::meta({
-						s::P("http-equiv", "Content-Type"),
-						s::P("content", "text/html; charset=US-ASCII")
-					}),
-					s::title("mosh-fcgi: upload progress meter")
-				})
-			    << s::body_begin();
 
-			doneHeader=true;				
+	size_t in_tot;
+	size_t data_tot;
+
+	size_t in_expect;
+	size_t data_expect;
+
+	bool param_handler(std::pair<std::string, std::string> const& p) {
+		if (p.first == "HTTP_CONTENT_LENGTH") {
+			try {
+				in_expect = boost::lexical_cast<size_t>(p.second);
+			} catch (boost::bad_lexical_cast&) {
+				in_expect = 0;
+			}
 		}
+		else if (am_filter && p.first == "FCGI_DATA_LENGTH") {
+			try {
+				data_expect = boost::lexical_cast<size_t>(p.second);
+			} catch (boost::bad_lexical_cast&) {
+				data_expect = 0;
+			}
+		}
+		/* We don't want to store request parameters, so we
+		 * return false in order to instruct Request_base::fill_params
+		 * to *not* insert it into the param map
+		 */
+		return false;
 	}
 
+	void do_header() {
+		if (done_header)
+			return;
+		out << http::header::content_type("text/plain", "US-ASCII");
+		out << "mosh-fcgi: " << xname << " progress\r\n";
+		done_header = true;
+	}
+
+	
 	bool response() {
 		// In case there was no uploaded data, we need to make our header.
-		doHeader();
+		do_header();
 		
-		out << "upload finished" << html::element::s::br();
+		if (recv_in) {
+			out << "Length check of received IN bytes: ";
+			if (in_expect != in_tot) {
+				out << "ERROR: expected: " << in_expect << " received: " << in_tot;
+			} else {
+				out << "ok: " << in_expect;
+			}
+			out << "\r\n";
+		}
 
-		out << "filter data: " << html::element::s::br();
-		out.dump(session.data_buffer.data(), session.data_buffer.size());
+		if (am_filter && recv_data) {
+			out << "Length check of recieved DATA bytes: ";
+			if (data_expect != data_tot) {
+				out << "ERROR: expected: " << data_expect << " received: " << data_tot;
+			} else {
+				out << "ok: " << data_expect;
+			}
+			out << "\r\n";
+		}
+		
+		out << "Finished.\r\n";
 
-		out << html::element::s::body_end() << html::element::s::html_end();
-
-		// Always return true if you are done. This will let httpd know we are done
-		// and the manager will destroy the request and free it's resources.
-		// Return false if you are not finished but want to relinquish control and
-		// allow other requests to operate.
 		return true;
 	}
-
-	ssize_t in_tot;
-	ssize_t data_tot;
-	bool in_handler(int bytesReceived) {
-		doHeader();
-		out << "in: " << (in_tot+=bytesReceived) << '/' << session.envs["HTTP_CONTENT_LENGTH"] << html::element::s::br();
+	/*
+	 * Don't confuse this with void in_handler(size_t).
+	 * This version of in_handler handles the entire message, and we can ignore the body if
+	 * we so choose, unlike in_handler(size_t), which is the post-parse handler.
+	 * This is the pipeline for IN request parsing:
+	 *
+	 * Request::handler() -> { in_handler(const uchar*, size_t) ;  in_handler(size_t); }
+	 * 
+	 * So the (const uchar*, size_t) form is the actual handler.
+	 * Furthermore, the (size_t) form doesn't even exist unless we're deriving Request or Form_request<charT>.
+	 */
+	void in_handler(const uchar* data, size_t len) {
+		recv_in = true;
+		do_header();
+		out << "in: " << (in_tot+=len) << '/' << in_expect << "\r\n";
 		out.flush();    // Make sure to flush the buffer so it is actually sent.
-		return true;
 	}
-	bool data_handler(int bytesReceived) {
-		doHeader();
-		out << "data: " << (data_tot+=bytesReceived) << '/' << session.envs["FCGI_DATA_LENGTH"] << html::element::s::br();
+	/*
+	 * Don't confuse this with void data_handler(size_t).
+	 *
+	 * See above comment for the explanation as to why this form is overriden instead of (size_t).
+	 */
+	void data_handler(const uchar* data, size_t len) {
+		if (!am_filter)
+			return;
+		recv_data = true;
+		do_header();
+		out << "data: " << (data_tot+=len) << '/' << data_expect << "\r\n";
 		out.flush();    // Make sure to flush the buffer so it is actually sent.
-		return true;
 	}
 };
 
 // The main function is easy to set up
 int main() {
 	try {
-		// First we make a MOSH_FCGI::Manager object, with our request handling class
-		// as a template parameter.
-		MOSH_FCGI::Manager<Filter> fcgi;
+		// Make a MOSH_FCGI::Manager object, with our handler as the template parameter
+		MOSH_FCGI::ManagerT<Filter> fcgi;
 		// Now just call the object handler function. It will sleep quietly when there
 		// are no requests and efficiently manage them when there are many.
 		fcgi.handler();
