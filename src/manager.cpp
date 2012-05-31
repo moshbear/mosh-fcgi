@@ -1,12 +1,8 @@
 #include <map>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <utility>
-#include <cassert>
-extern "C" {
-#include <sys/types.h>
-#include <unistd.h>
-}
 
 #include <mosh/fcgi/manager.hpp>
 #include <mosh/fcgi/protocol/funcs.hpp>
@@ -26,15 +22,7 @@ extern "C" {
 
 namespace {
 
-/*! @brief The global multiplexer 
- *
- *  When signals are caught, the pid is checked to see which manager instance is responsible.
- *  If there isn't one, then the signal is ignored. Otherwise, the instance's terminate (if SIGUSR1)
- *  or stop (if SIGTERM) function is called.
- *  
- *  @see signal_handler
- */
-MOSH_FCGI::Rw_locked<std::map<pid_t, MOSH_FCGI::Manager*>> instances;
+MOSH_FCGI::Manager* instance;
 
 /*! @brief A list of recognized management parameters.
  *
@@ -72,18 +60,14 @@ SRC::u_string process_gv(const SRC::uchar* data, size_t data_len) {
 
 //! Global signal handler
 void signal_handler(int signo) {
-	pid_t pid = getpid();
-	std::lock_guard<MOSH_FCGI::Rw_lock> rd_lock(instances);
-	auto inst = instances.find(pid);
-	if (inst == instances.end())
+	if (instance == nullptr)
 		return;
-	assert (inst->second != nullptr);
 	switch (signo) {
 	case SIGUSR1:
-		inst->second->terminate();
+		instance->terminate();
 		break;
 	case SIGTERM:
-		inst->second->stop();
+		instance->stop();
 		break;
 	}
 }
@@ -108,24 +92,15 @@ Manager::Manager(int fd, std::function<Request_base*()> new_req)
 				}),
 	new_request(new_req), asleep(false), do_stop(false), do_terminate(false)
 {
-	setup_signals();
+	if (instance != nullptr)
+		throw std::runtime_error("Detected concurrent instances of Manager per process");
 
-	// Register our pid & instance ptr in the global table
-	std::lock_guard<Rw_lock> instance_lk(instances);
-	pid_t pid = getpid();
-	assert(instances.find(pid) == instances.end());
-	instances.upgrade_lock();
-	instances.insert({ pid, this });
+	setup_signals();
+	instance = this;
 }
 
 Manager::~Manager() {
-	// Unregister our pid & instance from the global table
-	pid_t pid = getpid();
-	std::lock_guard<Rw_lock> instance_lk(instances);
-	auto m = instances.find(pid);
-	assert((m != instances.end()) && (m->second == this));
-	instances.upgrade_lock();
-	instances.erase(m);
+	instance = nullptr;
 }
 
 void Manager::push(protocol::Full_id id, protocol::Message message) {
