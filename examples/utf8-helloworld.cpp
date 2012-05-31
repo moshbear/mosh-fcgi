@@ -24,9 +24,6 @@
 #include <mosh/fcgi/manager.hpp>
 #include <mosh/fcgi/http/misc.hpp>
 #include <mosh/fcgi/http/header.hpp>
-#include <mosh/fcgi/html/element.hpp>
-#include <mosh/fcgi/html/element/s.hpp>
-#include <mosh/fcgi/html/element/ws.hpp>
 
 // I like to have an independent error log file to keep track of exceptions while debugging.
 // You might want a different filename. I just picked this because everything has access there.
@@ -41,65 +38,34 @@ void error_log(const char* msg) {
 	error << '[' << MOSH_FCGI::http::time_to_string("%Y-%m-%d: %H:%M:%S") << "] " << msg << endl;
 }
 
-// Let's make our request handling class. It must do the following:
-// 1) Be derived from MOSH_FCGI::Request
-// 2) Define the virtual response() member function from MOSH_FCGI::Request()
-
-// First things first let's decide on what kind of character set we will use.
-// Obviously with all these different languages we can't use something like
-// ISO-8859-1. Our only option is unicode and in particular UTF-8. The way this
-// library handles unicode might be different than some are used to but it is done
-// the way it is supposed to be. All internal characters are wide. In this case UTF-32.
-// This way we don't have to mess around with variable size characters in our program.
-// A string with 10 wchar_ts is ten characters long. Not up in the air as it is with UTF-8.
-// Anyway, moving right along, the streams will code convert all the UTF-32 data to UTF-8
-// before it is sent out to the client. This way we get the best of both worlds.
-//
-// So, whenever we are going to use UTF-8, our template parameter for MOSH_FCGI::Request<char_type>
-// should be wchar_t. Keep in mind that this suddendly makes
-// everything wide character and utf compatible. Including HTTP header data (cookies, urls, yada-yada).
-
-class HelloWorld: public MOSH_FCGI::Request<wchar_t> {
+/*!
+ * Given that Fcgistream converts UTF-[wchar] to UTF-8, we're not dealing with UTF-8 input,
+ * and we're not reading IN or DATA, we don't need to derive from anything fancier than Request_base.
+ * Furthermore, we're not reading PARAMS, so we can virtually override params_handler to return false on
+ * all input.
+ */
+class Hello_world: public MOSH_FCGI::Request_base {
+	bool param_handler(std::pair<std::string, std::string> const&) {
+		return false;
+	}
 	bool response() {
 		using namespace MOSH_FCGI::http;
-		using namespace MOSH_FCGI::html::element;
 
-		// Print the header. Note use of Fcgistream<charT>::dump(std::string const&) to
-		// dump ASCII data directly to the stream.
-		// Note: header::operator string() automatically does proper encoding wrt
-		// 	line endings, including \r\n\r\n termination
-		out << header::content_type("text/html", "utf-8");
+		out << header::content_type("text/plain", "utf-8");
 
-		// Here we use the html renderer imported from my fork of mosh-cgi
-		out << s::html_begin();
-		out << s::head({
-				s::meta({
-					s::P("http-equiv", "Content-Type"),
-					s::P("content", "text/html"),
-					s::P("charset", "utf-8")
-				}),
-				s::title("mosh-fcgi: Hello World in UTF-8")
-			});
-		out << ws::body({
-			L"English: Hello World", ws::br,
-			L"Russian: Привет мир", ws::br,
-			L"Greek: Γεια σας κόσμο", ws::br,
-			L"Chinese: 世界您好", ws::br,
-			L"Japanese: 今日は世界", ws::br,
-			L"Runic English?: ᚺᛖᛚᛟ ᚹᛟᛉᛚᛞ", ws::br
-		});
-		out << s::html_end;
+		out << "Hello World in six languages: \r\n\r\n";
+		out <<	L"English: Hello World" << "\r\n";
+		out <<	L"Russian: Привет мир" << "\r\n";
+		out <<	L"Greek: Γεια σας κόσμο" << "\r\n";
+		out <<	L"Chinese: 世界您好" << "\r\n";
+		out <<	L"Japanese: 今日は世界" << "\r\n";
+		out <<	L"Runic English?: ᚺᛖᛚᛟ ᚹᛟᛉᛚᛞ" << "\r\n";
 		
 		// There is also a stream setup for error output. Anything sent here will go
 		// to your server's error log. We'll send something there for fun.
 		err << "Hello, error.log from utf8-test";
 
-		// Always return true if you are done. This will let httpd know we are done
-		// and the manager will destroy the request and free it's resources.
-		// Return false if you are not finished but want to relinquish control and
-		// allow other requests to operate. You might do this after an SQL query
-		// while waiting for a reply. Passing messages to requests through the
-		// manager is possible but beyond the scope of this example.
+		// We're done here
 		return true;
 	}
 };
@@ -109,7 +75,7 @@ int main() {
 	try {
 		// First we make a MOSH_FCGI::Manager object, with our request handling class
 		// as a template parameter.
-		MOSH_FCGI::Manager<HelloWorld> fcgi;
+		MOSH_FCGI::ManagerT<Hello_world> fcgi;
 		// Now just call the object handler function. It will sleep quietly when there
 		// are no requests and efficiently manage them when there are many.
 		fcgi.handler();
