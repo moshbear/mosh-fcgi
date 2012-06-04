@@ -475,7 +475,7 @@ public:
 		return _data;
 	}
 	
-	void make_file_persistent() const {
+	void make_file_persistent() {
 		require_file_mode();
 		file.make_permanent();
 	}
