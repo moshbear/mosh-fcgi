@@ -26,9 +26,8 @@
 #include <mosh/fcgi/request.hpp>
 #include <mosh/fcgi/http/misc.hpp>
 #include <mosh/fcgi/http/header.hpp>
-#include <mosh/fcgi/html/element.hpp>
-#include <mosh/fcgi/html/element/s.hpp>
 #include <mosh/fcgi/manager.hpp>
+#include <mosh/fcgi/bits/u.hpp>
 
 // In this example we are going to use boost::asio to handle our timers and callback.
 #include <boost/asio.hpp>
@@ -52,14 +51,8 @@ void error_log(const char* msg) {
 	error << '[' << MOSH_FCGI::http::time_to_string("%Y-%m-%d: %H:%M:%S") << "] " << msg << endl;
 }
 
-// Let's make our request handling class. It must do the following:
-// 1) Be derived from MOSH_FCGI::Request
-// 2) Define the virtual response() member function from MOSH_FCGI::Request()
-
-// First things first let's decide on what kind of character set we will use. Let's just
-// use good old ascii this time. No wide or high-bit characters
-
-class Timer: public MOSH_FCGI::Request<char> {
+// No buffering and no form data, so we're deriving Request_base
+class Timer: public Request_base {
 public:
 	Timer(): state(START) {}
 private:
@@ -69,25 +62,13 @@ private:
 	std::unique_ptr<boost::asio::deadline_timer> t;
 
 	bool response() {
-		using namespace MOSH_FCGI::html::element;
 		switch(state) {
 			case START: {
-				out << http::header::Header(http::header::content_type("text/html", "US-ASCII"));
+				out << http::header::content_type("text/plain", "US-ASCII");
+				
+				out << "mosh-fcgi threaded timer\r\n\r\n";
+				out << "starting:... \r\n";
 
-				out << s::html_begin()
-				    << s::head({
-						s::meta({
-							s::P("http-equiv", "Content-Type"),
-							s::P("content", "text/html; charset=US-ASCII")
-						}),
-						s::title("mosh-fcgi: threaded timer")
-					})
-				    << s::body_begin();
-			
-				// Output a message saying we are starting the timer
-				out << "starting timer..." << s::br();
-
-				// Let's flush the buffer just to get it out there.
 				out.flush();
 
 				// Make a five second timer
@@ -100,7 +81,7 @@ private:
 				// requests from other threads.
 
 				// Let's build the message we want sent back to here.
-				MOSH_FCGI::protocol::Message msg;
+				protocol::Message msg;
 				// The first part of the message we have to define is the type. A type of 0 means a fastcgi message
 				// and is used internally. All other values we can use ourselves to define different message types (sql queries,
 				// file grabs, etc...). We will use type=1 for timer stuff.
@@ -110,33 +91,27 @@ private:
 				{
 					char cString[] = "I was passed between two threads!!";
 					msg.size = sizeof(cString);
-					msg.data.reset(new char[sizeof(cString) + 1]);
-					std::strncpy(msg.data.get(), cString, sizeof(cString));
+					msg.data.reset(new uchar[sizeof(cString) + 1]);
+					std::strncpy(sign_cast<char*>(msg.data.get()), cString, sizeof cString);
 				}
 
 				// Now we will give our callback data to boost::asio
-				t->async_wait(boost::bind(callback, msg));
+				t->async_wait(([this, msg] (const boost::system::error_code&) { this->callback(msg); }));
 
 				// We need to set our state to FINISH so that when this response is called a second time, we don't repeat this.
-				state=FINISH;
-
-				// Now we will return and allow the task manager to do other things (or sleep if there is nothing to do).
-				// We must return false if the request is not yet complete.
+				state = FINISH;
+				
+				/* We're not done with the request, so we return false so that the
+				 * manager's handler loop can service other requests instead of
+				 * just waiting.
+				 */
 				return false;
 			}
 			case FINISH: {
-				// Although we don't need the message we were sent, it is stored in the Request class as member data named
-				// "message".
 				out << "timer finished! message data: \"" << message.data.get() << "\"";
-				out << s::body_end() << s::html_end();
-
-				// Always return true if you are done. This will let httpd know we are done
-				// and the manager will destroy the request and free its resources.
-				// Return false if you are not finished but want to relinquish control and
-				// allow other requests to operate.
-				return true;
 			}
 		}
+		return true;
 	}
 };
 
@@ -151,7 +126,7 @@ int main() {
 
 		// Now we make a MOSH_FCGI::Manager object, with our request handling class
 		// as a template parameter.
-		MOSH_FCGI::Manager<Timer> fcgi;
+		MOSH_FCGI::ManagerT<Timer> fcgi;
 		// Now just call the object handler function. It will sleep quietly when there
 		// are no requests and efficiently manage them when there are many.
 		fcgi.handler();
