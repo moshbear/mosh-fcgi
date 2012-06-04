@@ -196,13 +196,13 @@ protected:
 	void in_handler(const uchar* data, size_t len) {
 		post_buf.reserve(post_buf.size() + len);
 		std::copy(data, data + len, std::back_inserter(post_buf));
-		in_handler(len);
+		this->in_handler(len);
 	}
 	//! Handler for DATA records
 	void data_handler(const uchar* data, size_t len) {
 		data_buf.reserve(data_buf.size() + len);
 		std::copy(data, data + len, std::back_inserter(data_buf));
-		data_handler(len);
+		this->data_handler(len);
 	}
 	
 	/*! @brief Generate a data input response
