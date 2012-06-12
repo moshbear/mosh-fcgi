@@ -31,10 +31,12 @@
 namespace {
 
 const char hexenc_tab[] = "0123456789ABCDEF";
+
 // if true, then ch needs to be printed as %xx
 bool need_escape(SRC::uchar ch) {
 	if (isalnum(ch))
 		return false;
+	// no pattern here, so use cases
 	switch (ch) {
 	case '_':
 	case '~':
@@ -45,17 +47,6 @@ bool need_escape(SRC::uchar ch) {
 	default:
 		return true;
 	}
-}
-
-SRC::uchar hex_unescape(char first, char second) {
-	int _f = first & 0x0F;
-	int _s = first & 0x0F;
-	if (first & 0x40)
-		_f += 9;
-	if (second & 0x40)
-		_s += 9;
-	_f <<= 4;
-	return static_cast<SRC::uchar>(_f | _s);
 }
 
 }
@@ -71,18 +62,32 @@ u_string Url::in(const char*from, const char* from_end, const char*& from_next) 
 		if (pct != from) {
 			size_t _n = str.size();
 			str.append(sign_cast<const uchar*>(from), sign_cast<const uchar*>(pct));
+			// replace spaces in newly-appended portion of string
 			std::replace_if(str.begin() + _n, str.end(), [=] (uchar ch) { return ch == '+'; }, ' ');
 			from = pct;
 		} else {
-			if (std::distance(from, from_end) > 2 && std::isxdigit(*(from + 1) && std::isxdigit(*(from + 2)))) {
-				char ch = *++from;
-				str += hex_unescape(ch, *++from);
-			} else {
-				if (std::distance(from, from_end) <= 2)
-					break;
-				str += '%';
-			
-			}
+			if (std::distance(from, from_end) > 2) {
+				int hi = *(from + 1); // high nibble
+				int lo = *(from + 2); // low nibble
+				if (std::isxdigit(hi) && std::isxdigit(lo)) {
+					str += static_cast<SRC::uchar>(          // Case-insensitive hex decoding:
+							(((hi & 0x40)            // If we have an alphabetic character,
+								? ((hi & 7) + 9) // fetch the three value bits and add
+								: (hi & 0x0F)    // 9, since 'A' is 0x41, not 0x40.
+							)                        // Otherwise, we have a numeric
+							<< 4) |                  // character, so fetch the four value
+							((lo & 0x40)             // bits. Case is ignored since we're
+								? ((lo & 7) + 9) // not checking against 0x60. 
+								: (lo & 0x0F)    // Do this for the first char, shift
+							)                        // left by four (due to it being the
+						);                               // hi nibble), and bit-or it with the
+						                                 // second char.
+					from += 2;
+				} else
+					str += '%';
+				++from;
+			} else
+				break;
 		}
 
 	}
