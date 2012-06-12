@@ -33,6 +33,7 @@
 #include <mosh/fcgi/http/form.hpp>
 #include <mosh/fcgi/http/cookie.hpp>
 #include <mosh/fcgi/http/conv/url.hpp>
+#include <mosh/fcgi/http/session/funcs.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
 #include <src/singleton.hpp>
 #include <src/namespace.hpp>
@@ -222,11 +223,8 @@ void do_param(std::pair<std::string, std::string> const& p,
 				if (!ue_init())
 					throw std::runtime_error("session_base->init_ue");
 			} else if (!v.compare(0, mpT.size(), mpT)) {
-				xpr::smatch m;
-				if (xpr::regex_search(v, m, rc().boundary)) {
-					if (!mp_init("--" + m.str(1)))
-						throw std::runtime_error("session_base->init_mp");
-				}
+				if (!mp_init(boundary_from_ct(v)))
+					throw std::runtime_error("session_base->init_mp");
 			} else {
 				throw std::runtime_error("Bad Content-type");
 			}
@@ -293,11 +291,11 @@ void do_headers(std::string const& buf,
 					std::string cte = m.str(1);	
 					// Convert to lower case
 					std::for_each(cte.begin(), cte.end(),
-							[] (char& ch) {
-								if ('A' <= ch && ch <= 'Z')
-									ch += ('a' - 'A');
-							}
-					);
+							[] (char& ch) {                  // ASCII lowercase is exactly
+								if ((ch & 0x60) == 0x40) // 0x20 away from uppercase;
+									ch |= 0x20;      // if we have uppercase,
+							}                                // convert it to lowercase
+					);                                               // by bit-or'ing the case bit
 					cte_func(cte);
 				}
 			}
@@ -305,6 +303,14 @@ void do_headers(std::string const& buf,
 	}
 	for (auto& h : header)
 		h_func(h.first, h.second);
+}
+
+std::string boundary_from_ct(std::string const& ct) {
+	xpr::smatch m;
+	if (xpr::regex_search(ct, m, rc().boundary)) {
+		return "--" + m.str(1);
+	}
+	return "";
 }
 
 }

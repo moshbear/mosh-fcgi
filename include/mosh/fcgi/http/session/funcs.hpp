@@ -96,6 +96,12 @@ void do_headers(std::string const& buf,
 		std::function<void (std::string const&)> cte_func,
 		std::function<void (std::string const&, std::string const&)> h_func);
 
+/*! @brief Extract the boundary from a Content-Type header
+ *
+ * @param[in] ct Value of Content-Type header
+ */
+std::string boundary_from_ct(std::string const& ct);
+
 }
 }
 
