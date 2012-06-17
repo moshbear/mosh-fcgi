@@ -1,4 +1,4 @@
-//TODO: upload filter helloworldcgi
+//TODO: upload filter
 
 //! @file  mosh/fcgi/doc.hpp Documentation file for main page and tutorials
 /*!
@@ -18,7 +18,7 @@
 
 @section intro Introduction
 
-The mosh-fcgi library is m0shbear's fork of Eddie Carle's mosh-fcgi library (which is a
+The mosh-fcgi library is m0shbear's fork of Eddie Carle's fastcgi++ library (which is a
 C++ alternative to the FastCGI developer's kit) merged with m0shbear's fork of GNU Cgicc.
 Of course, the original pieces of cgicc still in the code are essentially non-existent -
 all the non-specifics have been completely rewritten and the original html and http classes
@@ -46,24 +46,26 @@ web applications, evident with the multiplexed approach utilized by the library.
 	@li Complete compliance with FastCGI protocol version 1
 	@li Support for %multipart/mixed
 	@li Enforcement of aligned data types (while unneccessary on x86, this pedantry ensures portability on PPC and SPARC)
-	@li CGI compatibility
 
 @section overview Overview
 
-The original library, mosh-fcgi, is built around three classes.
-MOSH_FCGI::Manager handles all task and request management along with the
-communication inside and outside the library. MOSH_FCGI::Transceiver handles
-all low level socket io and maintains send/receive buffers. MOSH_FCGI::Request
-is designed to handle the individual requests themselves. The aspects of the
-FastCGI protocol itself are defined in the MOSH_FCGI::protocol namespace.
+Mosh-fcgi, is built around three classes. @c MOSH_FCGI::Manager handles all task
+and request management along with the communication inside and outside the
+library. Note: this is a base class - use @c ManagerT instead.
+@c MOSH_FCGI::Transceiver handles all low level socket io and maintains
+send/receive buffers. MOSH_FCGI::Request_base (and derivations thereof in
+mosh/fcgi/request.hoo)is designed to handle the individual requests themselves.
+The aspects of the FastCGI protocol itself are defined in the MOSH_FCGI::protocol
+namespace.
 
-The MOSH_FCGI::Request class is a pure virtual class. The class, as is,
-establishes and parses session data. Once complete it looks to user defined
-virtual functions for actually generating the response. A response shall be
-outputted by the user defined virtuals through an output stream. Once a request
-has control over operation it maintains it until relinquishing it. Should the
-user know a request will sit around waiting for data, it can return control to
-MOSH_FCGI::Manager and have a message sent back through the manager when the
+The MOSH_FCGI::Request_base class is a pure virtual base class which handles the
+non-streamed portions of FastCGI requests. The class, as is, establishes and parses
+FastCGI data. Stream data is parsed in Request<IN_buf, DATA_buf>. Once complete, it
+looks to user defined virtual functions for actually generating the response. A
+response shall be outputted by the user defined virtuals through an output stream.
+Once a request has control over operation, it maintains it until relinquishing it.
+Should the user know a request will sit around waiting for data, it can return control
+to MOSH_FCGI::Manager and have a message sent back through the manager when the
 data is ready. The aspects of the session are built around
 MOSH_FCGI::http::session. The HTTP header and HTML generation code imported
 from merging the Cgicc fork is also in MOSH_FCGI::http (headers and cookies),
@@ -85,8 +87,6 @@ all the open connections and polls them for incoming data.
 	@li Boost C++ Libraries >1.35.0
 	@li Posix compliant OS (socket and thread/lock stuff)
 	@li C++11-compliant compiler
-	@li NSS (hashing)
-	@li Ccache (faster compilation) (optional)
 
 
 @section installation Installation
@@ -116,24 +116,224 @@ Note that it is installed in $WWWROOT/mosh_fcgi.
 
 This is a collection of tutorials that should cover most aspects of the mosh-fcgi library
 
-@subpage helloWorld : A simple tutorial outputting "Hello World" in five languages using UTF-32 internally and UTF-8 externally.
-
-@subpage helloWorldCgi: helloWorld but in CGI mode instead of FastCGI mode.
+@subpage hello-world : A simple tutorial outputting "Hello World" in five languages using native @c wchar_t Unicode internally and UTF-8 externally.
 
 @subpage echo : An example of a FastCGI application that echoes all user data and sets a cookie
 
-@subpage showGnu : A tutorial explaining how to display images and non-html data as well as setting locales
+@subpage raw-echo: An example of a FastCGI application that dumps all the data given, namely the FastCGI request properties, parameter list, and IN and DATA streams
+
+@subpage show-gnu : A tutorial explaining how to display images and non-html data as well as setting locales
 
 @subpage timer : A tutorial covering the use of the task manager and threads to have requests efficiently communicate with non-mosh-fcgi data
 
 @subpage upload : A tutorial covering the use of in_handler to implement a progress meter during uploads
 
-@subpage koi8r : An example of using a non-UTF8 output charset
-
 @subpage filter : An example of using the FastCGI data stream 
 
 */
 
+/*!
+@page hello-world Hello World in Five Languages
+
+@section hello-world-tut Tutorial
+
+Our goal here will be to make a FastCGI application that responds to clients
+with a "Hello World" in five different languages. 
+
+All code and data is located in the examples directory of the tarball.
+Look at the Makefile (examples/Makefile.am) for linking requirements.
+
+\subsection hello-world-err Error Logging
+
+Our first step will be setting up an error logging system. Although requests can
+log errors directly to the HTTP server error log, it's nice to have an error
+logging system that's separate from the library when testing applications. We 
+set up a function that takes a C string and logs it to a file with a timestamp.
+Since everyone has access to the /tmp directory, I set it up to send error
+messages to /tmp/errlog. You can change it if needed.
+
+@code
+
+
+#include <fstream>
+#include <mosh/fcgi/http/misc.hpp>
+
+void error_log(const char* msg)
+{
+	using namespace std;
+
+	static ofstream error;
+
+	error << '[' << MOSH_FCGI::http::time_to_string("%Y-%m-%d: %H:%M:%S") << "] " << msg << endl;
+}
+
+@endcode
+
+@subsection hello-world-req Request Handler
+
+Now we need to write the code that actually handles the request. Quite simply,
+all we need to do is derive from MOSH_FCGI::Request and define the
+MOSH_FCGI::Request_base::response() function. We don't want to store any
+parameters sent by the server (since it's going to be ignored), so we override
+MOSH_FCGI::Request_base::param_handler and have it return false.
+Unicode is handled by Fcgistream, which writes UTF-8 output.
+
+@code
+#include <mosh/fcgi/request.hpp>
+#include <mosh/fcgi/http/header.hpp>
+
+class Hello_world: public MOSH_FCGI::Request_base
+{
+@endcode
+
+We define a dummy parameter handler in order to tell the library to discard the code.
+While you can just leave the argument anonymous, you cannot change the type, since
+parameters are stored in a @c std::map .
+
+@code
+	bool param_handler(std::pair<std::string, std::string> const&) {
+@endcode
+	
+Nothing is done here and we don't want to store any parameters, so just return false.
+
+@code
+		return false;
+	}
+@endcode
+
+
+Now we can define our response function. It is this function that is called to
+generate a response for the client. While called multiple times, an inline definition
+has no performance loss because all the code is virtual calls inside a precompiled
+library.
+
+@code
+	bool response() {
+@endcode
+
+Any data we want to send to the client just gets inserted into the request's
+MOSH_FCGI::Fcgistream "out" stream. It works just the same as cout in almost
+every way, except that pushing Unicode data involves implicit buffering and
+conversion to UTF-8. It also adds the ability to write any of standard or unsigned
+@c char strings. We'll start by using MOSH_FCGI::http::header::content_type to output
+a Content-type HTTP header to the client. Line endings are handled automatically.
+
+@code
+		out << header::content_type("text/html", "utf-8");
+@endcode
+
+Now we're ready to insert all the HTML data into the stream. We use @c L"xxx" to
+denote wide string literals.
+
+@code
+		out << "Hello World in six languages: \r\n\r\n";
+
+		out <<	L"English: Hello World" << "\r\n";
+		out <<	L"Russian: Привет мир" << "\r\n";
+		out <<	L"Greek: Γεια σας κόσμο" << "\r\n";
+		out <<	L"Chinese: 世界您好" << "\r\n";
+		out <<	L"Japanese: 今日は世界" << "\r\n";
+		out <<	L"Runic English?: ᚺᛖᛚᛟ ᚹᛟᛉᛚᛞ" << "\r\n";
+@endcode
+
+We'll also output a little hello to the HTTP server error log just for fun as well.
+
+@code
+		err << "Hello, error.log from utf8-test";
+@endcode
+
+And we're basically done defining our response! All we need to do is return a
+boolean value. Always return @c true if you are done. This will let the manager
+know we are done so that post-request cleanup can be performed. Return @c false if
+you are not finished but want to relinquish control and allow other requests to
+operate. You would do this if the request needed to wait for a message to be passed
+back to it through the task manager.
+
+@code
+		return true;
+	}
+};
+@endcode
+
+@subsection hello-world-mgr Requests Manager
+
+Now we need to make our main() function. Really all one needs to do is create a
+MOSH_FCGI::ManagerT object with the new class we made as a template parameter,
+then call its handler. Let's go one step further though and set up a try/catch
+in case we get any exceptions and log them with our error_log function.
+
+@code
+#include <mosh/fcgi/manager.hpp>
+int main() {
+	try {
+		MOSH_FCGI::ManagerT<HelloWorld> fcgi;
+		fcgi.handler();
+	} catch (std::exception& e) {
+		error_log(e.what());
+	}
+}
+@endcode
+
+And that's it! About as simple as it gets.
+
+@section hello-world-code Full Source Code
+
+@code
+
+#include <fstream>
+
+#include <mosh/fcgi/request.hpp>
+#include <mosh/fcgi/manager.hpp>
+#include <mosh/fcgi/http/misc.hpp>
+#include <mosh/fcgi/http/header.hpp>
+
+void error_log(const char* msg) {
+	using namespace std;
+	static ofstream error;
+	
+	if (!error.is_open()) {
+		error.open("/tmp/errlog", ios_base::out | ios_base::app);
+	}
+
+	error << '[' << MOSH_FCGI::http::time_to_string("%Y-%m-%d: %H:%M:%S") << "] " << msg << endl;
+}
+
+class Hello_world: public MOSH_FCGI::Request_base {
+	bool param_handler(std::pair<std::string, std::string> const&) {
+		return false;
+	}
+	bool response() {
+		using namespace MOSH_FCGI::http;
+
+		out << header::content_type("text/plain", "utf-8");
+
+		out << "Hello World in six languages: \r\n\r\n";
+
+		out <<	L"English: Hello World" << "\r\n";
+		out <<	L"Russian: Привет мир" << "\r\n";
+		out <<	L"Greek: Γεια σας κόσμο" << "\r\n";
+		out <<	L"Chinese: 世界您好" << "\r\n";
+		out <<	L"Japanese: 今日は世界" << "\r\n";
+		out <<	L"Runic English?: ᚺᛖᛚᛟ ᚹᛟᛉᛚᛞ" << "\r\n";
+		
+		err << "Hello, error.log from utf8-test";
+
+		return true;
+	}
+};
+
+int main() {
+	try {
+		MOSH_FCGI::ManagerT<Hello_world> fcgi;
+		fcgi.handler();
+	} catch (std::exception& e) {
+		error_log(e.what());
+	}
+}
+
+@endcode
+
+*/
 /*!
 
 @page timer Delayed response
@@ -158,7 +358,6 @@ Since everyone has access to the /tmp directory, I set it up to send error
 messages to /tmp/errlog. You can change it if needed.
 
 @code
-
 
 #include <fstream>
 #include <mosh/fcgi/http/misc.hpp>
@@ -910,7 +1109,7 @@ First thing we need to do is output our HTTP header. Note that headers must be i
 can't use any Unicode or even high-bit ISO-8859-1 here.
 
 @code
-		out.dump(http::header::content_type("text/html", "utf-8") + http::Cookie({"lang", "ru"}));
+		out << http::header::content_type("text/html", "utf-8") + http::Cookie({"lang", "ru"});
 @endcode
 
 Next we'll get some initial HTML stuff out of the way
@@ -946,7 +1145,7 @@ Because headers are all ASCII, it's safe to dump directly to the ouput stream. T
 overhead of ASCII->Unicode->UTF8 is thus eliminated.
 			
 @code
-			out.dump(s::p(ul));
+			out << s::p(ul);
 		}
 	
 @endcode
@@ -955,7 +1154,7 @@ Now we get to GET data.
 
 @code
 		if (!session.gets.empty()) {
-			out.dump(s::h1("GETs (decoded QUERY_STRING)").to_string() + s::br.to_string() + "\r\n");
+			out << s::h1("GETs (decoded QUERY_STRING)").to_string() << s::br.to_string() << "\r\n";
 @endcode
 
 We make a temporary MOSH_FCGI::html::Element here in order to make construction 
@@ -1265,207 +1464,6 @@ int main() {
 
 */
 
-/*!
-@page helloWorld Hello World in Five Languages
-
-@section helloWorldTutorial Tutorial
-
-Our goal here will be to make a FastCGI application that responds to clients
-with a "Hello World" in five different languages. 
-
-All code and data is located in the examples directory of the tarball.
-Look at the Makefile (examples/Makefile.am) for linking requirements.
-
-\subsection helloWorldError Error Logging
-
-Our first step will be setting up an error logging system. Although requests can
-log errors directly to the HTTP server error log, it's nice to have an error
-logging system that's separate from the library when testing applications. We 
-set up a function that takes a C string and logs it to a file with a timestamp.
-Since everyone has access to the /tmp directory, I set it up to send error
-messages to /tmp/errlog. You can change it if needed.
-
-@code
-
-
-#include <fstream>
-#include <mosh/fcgi/http/misc.hpp>
-
-void error_log(const char* msg)
-{
-	using namespace std;
-
-	static ofstream error;
-
-	error << '[' << MOSH_FCGI::http::time_to_string("%Y-%m-%d: %H:%M:%S") << "] " << msg << endl;
-}
-
-@endcode
-
-@subsection helloWorldRequest Request Handler
-
-Now we need to write the code that actually handles the request. Quite simply,
-all we need to do is derive from MOSH_FCGI::Request and define the
-MOSH_FCGI::Request::response() function. Since we've decided to use wide Unicode
-characters, we need to pass @c wchar_t as the template parameter to the Request
-class instead of @c char.
-
-@code
-#include <mosh/fcgi/request.hpp>
-
-class HelloWorld: public MOSH_FCGI::Request<wchart>
-{
-@endcode
-
-Now we can define our response function. It is this function that is called to
-generate a response for the client. It isn't a good idea to define the
-response() function inline as it is called from numerous spots, but for the
-example's readability, an exception will be made.
-
-@code
-	bool response() {
-@endcode
-
-Any data we want to send to the client just get's inserted into the request's
-MOSH_FCGI::Fcgistream "out" stream. It works just the same as cout in almost
-every way. We'll start by using MOSH_FCGI::http::header::Header to output
-a HTTP header to the client. Line endings are handled automatically.
-
-@code
-		out.dump(header::content_type("text/html", "utf-8"));
-@endcode
-
-Now we're ready to insert all the HTML data into the stream. As with %Echo, we
-use @c L"xxx" to denote wide string literals.
-
-@code
-		out << ws::html_begin();
-		out << ws::head({
-				ws::meta({
-					ws::P("http-equiv", L"Content-Type"),
-					ws::P("content", L"text/html"),
-					ws::P("charset", L"utf-8")
-				}),
-				ws::title(L"mosh-fcgi: Hello World in UTF-8")
-			});
-		out << ws::body({
-			L"English: Hello World", ws::br,
-			L"Russian: Привет мир", ws::br,
-			L"Greek: Γεια σας κόσμο", ws::br,
-			L"Chinese: 世界您好", ws::br,
-			L"Japanese: 今日は世界", ws::br,
-			L"Runic English?: ᚺᛖᛚᛟ ᚹᛟᛉᛚᛞ", ws::br
-		});
-		out << ws::html_end;
-@endcode
-
-We'll also output a little hello to the HTTP server error log just for fun as well.
-
-@code
-		err << L"Hello, error.log from utf8-test";
-@endcode
-
-And we're basically done defining our response! All we need to do is return a
-boolean value. Always return @c true if you are done. This will let httpd and
-the manager know we are done so they can destroy the request and free its
-resources. Return @c false if you are not finished but want to relinquish control
-and allow other requests to operate. You would do this if the request needed to
-wait for a message to be passed back to it through the task manager.
-
-@code
-		return true;
-	}
-};
-@endcode
-
-@subsection helloWorldManager Requests Manager
-
-Now we need to make our main() function. Really all one needs to do is create a
-MOSH_FCGI::Manager object with the new class we made as a template parameter,
-then call its handler. Let's go one step further though and set up a try/catch
-in case we get any exceptions and log them with our error_log function.
-
-@code
-#include <mosh/fcgi/manager.hpp>
-int main() {
-	try {
-		MOSH_FCGI::Manager<HelloWorld> fcgi;
-		fcgi.handler();
-	} catch (std::exception& e) {
-		error_log(e.what());
-	}
-}
-@endcode
-
-And that's it! About as simple as it gets.
-
-@section helloWorldCode Full Source Code
-
-@code
-#include <fstream>
-
-#include <mosh/fcgi/request.hpp>
-#include <mosh/fcgi/manager.hpp>
-#include <mosh/fcgi/http/misc.hpp>
-#include <mosh/fcgi/http/header.hpp>
-#include <mosh/fcgi/html/element.hpp>
-#include <mosh/fcgi/html/element/ws.hpp>
-
-void error_log(const char* msg) {
-	using namespace std;
-	static ofstream error;
-	
-	if (!error.is_open()) {
-		error.open("/tmp/errlog", ios_base::out | ios_base::app);
-	}
-
-	error << '[' << MOSH_FCGI::http::time_to_string("%Y-%m-%d: %H:%M:%S") << "] " << msg << endl;
-}
-
-class HelloWorld: public MOSH_FCGI::Request<wchar_t> {
-	bool response() {
-		using namespace MOSH_FCGI::http;
-		using namespace MOSH_FCGI::html::element;
-
-		out.dump(header::content_type("text/html", "utf-8"));
-
-		out << ws::html_begin();
-		out << ws::head({
-				ws::meta({
-					ws::P("http-equiv", L"Content-Type"),
-					ws::P("content", L"text/html"),
-					ws::P("charset", L"utf-8")
-				}),
-				ws::title(L"mosh-fcgi: Hello World in UTF-8")
-			});
-		out << ws::body({
-			L"English: Hello World", ws::br,
-			L"Russian: Привет мир", ws::br,
-			L"Greek: Γεια σας κόσμο", ws::br,
-			L"Chinese: 世界您好", ws::br,
-			L"Japanese: 今日は世界", ws::br,
-			L"Runic English?: ᚺᛖᛚᛟ ᚹᛟᛉᛚᛞ", ws::br
-		});
-		out << ws::html_end;
-		
-		err << L"Hello, error.log from utf8-test";
-
-		return true;
-	}
-};
-
-int main() {
-	try {
-		MOSH_FCGI::Manager<HelloWorld> fcgi;
-		fcgi.handler();
-	} catch (std::exception& e) {
-		error_log(e.what());
-	}
-}
-
-@endcode
-
-*/
 /*!
 @page koi8r Non-UTF8 charset (specifically, KOI8-R)
 
