@@ -460,125 +460,60 @@ protected:
  */
 //@{
 /*! @brief Embed an element inside another element.
- *  @param[in] e1 Element
+ *  @param[in] e Element
  *  @param[in] e2 Element to embed
  */
 template <typename charT, typename T>
 typename std::enable_if<std::is_base_of<Element<charT>, T>::value, T>::type
-operator + (T&& e1, T&& e2) {
-	T e(std::forward<T>(e1));
+operator + (T e, T&& e2) {
 	e += static_cast<std::basic_string<charT>>(e2);
-	return e;
-}
-/*! @brief Embed an element inside another element.
- *  @param[in] e1 Element
- *  @param[in] e2 Element to embed
- */
-template <typename charT, typename T>
-typename std::enable_if<std::is_base_of<Element<charT>, T>::value, T>::type
-operator + (T const& e1, T&& e2) {
-	T e(e1);
-	e += static_cast<std::basic_string<charT>>(e2);
-	return ;
-}
-
-/*! @brief Concatenate an attribute.
- *  @param[in] _e element
- *  @param[in] _a attribute
- */
-template <typename charT, typename T>
-typename std::enable_if<std::is_base_of<Element<charT>, T>::value, T>::type
-operator + (T const& _e, const typename Element<charT>::attribute& _a) {
-	T e(_e);
-	e += _a;
 	return e;
 }
 
 /*! @brief Concatenate an attribute.
- *  @param[in] _e element
+ *  @param[in] e element
  *  @param[in] _a attribute
  */
 template <typename charT, typename T>
 typename std::enable_if<std::is_base_of<Element<charT>, T>::value, T>::type
-operator + (T&& _e, const typename Element<charT>::attribute& _a) {
-	T e(std::move(_e));
-	e += _a;
-	return std::move(e);
-}
-
-/*! @brief Concatenate attribute(s).
- *  @param[in] _e element
- *  @param[in] _a {}-list of attributes
- */
-template <typename charT, typename T>
-typename std::enable_if<std::is_base_of<Element<charT>, T>::value, T>::type
-operator + (T const& _e, std::initializer_list<typename Element<charT>::attribute> _a) {
-	T e(_e);
+operator + (T e, const typename Element<charT>::attribute& _a) {
 	e += _a;
 	return e;
 }
 
 /*! @brief Concatenate attribute(s).
- *  @param[in] _e element
+ *  @param[in] e element
  *  @param[in] _a {}-list of attributes
  */
 template <typename charT, typename T>
 typename std::enable_if<std::is_base_of<Element<charT>, T>::value, T>::type
-operator + (T&& _e, std::initializer_list<typename Element<charT>::attribute> _a) {
-	T e(std::move(_e));
-	e += _a;
-	return std::move(e);
-}
-
-/*! @brief Concatenate attribute(s).
- *  @param[in] _e element
- *  @param[in] _a list of attributes
- */
-template <typename charT, typename T>
-typename std::enable_if<std::is_base_of<Element<charT>, T>::value, T>::type
-operator + (T const& _e, typename Element<charT>::attr_list const& _a) {
-	T e(_e);
+operator + (T e, std::initializer_list<typename Element<charT>::attribute> _a) {
 	e += _a;
 	return e;
 }
 
 /*! @brief Concatenate attribute(s).
- *  @param[in] _e element
+ *  @param[in] e element
  *  @param[in] _a list of attributes
  */
 template <typename charT, typename T>
 typename std::enable_if<std::is_base_of<Element<charT>, T>::value, T>::type
-operator + (T&& _e, typename Element<charT>::attr_list const& _a) {
-	T e(std::move(_e));
+operator + (T e, typename Element<charT>::attr_list const& _a) {
 	e += _a;
-	return std::move(e);
+	return e;
 }
-
 
 /*! @brief Concatenate a value.
- *  @param[in] _e element 
+ *  @param[in] e element 
  *  @param[in] _v value
  */
 template <typename charT, typename T>
 typename std::enable_if<std::is_base_of<Element<charT>, T>::value, T>::type
-operator + (T const& _e, const std::basic_string<charT>& _v) {
-	T e(_e);
+operator + (T e, const std::basic_string<charT>& _v) {
 	e += _v;
 	return e;
 }
 	
-/*! @brief Concatenate a value.
- *  @param[in] _e element 
- *  @param[in] _v value
- */
-template <typename charT, typename T>
-typename std::enable_if<std::is_base_of<Element<charT>, T>::value, T>::type
-operator + (T&& _e, const std::basic_string<charT>& _v) {
-	T e(std::move(_e));
-	e += _v;
-	return std::move(e);
-}
-
 /*! @brief Append a rendered element to a string.
  *  @param[in] _v string
  *  @param[in] _e element
@@ -590,51 +525,25 @@ operator + (std::basic_string<charT> const& _v, T&& _e) {
 }
 
 /*! @brief Concatenate value(s).
- *  @param[in] _e element
+ *  @param[in] e element
  *  @param[in] _v {}-list of values
  */
 template <typename charT, typename T>
 typename std::enable_if<std::is_base_of<Element<charT>, T>::value, T>::type
-operator + (T const& _e, std::initializer_list<std::basic_string<charT>> _v) {
-	T e(_e);
+operator + (T e, std::initializer_list<std::basic_string<charT>> _v) {
 	e += _v;
 	return e;
 }
 
 /*! @brief Concatenate value(s).
- *  @param[in] _e element
- *  @param[in] _v {}-list of values
- */
-template <typename charT, typename T>
-typename std::enable_if<std::is_base_of<Element<charT>, T>::value, T>::type
-operator + (T&& _e, std::initializer_list<std::basic_string<charT>> _v) {
-	T e(std::move(_e));
-	e += _v;
-	return std::move(e);
-}
-
-/*! @brief Concatenate value(s).
- *  @param[in] _e element
+ *  @param[in] e element
  *  @param[in] _v list of values
  */
 template <typename charT, typename T>
 typename std::enable_if<std::is_base_of<Element<charT>, T>::value, T>::type
-operator + (T const& _e, typename Element<charT>::string_list const& _v) {
-	T e(_e);
+operator + (T e, typename Element<charT>::string_list const& _v) {
 	e += _v;
 	return e;
-}
-
-/*! @brief Concatenate value(s).
- *  @param[in] _e element
- *  @param[in] _v list of values
- */
-template <typename charT, typename T>
-typename std::enable_if<std::is_base_of<Element<charT>, T>::value, T>::type
-operator + (T&& _e, typename Element<charT>::string_list const& _v) {
-	T e(std::move(_e));
-	e += _v;
-	return std::move(e);
 }
 
 //@}
