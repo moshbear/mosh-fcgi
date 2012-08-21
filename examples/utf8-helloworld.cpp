@@ -54,6 +54,7 @@ class Hello_world: public MOSH_FCGI::Request_base {
 		out << header::content_type("text/plain", "utf-8");
 
 		out << "Hello World in six languages: \r\n\r\n";
+
 		out <<	L"English: Hello World" << "\r\n";
 		out <<	L"Russian: Привет мир" << "\r\n";
 		out <<	L"Greek: Γεια σας κόσμο" << "\r\n";
