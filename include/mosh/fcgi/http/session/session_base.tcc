@@ -72,7 +72,7 @@ u_string Session_base<ct>::process_encoded_data() {
 		ret = std::move(this->conv->in(this->ebuf.data(), this->ebuf.data() + this->ebuf.size(), f_next));
 		this->ebuf.erase(0, f_next - this->ebuf.data());
 	} else { // null converter; bitwisedly copy
-		ret = std::move(std::string(sign_cast<const uchar*>(this->ebuf.data()),
+		ret = std::move(u_string(sign_cast<const uchar*>(this->ebuf.data()),
 						sign_cast<const uchar*>(this->ebuf.data()) + this->ebuf.size()));
 		this->ebuf.clear();
 	}
@@ -85,9 +85,9 @@ u_string Session_base<ct>::process_encoded_data() {
 template <class char_type>
 void Session_base<char_type>::parse_param(std::pair<std::string, std::string> const&p) {
 	session::do_param(p,
-			[&] ()  { return this->ue_init(); },
-			[&] (std::string const& a1) { return this->mp_init(a1); },
-			[&] (const char* a1, size_t a2) { this->fill_ue_oneshot(a1, a2); },
+			[&] ()  { return this->init_ue(); },
+			[&] (std::string const& a1) { return this->init_mp(a1); },
+			[&] (const char* a1, size_t a2) { this->fill_ue_oneshot(a1, a2, this->gets); },
 			[&] (const char* a1, size_t a2) { session::process_cookies(a1, a2, this->cookies, this->cookies_g); }
 	);
 }
