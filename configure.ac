@@ -13,18 +13,9 @@ AC_PROG_LIBTOOL
 BOOST_XPRESSIVE
 BOOST_THREADS
 
-PKG_CHECK_MODULES([NSS], [nss], [have_nss=yes],
-	[AC_SEARCH_LIBS([HASH_Create], [nss nss3],
-		    [have_nss=yes],
-		    [true],
-		    [-lpthread])
-])
-AC_SUBST([NSS_CFLAGS], [$NSS_CFLAGS])
-AC_SUBST([NSS_LIBS], [$NSS_LIBS])
-
 AC_PROG_CXX
 
-CXX="${CXX} -std=c++0x -Wall"
+CXX="${CXX} -std=c++0x -Wall -g -ggdb -O2"
 
 AC_MSG_NOTICE([checking for language features])
 AC_COMPILE_CHECK([c++11 angle brackets], [ template <typename T> class Q { }; ] , [ Q<Q<int>> foo; ], [AC_MSG_NOTICE([working])], [AC_MSG_ERROR([no improved angle bracket support])])
@@ -50,7 +41,7 @@ AC_TYPE_UINT16_T
 AC_TYPE_UINT32_T
 AC_TYPE_UINT64_T
 
-pkgConfigLibs="-lmosh_fcgi $NSS_LIBS"
+pkgConfigLibs="-lmosh_fcgi"
 
 AC_SUBST(pkgConfigLibs)
 

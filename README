@@ -1,5 +1,5 @@
 File: README
-V: 0.7.0, 2012-02-25 m0shbear
+V: 0.7.1, 2012-04-04 m0shbear
 ==
 http://moshbear.net/proj.pl?a=fcgi
 
@@ -9,7 +9,6 @@ Requirements:
 *	C++11 compiler
 *	POSIX
 *	Boost
-*	NSS
 
 Features added:
 * support for FCGI_ROLE_AUTHORIZER
