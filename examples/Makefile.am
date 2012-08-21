@@ -10,7 +10,7 @@ EXTRA_DIST = echo.html gnu.png upload.html echo.cpp raw-echo.cpp show-gnu.cpp up
 
 all: examples
 
-examples: utf8-helloworld.fcgi echo.fcgi showgnu.fcgi timer.fcgi upload.fcgi filter.fcgi
+examples: utf8-helloworld.fcgi echo.fcgi show-gnu.fcgi timer.fcgi upload.fcgi filter.fcgi
 
 %.fcgi: %.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $^ -I$(top_srcdir)/include -L$(top_srcdir)/src/.libs $(pkgConfigLibs) 
