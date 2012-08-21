@@ -1,5 +1,5 @@
 /***************************************************************************
-* Copyright (C) 2011 m0shbear                                              *
+* Copyright (C) 2011-2 m0shbear                                            *
 *		2007 Eddie                                                 *
 *                                                                          *
 * This file is part of mosh-fcgi.                                          *
@@ -55,24 +55,21 @@ void error_log(const char* msg) {
 	error << '[' << MOSH_FCGI::http::time_to_string("%Y-%m-%d: %H:%M:%S") << "] " << msg << endl;
 }
 
-// Let's make our request handling class. It must do the following:
-// 1) Be derived from MOSH_FCGI::Request
-// 2) Define the virtual response() member function from MOSH_FCGI::Request()
-
-// First things first let's decide on what kind of character set we will use.
-// Since we want to be able to echo all languages we will use unicode. The way this
-// library handles unicode might be different than some are used to but it is done
-// the way it is supposed to be. All internal characters are wide. In this case UTF-32.
-// This way we don't have to mess around with variable size characters in our program.
-// A string with 10 wchar_ts is ten characters long. Not up in the air as it is with UTF-8.
-// Anyway, moving right along, the streams will code convert all the UTF-32 data to UTF-8
-// before it is sent out to the client. This way we get the best of both worlds.
-//
-// So, whenever we are going to use UTF-8, our template parameter for MOSH_FCGI::Request<char_type>
-// should be wchar_t. Keep in mind that this suddendly makes
-// everything wide character and utf compatible. Including HTTP header data (cookies, urls, yada-yada).
-
-class Echo: public Request<wchar_t> {
+/*!
+ * Make a request handling class, which does the following:
+ * * derive MOSH_FCGI::Form_request, since we're dealing with form data
+ * * define the virtual function `bool response()`
+ *
+ * The character set in use will be Unicode, internally encoded in the native wide Unicode format
+ * (e.g. UTF-16 for Windows, UTF-32 for Linux). If you want platform-independent UTF-16 or UTF-32,
+ * templatize src/bits/utf8 and instantiate for @c char16_t or @c char32_t .
+ *
+ * The external encoding is going to be UTF-8. Now, Fcgistream automatically does internal UTF
+ * to UTF-8 conversion, but Form_request needs to be instantiated as Form_request<wchar_t> so that
+ * the HTTP handler decodes the UTF-8 instead of leaving it unparsed.
+ */
+class Echo: public Form_request<wchar_t> {
+	//! Helper for dumping multipart/form-data entries as HTML
 	static std::wstring dump_mp(http::form::MP_entry<wchar_t> const& f) {
 		ws::Element ul = ws::ul();
 		if (f.is_file()) {
@@ -111,6 +108,7 @@ class Echo: public Request<wchar_t> {
 		return ul;
 	}
 
+	//! Helper for dumping multipart/mixed entries as HTML
 	static std::wstring dump_mm(http::form::MP_mixed_entry<wchar_t> const& m) {
 		ws::Element ul = ws::ul();
 		if (!m.headers.empty()) {
@@ -126,7 +124,7 @@ class Echo: public Request<wchar_t> {
 		if (v.size() > 0) {
 			if (!m.is_scalar_value()) {
 				ws::Element ul2 = ws::ul();
-				for (const auto& a : v) {
+				for (auto& a : v) {
 					ul2 += ws::li(dump_mp(a));
 					ul2 += L"\r\n";
 				}
@@ -140,11 +138,44 @@ class Echo: public Request<wchar_t> {
 		
 	bool response()	{
 		using namespace html::element;
-		// Print a header with a set cookie
-		// Note: Cookie data must be ASCII. Q-encoding or url-encoding can be used, but results
-		// 	are implementation definded.
+		/*
+		 * Print a header with a set cookie.
+		 * Here, the header is enclosed with parenthese. This is required if you're going to be
+		 * concatenating multiple header lines in the form of header_1(...) + ... + header_n(...).
+		 * Otherwise, the headers get converted to string before concatenation and the output is not
+		 * going to be what you expect. So be safe and parenthesize before stream-shifting.
+		 *
+		 * Note: Cookie data must be ASCII. Non-ascii can be represented with Q-encoding, Base-64, or
+		 * other ASCII-serialization, but the behavior for setting and parsing these cookies is
+		 * implementation-defined.
+		 */
 		out << (http::header::content_type("text/html", "utf-8") + http::Cookie("lang", "ru"));
 
+		/*
+		 * Print the html start data.
+		 * Here, we use html_begin so that we don't have to print everything to a stream and do
+		 * 	out << (s::html() + html_data)	.
+		 * 
+		 * All HTML elements support the use of { ... ,..., ...} so that (s::e1() + str_1 + ... + str_n)
+		 * can be represented instead, as s::e1({ str_1, ..., str_n }). This removes the amount of
+		 * parentheses needed and eliminates common potential bugs in string concatenation.
+		 *
+		 * { ..., ..., ... } has another form, where it accepts an an initializer list of std::pair<s,s>s.
+		 * Here, this is a list of element attributes. Using the aforementioned parentheses and
+		 * plus-concatenation here is simultaneously tricky, error-prone, ugly, and needlessly complex.
+		 * 
+		 * Outside the scope of this example is the third form, where each element receives a list of
+		 * attributes and a list of values to concatenate within.
+		 *
+		 * Formally, an Element's argument(s) can be described as:
+		 *
+		 * (Element)({pair<string,string>|initializer_list<pair<string,string>>}{*}
+		 * 		{string | initializer_list<string>}
+		 * 	    ),
+		 * where {*} is a comma if the argument count is 2,
+		 * 		nothing if the argument count is 1, and
+		 * 		undefined otherwise.
+		 */
 		out << s::html_begin();
 		out << s::head({
 				s::meta({
@@ -154,18 +185,19 @@ class Echo: public Request<wchar_t> {
 				}),
 				s::title("mosh-fcgi: Echo in UTF-8")
 			});
+		// As with html_begin, we use the same logic for body_begin.
 		out << s::body_begin();
-		out << s::h1(L"Session Parameters");
+		out << s::h1("Session Parameters");
 	
 		// Print env vars
 		{
 			s::Element ul = s::ul();
-			for (auto& e : session.envs) {
+			for (auto& e : envs) {
+				// Element instances are also appendable, so string data can be added
+				// inside an iteration or other unrollable control structure
 				ul += s::li(s::b(e.first)) + S(": ") + e.second;
 				ul += "\r\n";
 			}
-			// To avoid the overhead of converting to unicode, then back to UTF-8, we
-			// just dump the ascii data as-is
 			out << s::p(ul);
 
 		}
@@ -173,16 +205,22 @@ class Echo: public Request<wchar_t> {
 		// Print GETs (i.e. parsed QUERY_STRING)
 		if (!session.gets.empty()) {
 			out << s::h1("GETs (decoded QUERY_STRING)") << s::br << "\r\n";
+			// Here, we use the *wide* string form of Element, so that we can
+			// print Unicode data.
 			ws::Element ul = ws::ul();
 			for (auto& g : session.gets) {
+				// Here, we make use of the fact that form data can have multiple
+				// values per name
 				if (!g.second.is_scalar_value()) {
 					ws::Element ul2 = ws::ul();
-					for (const auto& a : g.second.values) {
+					for (auto& a : g.second.values) {
 						ul2 += ws::li(a);
 						ul2 += L"\r\n";
 					}
 					ul += ws::li(ws::b(g.first)) + S(L": ") + ul2.to_string();
 				} else {
+					// Fcgistream::operator << (Fcgistream&, wstring const&) does
+					// UTF-8 decode and buffers the data
 					out << ws::li(ws::b(g.first)) + S(L": ") + g.second.value();
 				}	
 			}
@@ -195,7 +233,7 @@ class Echo: public Request<wchar_t> {
 			for (auto& p : session.posts) {
 				if (!p.second.is_scalar_value()) {
 					ws::Element ul2 = ws::ul();
-					for (const auto& v : p.second.values) {
+					for (auto& v : p.second.values) {
 						ul2 += ws::li(dump_mp(v));
 						ul2 += L"\r\n";
 					}
@@ -211,7 +249,7 @@ class Echo: public Request<wchar_t> {
 			for (auto& mm : session.mm_posts) {
 				if (!mm.second.is_scalar_value()) {
 					ws::Element ul2 = ws::ul();
-					for (const auto& v : mm.second.values) {
+					for (auto& v : mm.second.values) {
 						ul2 += ws::li(dump_mm(v));
 						ul2 += L"\r\n";
 					}
@@ -221,14 +259,21 @@ class Echo: public Request<wchar_t> {
 			}
 			out << ul << s::br << L"\r\n";
 		}
+		// Close the body and html tags
 		out << s::body_end << s::html_end;
 
-		// Always return true if you are done. This will let http know we are done
-		// and the manager will destroy the request and free it's resources.
-		// Return false if you are not finished but want to relinquish control and
-		// allow other requests to operate. You might do this after an SQL query
-		// while waiting for a reply. Passing messages to requests through the
-		// manager is possible but beyond the scope of this example.
+		/*
+		 * We're done here, so we return true, permitting the manager to complete the request.
+		 *
+		 * If the request is incomplete but is waiting for external data, e.g. a SQL query,
+		 * return false so that the manager can deal with other requests.
+		 *
+		 * Passing messages to requests is possible but beyond the scope of this example.
+		 * See timer.cpp for a simple example of intra-request message passing.
+		 * 
+		 * HTTP sessions support is outside the scope of mosh-fcgi, so cookie handling, etc,
+		 * may require a third-party or home-grown mini-library for managing stateful data.
+		 */
 		return true;
 	}
 };
@@ -238,7 +283,7 @@ int main() {
 	try {
 		// First we make a MOSH_FCGI::Manager object, with our request handling class
 		// as a template parameter.
-		MOSH_FCGI::Manager<Echo> fcgi;
+		MOSH_FCGI::ManagerT<Echo> fcgi;
 		// Now just call the object handler function. It will sleep quietly when there
 		// are no requests and efficiently manage them when there are many.
 		fcgi.handler();
