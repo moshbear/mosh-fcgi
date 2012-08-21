@@ -120,21 +120,11 @@ void Session<ct, pt>::fill_ue(const char* data, size_t size) {
 			const char* _eoh = std::find(data, data_end, '=');
 
 			this->ebuf.append(data, _eoh);
+			data = _eoh + 1;
+			this->ubuf += this->process_encoded_data();
 			if (_eoh == data_end)
 				return;
-			data = _eoh + 1;
-			size_t _pct = this->ebuf.rfind('%');
-			if (_pct != std::string::npos) {
-				xpr::cmatch m;
-				// check for incomplete buffer
-				if (!(xpr::regex_search(this->ebuf.data() + _pct, iterator_plus_n(this->ebuf.data() + _pct,
-										this->ebuf.data() + this->ebuf.size(), 3),
-							m, this->ue_vars->rc().escaped_hex)
-					|| (_pct + 3 <= this->ebuf.size())
-				))
-					return;
-			}
-			this->ubuf += this->process_encoded_data();
+			
 			MP_entry cur_fe(this->to_unicode());
 			// Prepare pointers for state::data mode
 			this->posts[cur_fe.name] << std::move(cur_fe);
@@ -143,6 +133,8 @@ void Session<ct, pt>::fill_ue(const char* data, size_t size) {
 			// Clear ebuf and ubuf to avoid unintented conversion results 
 			this->ebuf.clear();
 			this->ubuf.clear();
+
+			data = _eoh + 1;
 		}
 		case Ue_type::State::value:
 		{
@@ -153,7 +145,7 @@ void Session<ct, pt>::fill_ue(const char* data, size_t size) {
 			if (_eov != data_end) {
 				this->ue_vars->state = Ue_type::State::name;
 				data = _eov + 1;
-				// Clear xbuf and ubuf to avoid unintented conversion results 
+				// Clear ebuf and ubuf to avoid unintented conversion results 
 				this->ebuf.clear();
 				this->ubuf.clear();
 			} else
@@ -188,7 +180,7 @@ void Session<ct, pt>::fill_mp(const uchar* data, size_t size) {
 					if (a1)
 						this->mp_vars->mm_vars.stop_parsing = false;
 				},
-				[&] (std::string const& a1) { cur_entry.cte_decoder = get_conv(a1); },
+				[&] (std::string const& a1) { cur_entry.ct_encoding = a1; },
 				[&] (std::string const& a1, std::string const& a2) {
 					if (!a1.compare("Content-Type"))
 						cur_entry.content_type = a2;
@@ -202,11 +194,11 @@ void Session<ct, pt>::fill_mp(const uchar* data, size_t size) {
 				using namespace xpr;
 				// prepare the cur_entry
 				MP_mixed_entry cur_mm(std::move(cur_entry));
-				smatch m;
 				auto _ct = cur_mm.headers.find("Content-Type");
 				if (_ct != cur_mm.headers.end()) {
-					if (regex_match(_ct->second, m, this->rc().boundary))
-						cur_mm.set_boundary("--" + m.str(1));
+					std::string bound = session::boundary_from_ct(_ct->second);
+					if (!bound.empty())
+						cur_mm.set_boundary(std::move(bound));
 				}
 				// prepare pointers for fill_mm
 				this->mm_posts[cur_mm.name] << std::move(cur_mm);
