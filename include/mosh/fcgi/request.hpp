@@ -193,13 +193,13 @@ template <typename Post_buf = std::vector<uchar>, typename Data_buf = std::vecto
 class Request : public virtual Request_base {
 protected:
 	//! Handler for IN records
-	void in_handler(const uchar* data, size_t len) {
+	virtual void in_handler(const uchar* data, size_t len) {
 		post_buf.reserve(post_buf.size() + len);
 		std::copy(data, data + len, std::back_inserter(post_buf));
 		this->in_handler(len);
 	}
 	//! Handler for DATA records
-	void data_handler(const uchar* data, size_t len) {
+	virtual void data_handler(const uchar* data, size_t len) {
 		data_buf.reserve(data_buf.size() + len);
 		std::copy(data, data + len, std::back_inserter(data_buf));
 		this->data_handler(len);
@@ -256,16 +256,19 @@ protected:
 	http::Session<char_type, post_val_type> session;
 	
 	//! Handler for parsed PARAMS
-	void params_handler(std::map<std::string, std::string> const& env) {
-		session.parse_param(env);
+	virtual bool params_handler(std::map<std::string, std::string> const& env) {
+		for (auto const& e : env)
+			session.parse_param(e);
 		return true;
 	}
 
 	//! Handler for IN records
-	void in_handler(const uchar* data, size_t len) {
+	virtual void in_handler(const uchar* data, size_t len) {
 		session.fill_post(data, len);
-		in_handler(len);
+		this->in_handler(len);
 	}
+
+	virtual void in_handler(size_t) { }
 };
 
 MOSH_FCGI_END
