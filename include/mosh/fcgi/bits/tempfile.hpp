@@ -75,7 +75,7 @@ public:
 	 * If this method is run, then the file represented by this object is
 	 * not deleted on destruction.
 	 */
-	void make_permanent() {
+	void make_permanent() const {
 		is_permanent = true;
 	}
 
@@ -105,7 +105,10 @@ private:
 
 	std::unique_ptr<std::ofstream> file;
 	std::string fname;
-	bool is_permanent;
+	// mutable since the class's behavior is invariant on whether
+	// the file is actually permanent or not
+	// well, excluding some of the cleanup code in the dtor
+	mutable bool is_permanent;
 };
 
 MOSH_FCGI_END
