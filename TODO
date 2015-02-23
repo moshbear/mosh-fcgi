@@ -1,5 +1,4 @@
 Todo:
 *	External converter hook
-*	html/Element: add repeater template function to mimic perl's ($cgi)->foo({...}, [ ... ])
 
-
+pragrma clang ignore global ctor/dtor for element/*

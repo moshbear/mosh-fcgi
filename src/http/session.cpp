@@ -1,6 +1,6 @@
 //! @file http/session.cpp Defines functions in http/session/funcs.hpp
 /***************************************************************************
-* Copyright (C) 2012 m0shbear                                              *
+* Copyright (C) 2012-3 m0shbear                                            *
 *                                                                          *
 * This file is part of mosh-fcgi.                                          *
 *                                                                          *
@@ -21,12 +21,13 @@
 #include <algorithm>
 #include <functional>
 #include <iterator>
+#include <list>
+#include <map>
 #include <stdexcept>
 #include <string>
-#include <map>
+#include <type_traits>
 #include <utility>
 #include <cstring>
-#include <boost/xpressive/xpressive.hpp>
 #include <mosh/fcgi/protocol/funcs.hpp>
 #include <mosh/fcgi/bits/u.hpp>
 #include <mosh/fcgi/bits/boyer_moore.hpp>
@@ -37,80 +38,123 @@
 #include <mosh/fcgi/bits/namespace.hpp>
 #include <src/singleton.hpp>
 #include <src/namespace.hpp>
+#include <src/http/mime.hpp>
+#include <src/utility.hpp>
+
 namespace {
 
-// Initialize the regex cache
-namespace xpr = boost::xpressive;
+#include "lut.hpp"
 
-struct Regex_cache {
-	xpr::sregex boundary;
-	Regex_cache() :
-		boundary("boundary=" >> !xpr::as_xpr('"') >> (xpr::s1 = +(~(xpr::set = '"', ';', ','))) >> !xpr::as_xpr('"'))
-	{ }
-	virtual ~Regex_cache() { }
-};
+//
+// Miscellany.
+//
 
-struct Ue_regex_cache {
-	xpr::cregex escaped_hex;
-	Ue_regex_cache() {
-		escaped_hex = '%' >> (xpr::xdigit >> xpr::xdigit);
-	}
-	virtual ~Ue_regex_cache() { }
-};
-	
+std::string char_to_hex_string(char ch) {
+	static const char hex[] = "0123456789ABCDEF";
+	int c(widen_cast<int>(ch));
+	std::string buf("0x..");
+	buf[2] = hex[(c & 0xF0) >> 4];
+	buf[3] = hex[(c & 0x0F)];
+	return buf;
+}
+
+}
+
 struct Mp_regex_cache {
-	xpr::sregex rfc822_cont;
-	xpr::sregex rfc822_hdr;
-	xpr::sregex cd_name;
-	xpr::sregex cd_fname;
-	xpr::sregex w1;
-	xpr::sregex ct_cs;
 	MOSH_FCGI::Boyer_moore_searcher mp_mixed;
-	xpr::sregex cte;
-	xpr::sregex cte_ign;
 	
 	Mp_regex_cache() : mp_mixed("multipart/mixed") {
-#define MIME_NOQUOTE _w|'!'|'#'|'\''|'*'|'+'|','|'.'|'^'|'`'|'{'|'}'|'|'|'~'
-		using namespace xpr;
-	
-		rfc822_hdr = (s1 = +(set[MIME_NOQUOTE|'-'])) >> ':' >> *_s >> (s2 = *(~_ln));
-		rfc822_cont = _ln >> +_s;
-		
-		cd_name = (_s | ';') >> icase("name=\"") >> (s1 = *(~(set = '"'))) >> '"';
-		cd_fname = (_s | ';') >> icase("filename=") >> ( s1 = ( '"' >> *(~(set = '"')) >> '"')
-							     | (*set[MIME_NOQUOTE]));
-		w1 = _b >> (s1 = _w);
-
-		ct_cs = (_s | ';') >> icase("charset=") >> !as_xpr('"') >> (s1 = set[_w|'('|')'|'+'|'-'|'.'|':'|'_']) >> !as_xpr('"');
-		
-		cte = (s1 = icase(as_xpr("quoted-printable")|"base64"|"8bit"|"binary"));
-		cte_ign = icase(as_xpr("8bit")|"binary");
-
-#undef MIME_NOQUOTE
 	}
 	virtual ~Mp_regex_cache() { }
 };
 
 // wrap the singletons in a struct to avoid default initialiazation
 struct _si {
-	static SRC::Singleton<Regex_cache> _rc;
-	static SRC::Singleton<Ue_regex_cache> _u_rc;
 	static SRC::Singleton<Mp_regex_cache> _m_rc;
 };
 
-Regex_cache& rc() { return _si::_rc.instance(); }
-Ue_regex_cache& u_rc() { return _si::_u_rc.instance(); }
 Mp_regex_cache& m_rc() { return _si::_m_rc.instance(); }
 
+
 std::map<std::string, std::string> read_mime_header(std::string const& buf) {
-	std::map<std::string, std::string> m;
-	std::string s = xpr::regex_replace(buf, m_rc().rfc822_cont, " ");
-	xpr::sregex_iterator m1(s.begin(), s.end(), m_rc().rfc822_hdr);
-	xpr::sregex_iterator m2;
-	for (; m1 != m2; ++m1) {
-		m[xpr::regex_replace(m1->str(1), m_rc().w1, "\\u($1)", xpr::regex_constants::format_perl)] = m1->str(2);
+	
+	std::string nocont;
+
+	{
+		bool usable;
+		std::tie(usable, nocont) = fold_long_headers_and_strip_comments(buf);
+		if (!usable)
+			throw std::invalid_argument(nocont);
 	}
-	return m;
+
+	// split <header>: <value>\r\n
+	
+	std::map<std::string, std::string> ret;
+	{
+		std::string::size_type nc_pos = 0;
+		std::string::size_type crlf_pos = 0;
+		std::string::size_type nc_size = nocont.size();
+
+		std::string kbuf;
+		std::string vbuf;
+
+		bool prev_w = false;
+		bool cur_w;
+		unsigned t_state;
+		enum { TOKEN, INTER, VALUE } state;
+
+		
+		while (nocont[nc_pos] == ' ')
+			++nc_pos;
+
+		for (const char* ncp = nocont.data() ; nc_pos < nc_size ; ++nc_pos) {
+			switch (state) {
+			case TOKEN:
+				t_state = tokens[widen_cast<int>(ncp[nc_pos])];
+				cur_w = !!(t_state & tok_flags::wordchar) ;
+				if (cur_w && !prev_w) 
+					kbuf += narrow_cast<char>(upper[widen_cast<int>(ncp[nc_pos])]);
+				if (t_state & tok_flags::none) {
+					state = INTER;
+					while (ncp[nc_pos + 1] == ' ')
+						++nc_pos;
+				}
+				prev_w = cur_w;
+				break;
+			case INTER: 
+				if (ncp[nc_pos] != ':')
+					throw std::invalid_argument("Malformed header: expected ':', got '" + nocont[nc_pos] + "'");
+			
+				while (ncp[nc_pos + 1] == ' ')
+					++nc_pos;
+				state = VALUE;
+				break;
+			case VALUE: // Unstructured field-body (RFC 822 (S) 3.1.3)
+				crlf_pos = nocont.find("\r\n", nc_pos);
+				
+				if (crlf_pos != std::string::npos) 
+					vbuf = std::move(ncont.substr(nc_pos, crlf_pos - nc_pos));	
+				else
+					vbuf = std::move(nocont.substr(nc_pos, crlf_pos));
+				ret[kbuf] = vbuf;
+				kbuf.clear();
+				prev_w = false;
+				if (crlf_pos == std::string::npos) {
+					nc_pos = nc_size;
+					break;
+				}
+				// skip through leading spaces for next iteration
+				nc_pos = crlf_pos + 1;
+				while (ncp[nc_pos + 1] == ' ')
+					++nc_pos;
+				prev_w = false;
+				state = TOKEN;
+				break;
+			}
+		}
+	}
+
+	return ret;
 }
 
 }
@@ -146,7 +190,6 @@ ssize_t process_urlencoded_kv(const char* data, size_t size, u_string& k, u_stri
 ssize_t process_cookies(const char* data, size_t size, std::map<std::string, form::Entry<char, Cookie>>& kv, Cookie& g) {
 	Cookie* last = &g;
 	const char* const data_end = data + size;
-	const char ws[] = " \t";
 	const char* sep_v = nullptr;
 	while (data != data_end) {
 		const char* sep_k = std::find(data, data_end, '=');
@@ -154,12 +197,10 @@ ssize_t process_cookies(const char* data, size_t size, std::map<std::string, for
 			return -1;
 		// trim whitespace before checking for quote
 		const char* start_v = sep_k;
-		while (start_v != data_end) {
-			if (strchr(ws, *start_v) != NULL)
-				++start_v;
-		}
+		while (start_v != data_end && !(tokens[widen_cast<int>(*start_v)] & tok_flags::lwspchar)
+			++start_v;
 		if (start_v == data_end)
-			throw std::runtime_error("Unexpected end of cookie data");
+			throw std::invalid_argument("Unexpected end of cookie data");
 
 		bool seen_quot = false;
 		if (*start_v == '"') {
@@ -170,7 +211,7 @@ ssize_t process_cookies(const char* data, size_t size, std::map<std::string, for
 		sep_v = std::find(start_v, data_end, seen_quot ? '"' : ';');
 		if (sep_v == data_end) {
 			if (seen_quot) 
-				throw std::runtime_error("Malformed cookie header");
+				throw std::invalid_argument("Malformed cookie header");
 			else 
 				sep_v = data_end;
 		}
@@ -209,7 +250,7 @@ void do_param(std::pair<std::string, std::string> const& p,
 		std::function<void (const char*, size_t)> do_gets,
 		std::function<void (const char*, size_t)> do_cookies)
 {
-	if ((!ue_init) || (!mp_init) || (!do_gets) || (!do_cookies))
+	if (!ue_init || !mp_init || !do_gets || !do_cookies)
 		throw std::invalid_argument("Undefined functors");
 	
 	std::string const& k = p.first;
@@ -217,17 +258,21 @@ void do_param(std::pair<std::string, std::string> const& p,
 	//this->charset() = "";
 	if (k == "CONTENT_TYPE") {
 		if (v.size()) {
-			std::string formT("application/x-www-formurl-encoded");
-			std::string mpT("multipart/form-data");
-			if (!v.compare(0, formT.size(), formT)) {
-				if (!ue_init())
-					throw std::runtime_error("session_base->init_ue");
-			} else if (!v.compare(0, mpT.size(), mpT)) {
-				if (!mp_init(boundary_from_ct(v)))
-					throw std::runtime_error("session_base->init_mp");
-			} else {
-				throw std::runtime_error("Bad Content-type");
-			}
+			bool flag = false;
+			auto try_init =	[&v, &flag](std::string const& str, std::function<bool ()> func,
+						std::string const& ex)
+			{
+				if (v.compare(0, str.size(), str))
+					return;
+				if (!func())
+					throw std::runtime_error(ex);
+				flag = true;
+			};
+			
+			try_init("application/x-www-formurl-encoded", ue_init, "session_base->init_ue");
+			try_init("multipart/form-data", std::bind(mp_init, boundary_from_ct(v)), "session_base->init_mp");
+			if (!flag)
+				throw std::invalid_argument("Unrecognized Content-type \"" + v + "\"");
 		}
 	} else if (k == "QUERY_STRING") {	
 		do_gets(sign_cast<const char*>(v.data()), v.size());
@@ -236,7 +281,7 @@ void do_param(std::pair<std::string, std::string> const& p,
 	}
 }
 
-void do_headers(std::string const& buf,
+void do_mp_headers(std::string const& buf,
 		std::function<void (u_string const&)> name_func,
 		std::function<void (u_string const&)> fname_func,
 		std::function<void (std::string const&)> cs_func,
@@ -250,54 +295,44 @@ void do_headers(std::string const& buf,
 	
 	std::map<std::string, std::string> header = read_mime_header(buf);
 	{ /* Content-Disposition */
-		xpr::smatch m;
 		auto _r_c = header.find("Content-Disposition");
 		if (_r_c == header.end() || _r_c->second.empty())
-			throw std::runtime_error("Missing Content-Disposition header");
+			throw_parser_error("Missing Content-Disposition header");
 		auto& r_cd = _r_c->second;
-		if (xpr::regex_match(r_cd, m, m_rc().cd_name)) {
-			std::string s = m.str(1);
+		auto cd_params = mime::get_mime_params(r_cd);
+		decltype(cd_params.find("")) param;
+		if ((param = cd_params.find("name")) != cd_params.end()) {
+			std::string s = param->second;
 			const uchar* _s_ = sign_cast<const uchar*>(s.data());
 			name_func(u_string(_s_, _s_ + s.size()));
 		}
-		if (xpr::regex_match(r_cd, m, m_rc().cd_fname)) {
-			std::string s = m.str(1);
+		if ((param = cd_params.find("filename")) != cd_params.end()) {
+			std::string s = param->second;
 			const uchar* _s_ = sign_cast<const uchar*>(s.data());
 			fname_func(u_string(_s_, _s_ + s.size()));
 		}
 	}
 	{	/* Content-Type */
-		// Check Value
 		auto _r_c = header.find("Content-Type");
 		if (_r_c == header.end() || _r_c->second.empty())
-			throw std::runtime_error("Missing Content-Type header");
+			throw_parser_error("Missing Content-Type header");
 		auto& r_ct = _r_c->second;
+		auto ct_params = mime::get_mime_params(r_ct);
+		decltype(ct_params.find("")) param;
 		const char* _dummy; // dummy
 		mixed_func(m_rc().mp_mixed.search(r_ct.data(), r_ct.size(), _dummy));
 		// Check Attribute charset
-		xpr::smatch m;
-		if (xpr::regex_match(r_ct, m, m_rc().ct_cs)) 
-			cs_func(m.str(1));
+		if ((param = ct_params.find("charset")) != ct_params.end()) 
+			cs_func(params->second);
 	}
 	{ /* Content-Transfer-Encoding */
-		xpr::smatch m;
 		auto _r_c = header.find("Content-Transfer-Encoding");
 		if (_r_c != header.end() && !_r_c->second.empty()) {
-			auto& r_cd = _r_c->second;
-			if (xpr::regex_match(r_cd, m, m_rc().cte)) {
-				std::string s = m.str(1);
-				xpr::smatch _m0; // dummy
-				if (!xpr::regex_match(s, _m0, m_rc().cte_ign)) {
-					std::string cte = m.str(1);	
-					// Convert to lower case
-					std::for_each(cte.begin(), cte.end(),
-							[] (char& ch) {                  // ASCII lowercase is exactly
-								if ((ch & 0x60) == 0x40) // 0x20 away from uppercase;
-									ch |= 0x20;      // if we have uppercase,
-							}                                // convert it to lowercase
-					);                                               // by bit-or'ing the case bit
+			auto& r_cte = _r_c->second;
+			std::string cte = fetch_cte(r_cte);
+			if (!cte.empty()) {
+				if (!match_cte(r_cte, cte_flags::ign))
 					cte_func(cte);
-				}
 			}
 		}
 	}
@@ -306,11 +341,11 @@ void do_headers(std::string const& buf,
 }
 
 std::string boundary_from_ct(std::string const& ct) {
-	xpr::smatch m;
-	if (xpr::regex_search(ct, m, rc().boundary)) {
-		return "--" + m.str(1);
-	}
-	return "";
+	
+	// Parses the grammar boundary=("(?:boundary_special|alpha|digit)*" | (?:alpha|digit|${boundary_special - tspecial}))
+
+	return SRC::mime::filtering::filter(SRC::mime::get_mime_param(ct, "boundary"),
+						SRC::mime::filtering::field::content_type, SRC::mime::filtering::subfield_content_type::boundary);
 }
 
 }

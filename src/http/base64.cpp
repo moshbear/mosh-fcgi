@@ -166,7 +166,6 @@ MOSH_FCGI_BEGIN
 namespace http {
 
 u_string Base64::in(const char* in, const char* in_end, const char*& in_next) const {
-	using std::codecvt_base;
 	u_string str;
 	str.resize(std::distance(in, in_end));
 	uchar* str_beg = &(*str.begin());

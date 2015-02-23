@@ -83,6 +83,7 @@ bool Request_base::handler() {
 			if (state != Record_type::params)
 				throw exceptions::Record_out_of_order(id, state, Record_type::params);
 			if (header.content_length() == 0) {
+				fill_params(true);
 				if (role == Role::authorizer) {
 					state = Record_type::out;
 					if (response()) {
@@ -95,12 +96,13 @@ bool Request_base::handler() {
 				break;
 			}
 			pbuf.append(body, body + header.content_length());
-			fill_params();
+			fill_params(false);
 		} break;
 		case Record_type::in: {
 			if (state != Record_type::in)
 				throw exceptions::Record_out_of_order(id, state, Record_type::in);
 			if (header.content_length() == 0) {
+				in_handler(nullptr, 0);
 				if (role == Role::filter) {
 					state = Record_type::data;
 					break;
@@ -118,6 +120,7 @@ bool Request_base::handler() {
 			if (state != Record_type::data)
 				throw exceptions::Record_out_of_order(id, state, Record_type::data);
 			if (header.content_length() == 0) {
+				data_handler(nullptr, 0);
 				state = Record_type::out;
 				if (response()) {
 					complete(0);
@@ -166,14 +169,16 @@ void Request_base::set(protocol::Full_id id, Transceiver& transceiver, protocol:
 	out.set(id, transceiver, protocol::Record_type::out);
 }
 
-void Request_base::fill_params() {
+void Request_base::fill_params(bool term) {
 	while (pbuf.size()) {
 		std::pair<std::string, std::string> params;
-		ssize_t to_erase = protocol::process_param_record(pbuf.data(), pbuf.size(), params);
-		if (to_erase == -1)
-			return;
-		pbuf.erase(0, to_erase);
-		if (params_handler(params))
+		if (!term) {
+			ssize_t to_erase = protocol::process_param_record(pbuf.data(), pbuf.size(), params);
+			if (to_erase == -1)
+				return;
+			pbuf.erase(0, to_erase);
+		}
+		if (params_handler(params) && !term)
 			envs.insert(params);
 
 	}
