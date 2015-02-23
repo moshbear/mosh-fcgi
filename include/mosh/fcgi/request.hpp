@@ -174,8 +174,10 @@ private:
 	void set(protocol::Full_id id, Transceiver& transceiver, protocol::Role role, bool kill_con,
 			std::function<void(protocol::Message)> callback);
 
-	//! Fill params
-	void fill_params();
+	/*! @brief Fill params
+	 *  @param term Terminal mode (send blank kv to param_handler to signal end of args list)
+	 */
+	void fill_params(bool term);
 };
 
 
@@ -194,14 +196,18 @@ class Request : public virtual Request_base {
 protected:
 	//! Handler for IN records
 	virtual void in_handler(const uchar* data, size_t len) {
-		post_buf.reserve(post_buf.size() + len);
-		std::copy(data, data + len, std::back_inserter(post_buf));
+		if (len > 0) {
+			post_buf.reserve(post_buf.size() + len);
+			std::copy(data, data + len, std::back_inserter(post_buf));
+		}
 		this->in_handler(len);
 	}
 	//! Handler for DATA records
 	virtual void data_handler(const uchar* data, size_t len) {
-		data_buf.reserve(data_buf.size() + len);
-		std::copy(data, data + len, std::back_inserter(data_buf));
+		if (len > 0) {
+			data_buf.reserve(data_buf.size() + len);
+			std::copy(data, data + len, std::back_inserter(data_buf));
+		}
 		this->data_handler(len);
 	}
 	
