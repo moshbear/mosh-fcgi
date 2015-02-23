@@ -43,37 +43,67 @@ namespace html {
 //! HTML element classes
 namespace element {
 
-//! Enumeration for encoding type
-namespace Type {
-	
-	/* Guide to constants:
-	 * Each value must be a power of 2
-	 */
 
-	//! Encodes an unary &lt;foo /&gt; element; resulting tag will have attributes but no data
-	const uint8_t unary = 1 << 0;
-	//! Encodes a binary &lt;foo&gt;&lt;/foo&gt; element; resulting tag will have both attributes and data
-	const uint8_t binary = 1 << 1;
-	//! Encodes a DOCTYPE directive &lt;!FOO &gt;
-	const uint8_t dtd = 1 << 2;
-	//! Encodes a comment &lt;!-- foo --&gt;
-	const uint8_t comment = 1 << 3;
-	
-	inline void _validate(uint8_t t) {
-		if (t < (1 << 0) || t > (1 << 3))
-			goto _throw_;
-		if (popcount(t) != 1)
-			goto _throw_;
-		return;
-	_throw_:
-		throw std::invalid_argument("MOSH_FCGI::html::element::Type");
-	}		
+/*! @name Container creation helpers
+ */
+//@{
+//! Make pair
+template <typename T1, typename T2>
+constexpr std::pair<T1, T2> P(T1 const& x, T2 const& y) {
+	return std::make_pair(x, y);
+}
+//! Make pair
+template <typename T1, typename T2>
+constexpr std::pair<T1, T2> P(T1 && x, T2 && y) {
+	return std::make_pair(std::move(x), std::move(y));
+}
+//! Make string from literal
+template <typename T, size_t N>
+std::basic_string<T> S(const T (&s)[N]) {
+	return std::basic_string<T>(s, N);
 }
 
 //! Wrapper for boost::lexical_cast<string>
 template <typename ct>
 std::basic_string<ct> from_pcchar(const char* s) {
 	return boost::lexical_cast<std::basic_string<ct>>(s);
+}
+
+//@}
+
+
+//! Enumeration for encoding type
+enum class Type {
+	//! Encodes an unary &lt;foo /&gt; element; resulting tag can have attributes but no data
+	unary,
+	//! Encodes a binary &lt;foo&gt;&lt;/foo&gt; element; resulting tag can have both attributes and data
+	binary,
+	//! Encodes a comment &lt;!-- foo --&gt;; resulting tag can have data but no attributes
+	comment,
+	//! Encodes a special beginning element; resulting tag can have attributes but no data - see HTML_begin<T> for example
+	begin,
+	//! Encodes a special ending element; resulting tag cannot have attributes or data - see HTML_end<T> for example
+	end,
+};
+
+namespace type_check {
+//! Enumerations for the type_check type asserter
+enum class Feature {
+	//! Element type can contain attributes
+	attribute,
+	//! Element type can contain data
+	data,
+};
+
+template <bool Throw_on_error> struct checker;
+template <> struct checker<true> {
+	static void value(Type, Feature); 
+};
+
+template <> struct checker<false> {
+	static bool value(Type, Feature) noexcept;
+};
+
 }
 
 //! An HTML element
@@ -90,6 +120,7 @@ public:
 	typedef typename std::vector<string> string_list;
 private:
 	typedef Element<charT> this_type;
+
 public:
 	/*! @brief Create a new element with a given name and type
 	 *
@@ -97,11 +128,9 @@ public:
 	 *  @param[in] type_ Element type
 	 *  @sa Type
 	 */
-	Element(uint8_t type_, const string& name_)
+	Element(Type type_, const string& name_)
 	: type(type_), name(name_), attributes(), data()
-	{
-		Type::_validate(type_);
-	}
+	{ }
 
 	//! Copy constructor
 	Element(const this_type& e)
@@ -314,7 +343,7 @@ public:
 	}
 
 	/*! @brief Add attribute(s).
-	 * @param[in] _a {}-list of attributes
+	 *  @param[in] _a {}-list of attributes
 	 */
 	this_type& operator += (std::initializer_list<attribute> _a) {
 		for (const auto& at : _a) {
@@ -325,7 +354,7 @@ public:
 	}
 
 	/*! @brief Add attribute(s).
-	 * @param[in] _a list of attributes
+	 *  @param[in] _a list of attributes
 	 */
 	this_type& operator += (attr_list const& _a) {
 		for (const auto& at : _a) {
@@ -336,7 +365,7 @@ public:
 	}
 
 	/*! @brief Add a value.
-	 * @param[in] _v value
+	 *  @param[in] _v value
 	 */
 	this_type& operator += (const string& _v) {
 		if (this->data_addition_hook(_v))
@@ -345,7 +374,7 @@ public:
 	}
 	
 	/*! @brief Add value(s).
-	 * @param[in] _v {}-list of values
+	 *  @param[in] _v {}-list of values
 	 */
 	this_type& operator += (std::initializer_list<string> _v) {
 		for (const auto& vv : _v) {
@@ -356,7 +385,7 @@ public:
 	}
 
 	/*! @brief Add value(s).
-	 * @param[in] _v list of values
+	 *  @param[in] _v list of values
 	 */
 	this_type& operator += (string_list const& _v) {
 		for (const auto& vv : _v) {
@@ -375,11 +404,21 @@ public:
 	 */
 	virtual operator string() const {
 		std::basic_stringstream<charT> s;
-		s << '<' << this->name;
+		s << '<';
+		if (this->type == Type::end) {
+			s << '/';
+		}
+		s << this->name;
+		if (this->type == Type::end) {
+			goto print_end;
+		}
 		for (const auto& a : this->attributes) {
 			s << a.first << "=\"" << a.second << "\" ";
 		}
-		if (this->type == Type::unary) {
+		if (this->type == Type::begin) {
+			s << '>';
+		}
+		else if (this->type == Type::unary) {
 			s << " /";
 		} else {
 			if (this->type == Type::binary) {
@@ -392,6 +431,7 @@ public:
 				s << "--";
 			}
 		}
+	print_end:
 		s << '>';
 		return s.str();
 	}
@@ -402,20 +442,6 @@ public:
 	}
 
 protected:
-	//! Default constructor for derived classes
-	Element()
-	: type(0), name(), attributes(), data()
-	{ }
-	
-	/*! @brief Type-exposing constructor for derived classes
-	 *  @param[in] type_ Type
-	 *  @sa Type
-	 */
-	Element(unsigned type_)
-	: type(type_), name(), attributes(), data()
-	{ }
-
-
 	/*! @brief Hook for attribute addition 
 	 * 
 	 *  To perform custon behavior (e.g. value checking) on attribute addition,
@@ -423,7 +449,10 @@ protected:
 	 *  @retval @c true Add the attribute to the list
 	 *  @retval @c false Don't add the attribute to the list
 	 */
-	virtual bool attribute_addition_hook(const attribute&) { return true; }
+	virtual bool attribute_addition_hook(const attribute&) {
+		type_check::checker<true>::value(type, type_check::Feature::attribute);
+		return true;
+	}
 	/*! @brief Hook for data addition 
 	 *
 	 *  To perform custon behavior (e.g. value checking) on data addition,
@@ -431,10 +460,13 @@ protected:
 	 *  @retval @c true Add the string to data
 	 *  @retval @c false Don't add the string to data
 	 */
-	virtual bool data_addition_hook(const string&) { return true; }
+	virtual bool data_addition_hook(const string&) {
+		type_check::checker<true>::value(type, type_check::Feature::data);
+		return true;
+	}
 
 	//! Element type
-	unsigned type;
+	Type type;
 
 private:
 	//! Element name
@@ -586,8 +618,8 @@ public:
 	 *  @param[in] type_ HTML type
 	 *  @sa doctype::HTML_revision
 	 */
-	HTML_begin(unsigned type_ = html_doctype::html_revision::xhtml_10_strict)
-	: Element<charT>(type_), doctype(html_doctype::html_doctype<charT>(type_)), xml_attributes()
+	HTML_begin(html_doctype::HTML_revision type_ = html_doctype::html_revisions::xhtml_10_strict)
+	: Element<charT>(Type::begin, from_pcchar<charT>("html")), doctype(html_doctype::html_doctype<charT>(type_)), xml_attributes(), d_type(type_)
 	{
 		if (is_xhtml()) {
 			this->xml_attributes.insert({ from_pcchar<charT>("version"), from_pcchar<charT>("1") });
@@ -596,14 +628,10 @@ public:
 	}
 
 	//! Copy constructor
-	HTML_begin(const HTML_begin<charT>& b)
-	: Element<charT>(b), doctype(b.doctype)
-	{ }
+	HTML_begin(const HTML_begin<charT>& b) = default;
 
 	//! Move constructor
-	HTML_begin(HTML_begin<charT>&& b)
-	: Element<charT>(std::move(b)), doctype(std::move(b.doctype))
-	{ }
+	HTML_begin(HTML_begin<charT>&& b) = default;
 
 	//! Destructor
 	virtual ~HTML_begin() { }
@@ -791,14 +819,10 @@ public:
 			s << "?>\r\n";
 		}	
 		s << this->doctype << "\r\n";
-		s << "<html";
-		for (const auto& a : this->attributes) {
-			s << ' ' << a.first << "=\"" << a.second << '"';
-		}
-		s << '>';
-
+		s << static_cast<Element<charT>>(*this);
 		return s.str();
 	}	
+
 protected:
 	/*! @brief Overrides Element<T>::attribute_addition_hook.
 	 *
@@ -841,25 +865,23 @@ protected:
 
 private:
 	bool is_xhtml() const {
-		using namespace html_doctype::html_revision;
-		return (get_family(this->type) == static_cast<uint8_t>(Family::xhtml));
+		return std::get<0>(d_type) == html_doctype::html_revision_atom::Family::xhtml;
 	}
+
+	// doctype tuple for is_xhtml
+	const html_doctype::HTML_revision d_type;
 
 };
 
 //! This class prints &lt;/html&gt;
 template <typename charT>
-struct HTML_end {
+struct HTML_end : public virtual Element<charT> {
 
-	HTML_end() { }
+	HTML_end() : Element<charT>(Type::end, from_pcchar<charT>("html")) { }
 	virtual ~HTML_end() { }
 
 	HTML_end const & operator () () const {
 		return *this;
-	}
-
-	virtual operator std::basic_string<charT> () const {
-		return from_pcchar<charT>("</html>");
 	}
 };
 
@@ -899,21 +921,17 @@ public:
  
  	//! Default constructor
 	Body_begin()
-	: Element<charT>()
+	: Element<charT>(Type::begin, from_pcchar<charT>("body"))
 	{ }
 
 	//! Copy constructor
-	Body_begin(const this_type& b)
-	: Element<charT>(b)
-	{ }
+	Body_begin(const this_type& b) = default;
 
 	//! Move constructor
-	Body_begin(this_type&& b)
-	: Element<charT>(std::move(b))
-	{ }
+	Body_begin(this_type&& b) = default;
 
 	//! Destructor
-	virtual ~Body_begin() { }
+	virtual ~Body_begin() {}
 
 	// Copy over all the overloads of () from Element because it's simply too much work to do in-class
 	// type_traits magic.
@@ -955,69 +973,18 @@ public:
 		return e;
 	}
 	//@}
-private:
-	/* @name Unavailable operators
-	 *
-	 * These overloaded operators are disabled for semantic reasons.
-	 */
-	//@{
-	// S
-	this_type operator () (const string&) const = delete;
-	// [S]
-	this_type operator () (std::initializer_list<string>) const  = delete;
-	this_type operator () (typename Element<charT>::string_list const&) const = delete;
-	// AS
-	this_type operator () (const attribute&, const string&) const = delete;
-	// A[S]
-	this_type operator () (const attribute&, std::initializer_list<string>) const = delete;
-	this_type operator () (const attribute&, typename Element<charT>::string_list const&) const = delete;
-	// [A]S
-	this_type operator () (std::initializer_list<attribute>, const string&) const = delete;
-	// [A][S]
-	this_type operator () (std::initializer_list<attribute>, std::initializer_list<string>) const = delete;
-	this_type operator () (std::initializer_list<attribute>, typename Element<charT>::string_list const&) const = delete;
-	// [A]S
-	this_type operator () (attr_list const& , const string&) const = delete;
-	// [A][S]
-	this_type operator () (attr_list const&, std::initializer_list<string>) const = delete;
-	this_type operator () (attr_list const&, typename Element<charT>::string_list const&) const = delete;
-
-
-	this_type& operator += (const string&) = delete;
-	this_type& operator += (std::initializer_list<string>) = delete;
-	this_type& operator += (typename Element<charT>::string_list const&) = delete;
-	//@}
-public:
-	//! Overrides Element<T>::operator string () const
-	virtual operator string () const {
-		std::basic_stringstream<charT> s;
-		s << "<body";
-		for (const auto& a : this->attributes) {
-			s << ' ' << a.first << "=\"" << a.second << '"';
-		}
-		s << '>';
-
-		return s.str();
-	}
-
-protected:
-	// Don't append data
-	virtual bool data_addition_hook(const string&) { return false; }
 };
 
 //! This class prints &lt;/body&gt;
 template <typename charT>
-struct Body_end {
-
-	Body_end() { }
-	virtual ~Body_end() { }
+struct Body_end : virtual public Element<charT> {
+	Body_end()
+	: Element<charT>(Type::end, from_pcchar<charT>("body")){
+	}
+	virtual ~Body_end() { };
 
 	Body_end const & operator () () const {
 		return *this;
-	}
-
-	virtual operator std::basic_string<charT> () const {
-		return from_pcchar<charT>("</body>");
 	}
 };
 
@@ -1032,28 +999,6 @@ template <typename charT>
 std::basic_ostream<charT>& operator << (std::basic_ostream<charT>& os, const Body_end<charT>& e) {
 	os << static_cast<std::basic_string<charT>>(e);
 	return os;
-}
-
-/*! @name Attribute taggers
- */
-//@{
-//! Attribute tagger. Use it to create std::pair&lt;T1,T2&gt;s representing element attributes.
-template <typename charT>
-std::pair<std::basic_string<charT>, std::basic_string<charT>>
-P(const std::basic_string<charT>& s1, const std::basic_string<charT>& s2) {
-	return std::make_pair(s1, s2);
-}
-//! Attribute tagger. Use it to create std::pair&lt;T1,T2&gt;s representing element attributes.
-template <typename charT>
-std::pair<std::basic_string<charT>, std::basic_string<charT>>
-P(std::basic_string<charT>&& s1, std::basic_string<charT>&& s2) {
-	return std::make_pair(std::move(s1), std::move(s2));
-}
-//@}
-//! Converts a string literal to std::basic_string
-template <typename T, size_t N>
-std::basic_string<T> S(const T (&s)[N]) {
-	return std::basic_string<T>(s, N);
 }
 
 /*! @name Repetition helpers
