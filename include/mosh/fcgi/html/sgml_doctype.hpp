@@ -77,7 +77,7 @@ public:
 	operator string() const {
 		switch (type) {
 		case Declaration_identifier::_system:
-			return ([&quoted1] () {
+			return ([this] () -> std::basic_string<charT> {
 					std::basic_stringstream<charT> ss;
 					ss << "SYSTEM \"";
 					ss << quoted1;
@@ -85,7 +85,7 @@ public:
 					return ss.str();
 				})();
 		case Declaration_identifier::_public:
-			return ([&quoted1, &quoted2] () {
+			return ([this] () -> std::basic_string<charT> {
 					std::basic_stringstream<charT> ss;
 					ss << "PUBLIC \"";
 					ss << quoted1;
@@ -169,6 +169,7 @@ public:
 	//! Convert to string
 	operator string () const {
 		std::basic_stringstream<charT> ss;
+		ss << "<!DOCTYPE";
 		ss << name;
 		ss << ' ';
 		ss << external;

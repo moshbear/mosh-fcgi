@@ -21,7 +21,7 @@
 #define MOSH_FCGI_HTML_HTML_DOCTYPE_HPP
 
 #include <string>
-#include <cstdint>
+#include <tuple>
 #include <mosh/fcgi/html/sgml_doctype.hpp>
 #include <mosh/fcgi/bits/t_string.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
@@ -35,187 +35,147 @@ namespace html {
 namespace html_doctype {
 
 //! HTML revision
-namespace html_revision {
+namespace html_revision_atom {
 	
-/*! @brief Make a bitwise HTML revision
- *  @param _family Product family
- *  @param _product Product
- *  @param _version Product version
- *  @param _variant Product variant
- *
- *  @see Family
- *  @see product
- *  @see version
- *  @see variant
- */
-constexpr uint32_t make_revision(uint8_t _family, uint8_t _product, uint8_t _version, uint8_t _variant) {
-	return (_family << 24) | (_product << 16) | (_version << 8) | (_variant);
-}
-/*! @brief Make a bitwise HTML revision
- *  @param _family Product family
- *  @param _product Product
- *  @param _version Product version
- *
- *  @see Family
- *  @see product
- *  @see version
- */
-template <typename T1, typename T2, typename T3>
-constexpr uint32_t make_revision(T1 _family, T2 _product, T3 _version) {
-	return make_revision(
-		static_cast<uint8_t>(_family),
-		static_cast<uint8_t>(_product),
-		static_cast<uint8_t>(_version),
-		static_cast<uint8_t>(0)
-	);
-}
-/*! @brief Make a bitwise HTML revision
- *  @param _family Product family
- *  @param _product Product
- *  @param _version Product version
- *  @param _variant Product variant
- *
- *  @see Family
- *  @see product
- *  @see version
- *  @see variant
- */
-template <typename T1, typename T2, typename T3, typename T4>
-constexpr uint32_t make_revision(T1 _family, T2 _product, T3 _version, T4 _variant) {
-	return make_revision(
-		static_cast<uint8_t>(_family),
-		static_cast<uint8_t>(_product),
-		static_cast<uint8_t>(_version),
-		static_cast<uint8_t>(_variant)
-	);
-}
-
-//! Get the encoded family code in hr
-constexpr uint8_t get_family(uint32_t hr) {
-	return static_cast<uint8_t>((hr & 0xFF000000) >> 24);
-}
-
-//! Get the encoded product code in hr
-constexpr uint8_t get_product(uint32_t hr) {
-	return static_cast<uint8_t>((hr & 0x00FF0000) >> 16);
-}
-
-//! Get the encoded version code in hr
-constexpr uint8_t get_version(uint32_t hr) {
-	return static_cast<uint8_t>((hr & 0x0000FF00) >> 8);
-}
-
-//! Get the encoded variant code in hr
-constexpr uint8_t get_variant(uint32_t hr) {
-	return static_cast<uint8_t>((hr & 0x000000FF));
-}
-
 //! Product family
-enum class Family : uint8_t {
+enum class Family {
 	//! HTML and variants thereof
-	html = 1,
+	html,
 	//! XHTML and variants thereof
-	xhtml = 2,
+	xhtml,
 };
 
 //! Per-family products
-namespace product {
-//! XHTML product family
-enum class XHTML : uint8_t {
+enum class Product {
+	//! Default value
+	none,
 	//! XHTML Basic
-	basic = 1,
+	xhtml_basic,
 	//! XHTML Mobile Profile
-	mp = 2,
+	xhtml_mp,
 };
-}
 
 //! Per-product versions
-namespace version {
-//! HTML version family
-enum class HTML : uint8_t {
+enum class Version {
 	//! HTML 4
-	_4 = 1,
+	html_4,
 	//! HTML 5
-	_5 = 2,
-};	
-//! XHTML version family
-enum class XHTML : uint8_t {
+	html_5,
 	//! XHTML 1.0
-	_1_0 = 1,
+	xhtml_1_0,
 	//! XHTML 1.1
-	_1_1 = 2,
+	xhtml_1_1,
 	//! XHTML 5
-	_5 = 3,
-};
-//! XHTML Basic version family
-enum class XHTML_basic : uint8_t {
+	xhtml_5,
 	//! XHTML Basic 1.0
-	_1_0 = 1,
+	xhtml_basic_1_0,
 	//! XHTML Basic 1.1
-	_1_1 = 2,
-};
-//! XHTML Mobile Profile version family
-enum class XHTML_mp : uint8_t {
+	xhtml_basic_1_1,
 	//! XHTML mobile profile 1.0
-	_1_0 = 1,
+	xhtml_mp_1_0,
 	//! XHTML mobile profile 1.1
-	_1_1 = 2,
+	xhtml_mp_1_1,
 	//! XHTML mobile profile 1.2
-	_1_2 = 3,
+	xhtml_mp_1_2,
 };
-}
 
 //! Variants
-namespace variant {
-//! HTML Variant; only useful for HTML 4 and XHTML 1.0
-enum class HTML4 : uint8_t {
-	strict = 1,
-	transitional = 2,
-	frameset = 3,
+enum class Variant {
+	//! Default value
+	none,
+	//! HTML4 / XHTML 1.0 Strict
+	strict,
+	//! HTML4 / XHTML 1.0 Transitional
+	transitional,
+	//! HTML4 / XHTML 1.0 Frameset
+	frameset,
 };
+
 }
+
+typedef std::tuple<html_revision_atom::Family, html_revision_atom::Product, html_revision_atom::Version, html_revision_atom::Variant> HTML_revision;
+
+namespace html_revisions {
+
+#define MOSH_FCGI_HTML_REVISION_FV(FAMILY, VERSION) \
+	HTML_revision( \
+		html_revision_atom::Family::FAMILY, \
+		html_revision_atom::Product::none, \
+		html_revision_atom::Version::VERSION, \
+		html_revision_atom::Variant::none \
+	)
+
+#define MOSH_FCGI_HTML_REVISION_FPV(FAMILY, PRODUCT, VERSION) \
+	HTML_revision( \
+		html_revision_atom::Family::FAMILY, \
+		html_revision_atom::Product::PRODUCT, \
+		html_revision_atom::Version::VERSION, \
+		html_revision_atom::Variant::none \
+	)
+
+#define MOSH_FCGI_HTML_REVISION_FVV(FAMILY, VERSION, VARIANT) \
+	HTML_revision( \
+		html_revision_atom::Family::FAMILY, \
+		html_revision_atom::Product::none, \
+		html_revision_atom::Version::VERSION, \
+		html_revision_atom::Variant::VARIANT \
+	)
+
+#define MOSH_FCGI_HTML_REVISION_FPVV(FAMILY, PRODUCT, VERSION, VARIANT) \
+	HTML_revision( \
+		html_revision_atom::Family::FAMILY, \
+		html_revision_atom::Product::PRODUCT, \
+		html_revision_atom::Version::VERSION, \
+		html_revision_atom::Variant::VARIANT \
+	)
 
 //! HTML 4.01 (Strict)
-const uint32_t html_4 = make_revision(Family::html, 0, version::HTML::_4, variant::HTML4::strict);
+const HTML_revision html_4 = MOSH_FCGI_HTML_REVISION_FVV(html, html_4, strict);
 //! HTML 4.01 Strict
-const uint32_t html_4_strict = make_revision(Family::html, 0, version::HTML::_4, variant::HTML4::strict);
+const HTML_revision html_4_strict = MOSH_FCGI_HTML_REVISION_FVV(html,html_4, strict);
 //! HTML 4.01 Frameset
-const uint32_t html_4_frameset = make_revision(Family::html, 0, version::HTML::_4, variant::HTML4::frameset);
+const HTML_revision html_4_frameset = MOSH_FCGI_HTML_REVISION_FVV(html, html_4, frameset);
 //! HTML 4.01 Transitional
-const uint32_t html_4_transitional = make_revision(Family::html, 0, version::HTML::_4, variant::HTML4::transitional);
+const HTML_revision html_4_transitional = MOSH_FCGI_HTML_REVISION_FVV(html, html_4, transitional);
 //! XHTML 1.0 (Strict)
-const uint32_t xhtml_10 = make_revision(Family::xhtml, 0, version::XHTML::_1_0, variant::HTML4::strict);
+const HTML_revision xhtml_10 = MOSH_FCGI_HTML_REVISION_FVV(xhtml, xhtml_1_0, strict);
 //! XHTML 1.0 Strict
-const uint32_t xhtml_10_strict = make_revision(Family::xhtml, 0, version::XHTML::_1_0, variant::HTML4::strict);
+const HTML_revision xhtml_10_strict = MOSH_FCGI_HTML_REVISION_FVV(xhtml, xhtml_1_0, strict);
 //! XHTML 1.0 Frameset
-const uint32_t xhtml_10_frameset = make_revision(Family::xhtml, 0, version::XHTML::_1_0, variant::HTML4::frameset);
+const HTML_revision xhtml_10_frameset = MOSH_FCGI_HTML_REVISION_FVV(xhtml, xhtml_1_0, frameset);
 //! XHTML 1.0 Transitional
-const uint32_t xhtml_10_transitional = make_revision(Family::xhtml, 0, version::XHTML::_1_0, variant::HTML4::transitional);
+const HTML_revision xhtml_10_transitional = MOSH_FCGI_HTML_REVISION_FVV(xhtml, xhtml_1_0, transitional);
 //! XHTML 1.1
-const uint32_t xhtml_11 = make_revision(Family::xhtml, 0, version::XHTML::_1_1);
+const HTML_revision xhtml_11 = MOSH_FCGI_HTML_REVISION_FV(xhtml, xhtml_1_1);
 //! XHTML Basic 1.0
-const uint32_t xhtml_basic_10 = make_revision(Family::xhtml, product::XHTML::basic, version::XHTML_basic::_1_0);
+const HTML_revision xhtml_basic_10 = MOSH_FCGI_HTML_REVISION_FPV(xhtml, xhtml_basic, xhtml_basic_1_0);
 //! XHTML Basic 1.1
-const uint32_t xhtml_basic_11 = make_revision(Family::xhtml, product::XHTML::basic, version::XHTML_basic::_1_1);
+const HTML_revision xhtml_basic_11 = MOSH_FCGI_HTML_REVISION_FPV(xhtml, xhtml_basic, xhtml_basic_1_1);
 //! XHTML Mobile Profile 1.0
-const uint32_t xhtml_mp_10 = make_revision(Family::xhtml, product::XHTML::mp, version::XHTML_mp::_1_0);
+const HTML_revision xhtml_mp_10 = MOSH_FCGI_HTML_REVISION_FPV(xhtml, xhtml_mp, xhtml_mp_1_0);
 //! XHTML Mobile Profile 1.1
-const uint32_t xhtml_mp_11 = make_revision(Family::xhtml, product::XHTML::mp, version::XHTML_mp::_1_1);
+const HTML_revision xhtml_mp_11 = MOSH_FCGI_HTML_REVISION_FPV(xhtml, xhtml_mp, xhtml_mp_1_1);
 //! XHTML Mobile Profile 1.2
-const uint32_t xhtml_mp_12 = make_revision(Family::xhtml, product::XHTML::mp, version::XHTML_mp::_1_2);
+const HTML_revision xhtml_mp_12 = MOSH_FCGI_HTML_REVISION_FPV(xhtml, xhtml_mp, xhtml_mp_1_2);
 //! HTML 5
-const uint32_t html_5 = make_revision(Family::html, 0, version::HTML::_4);
+const HTML_revision html_5 = MOSH_FCGI_HTML_REVISION_FV(html, html_5);
+//! XHTML 5
+const HTML_revision xhtml_5 = MOSH_FCGI_HTML_REVISION_FV(xhtml, xhtml_5);
 
+#undef MOSH_FCGI_HTML_REVISION_FV
+#undef MOSH_FCGI_HTML_REVISION_FPV
+#undef MOSH_FCGI_HTML_REVISION_FVV
+#undef MOSH_FCGI_HTML_REVISION_FPVV
 }
 
 template <typename charT>
-std::basic_string<charT> html_identifier(unsigned hr) {
+std::basic_string<charT> html_identifier(HTML_revision const& hr) {
 	return wide_string<charT>(html_identifier<char>(hr));
 }
-template<> std::string html_identifier<char>(unsigned hr);
+template<> std::string html_identifier<char>(HTML_revision const& hr);
 
 template <typename charT>
-sgml_doctype::Doctype_declaration<charT> html_doctype(unsigned hr) {
+sgml_doctype::Doctype_declaration<charT> html_doctype(HTML_revision const& hr) {
 	return sgml_doctype::Doctype_declaration<charT>(wide_string<charT>("html"), html_identifier<charT>(hr));
 }
 
