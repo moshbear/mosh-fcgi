@@ -149,7 +149,10 @@ private:
 	void in_handler(const uchar* data, size_t len) {
 		recv_in = true;
 		do_header();
-		out << "in: " << (in_tot+=len) << '/' << in_expect << "\r\n";
+		if (len > 0)
+			out << "in: " << (in_tot+=len) << '/' << in_expect << "\r\n";
+		else
+			out << "in: " << in_tot << '/' << in_expect << " <end of stream>\r\n";
 		out.flush();    // Make sure to flush the buffer so it is actually sent.
 	}
 	/*
@@ -162,7 +165,10 @@ private:
 			return;
 		recv_data = true;
 		do_header();
-		out << "data: " << (data_tot+=len) << '/' << data_expect << "\r\n";
+		if (len > 0)
+			out << "data: " << (data_tot+=len) << '/' << data_expect << "\r\n";
+		else
+			out << "data: " << data_tot << '/' << data_expect << " <end of stream>\r\n";
 		out.flush();    // Make sure to flush the buffer so it is actually sent.
 	}
 };
