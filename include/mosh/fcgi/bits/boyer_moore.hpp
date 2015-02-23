@@ -25,6 +25,7 @@
 #include <string>
 #include <cstring>
 #include <climits>
+#include <functional>
 #include <vector>
 #include <mosh/fcgi/bits/types.hpp>
 
@@ -53,7 +54,7 @@ public:
 	 * @param[in] len length of search string
 	 */
 	Boyer_moore_searcher(const uchar* str, size_t len) {
-		__init__(str, len);
+		arr_init(str, len);
 	}
 	/*! @brief Create a Boyer-moore string searcher from a string
 	 * @pre (@c str != 0 || @c len == 0)
@@ -61,19 +62,19 @@ public:
 	 * @param[in] len length of search string
 	 */
 	Boyer_moore_searcher(const char* str, size_t len) {
-		__init__(reinterpret_cast<const uchar*>(str), len);
+		arr_init(reinterpret_cast<const uchar*>(str), len);
 	}
 	/*! @brief Create a Boyer-moore string searcher from a string
 	 * @param[in] s search string
 	 */
 	Boyer_moore_searcher(const std::basic_string<uchar>& s) {
-		__init__(s.data(), s.size());
+		arr_init(s.data(), s.size());
 	}
 	/*! @brief Create a Boyer-moore string searcher from a string
 	 * @param[in] s search string
 	 */
 	Boyer_moore_searcher(const std::string& s) {
-		__init__(reinterpret_cast<const uchar*>(s.data()), s.size());
+		arr_init(reinterpret_cast<const uchar*>(s.data()), s.size());
 	}
 	
 	Boyer_moore_searcher(const Boyer_moore_searcher& bm)
@@ -206,7 +207,7 @@ private:
 	 * @param[in] str pointer to search string
 	 * @param[in] len length of search string
 	 */
-	void __init__(const uchar* str, size_t len);
+	void arr_init(const uchar* str, size_t len);
 };
 
 MOSH_FCGI_END

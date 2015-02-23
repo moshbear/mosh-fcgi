@@ -108,7 +108,7 @@ MOSH_FCGI_BEGIN
 /*
  * Boyer-Moore search algorithm
  */
-void Boyer_moore_searcher::__init__(const uchar* needle, size_t len) {
+void Boyer_moore_searcher::arr_init(const uchar* needle, size_t len) {
         if (len != 0) {
 		if (needle == 0)
 			throw std::invalid_argument("Precondition (needle != 0 || len == 0) failed");
