@@ -1,0 +1,6 @@
+CXX11 = clang++ -Weverything -Wno-documentation-unknown-command
+CXX11 += -std=c++11 -Wno-c++98-compat -Wno-c++98-compat-pedantic
+CXX11 += -O2 -march=native
+CXX11 += -g -ggdb
+
+CXXMMMQ = $(CXX11) -MM -MQ

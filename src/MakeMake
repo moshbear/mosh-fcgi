@@ -1,0 +1,55 @@
+#!/bin/sh
+#
+# Makefile generator for modules in src/ for faster compilation.
+#
+# (C) 2105 m0shbear
+# Licence: LGPL v3
+
+
+usage() {
+	cat >&2 <<_END_
+usage: makemake CXMK CXCO OB ...
+	CXMK = CXX for makedep
+	CXCO = CXX for compile
+	OB = CXX for object
+_END_
+}
+
+if [ $# -le 3 ]; then
+	usage
+	exit 1
+fi
+
+CXMK="$1"
+CXCO="$2"
+OB="$3"
+shift 3
+
+XFILES="$(echo $@ | tr / @)"
+OFILES="$(echo $XFILES | sed -r 's,\.c(xx|cc|pp)?\b,.o,g')"
+
+echo -e \
+"include ../Makefile.cxxopts\n" \
+".PHONY: all clean\n" \
+"\t\n" \
+"all: ${OB}.o ${OB}.a \n" \
+"\t\n" \
+"\n" \
+${OB}.o: $(echo $OFILES | sed -r 's,\.o\b,&.shared&') "\n" \
+"\t\$(CXX11) -fPIC -Wl,-r,\\( \$^ -Wl,\\) -o \$@\n" \
+"\n" \
+${OB}.a: $(echo $OFILES | sed -r 's,\.o\b,&.static&') "\n" \
+"\t\$(CXX11) -Wl,-r,\\( \$^ -Wl,\\) -o \$@\n" \
+"\n" \
+clean: "\n" \
+"\trm -f ${OB}.o ${OB}.a" $(echo $OFILES | sed -r 's,\.o\b,&*,g')"\n" \
+"\n"
+
+for src in $@; do
+
+	MK="$($CXMK $(echo $src | tr / @) $src)"
+	echo "$MK" | sed -r 's,\.o\b,.static&,'
+	echo "$MK" | sed -r 's,\.o\b,.shared&,'
+	echo $'\t' $CXCO -c -o \$@.static.o \$\<
+	echo $'\t' $CXCO -c -fPIC -o \$@.shared.o \$\<
+done
