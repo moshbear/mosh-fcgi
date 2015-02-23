@@ -38,8 +38,8 @@ namespace exceptions {
 //! General mosh-fcgi exception
 class Exception: public std::exception {
 public:
-	virtual const char* what() const throw() = 0;
-	~Exception() throw() {}
+	virtual const char* what() const noexcept = 0;
+	~Exception() noexcept {}
 };
 
 //! General mosh-fcgi request exception
@@ -49,10 +49,10 @@ public:
 	 * @param[in] id ID value for the request that generated the exception
 	 */
 	Request(protocol::Full_id id): id(id) { }
-	~Request() throw() {}
+	~Request() noexcept {}
 
-	virtual const char* what() const throw() = 0;
-	protocol::Full_id getid() const throw() { return id; }
+	virtual const char* what() const noexcept = 0;
+	protocol::Full_id getid() const noexcept { return id; }
 protected:
 	//! ID value for the request that generated the exception
 	protocol::Full_id id;
@@ -65,8 +65,8 @@ public:
 	 * @param[in] id ID value for the request that generated the exception
 	 */
 	Param(protocol::Full_id id);
-	~Param() throw() {}
-	virtual const char* what() const throw() { return msg.c_str(); }
+	~Param() noexcept {}
+	virtual const char* what() const noexcept { return msg.c_str(); }
 private:
 	//! Error message associated with the exception
 	std::string msg;
@@ -79,8 +79,8 @@ public:
 	 * @param[in] id ID value for the request that generated the exception
 	 */
 	Stream(protocol::Full_id id);
-	~Stream() throw() {}
-	virtual const char* what() const throw() { return msg.c_str(); }
+	~Stream() noexcept {}
+	virtual const char* what() const noexcept { return msg.c_str(); }
 private:
 	//! Error message associated with the exception
 	std::string msg;
@@ -95,10 +95,10 @@ public:
 	 * @param[in] recieved_record Type of record that was recieved
 	 */
 	Record_out_of_order(protocol::Full_id id, protocol::Record_type expected_record, protocol::Record_type recieved_record);
-	~Record_out_of_order() throw() {}
-	virtual const char* what() const throw() { return msg.c_str(); }
-	protocol::Record_type get_expected_record() const throw() { return expected_record;	}
-	protocol::Record_type get_recieved_record() const throw() { return recieved_record;	}
+	~Record_out_of_order() noexcept {}
+	virtual const char* what() const noexcept { return msg.c_str(); }
+	protocol::Record_type get_expected_record() const noexcept { return expected_record;	}
+	protocol::Record_type get_recieved_record() const noexcept { return recieved_record;	}
 private:
 	//! Type of record that was expected
 	protocol::Record_type expected_record;
@@ -116,10 +116,10 @@ public:
 	 * @param[in] erno Associated errno
 	 */
 	Socket(int fd, int erno): fd(fd), erno(erno) { }
-	~Socket() throw() {}
-	virtual const char* what() const throw() = 0;
-	int getfd() const throw() { return fd; }
-	int get_errno() const throw() { return erno; }
+	~Socket() noexcept {}
+	virtual const char* what() const noexcept = 0;
+	int getfd() const noexcept { return fd; }
+	int get_errno() const noexcept { return erno; }
 protected:
 	//! File descriptor of socket
 	int fd;
@@ -135,8 +135,8 @@ public:
 	 * @param[in] erno Associated errno
 	 */
 	Socket_write(int fd, int erno);
-	~Socket_write() throw() {}
-	virtual const char* what() const throw() { return msg.c_str(); }
+	~Socket_write() noexcept {}
+	virtual const char* what() const noexcept { return msg.c_str(); }
 private:
 	//! Error message associated with the exception
 	std::string msg;
@@ -150,8 +150,8 @@ public:
 	 * @param[in] erno Associated errno
 	 */
 	Socket_read(int fd, int erno);
-	~Socket_read() throw() {}
-	virtual const char* what() const throw() { return msg.c_str(); }
+	~Socket_read() noexcept {}
+	virtual const char* what() const noexcept { return msg.c_str(); }
 private:
 	//! Error message associated with the exception
 	std::string msg;
@@ -164,11 +164,11 @@ public:
 	 * @param[in] erno Associated errno
 	 */
 	Poll(int erno);
-	~Poll() throw() {}
-	virtual const char* what() const throw() {
+	~Poll() noexcept {}
+	virtual const char* what() const noexcept {
 		return msg.c_str();
 	}
-	int get_errno() const throw() {
+	int get_errno() const noexcept {
 		return erno;
 	}
 private:
@@ -182,8 +182,8 @@ private:
 class Partial: public Exception {
 public:
 	Partial(const std::string& str) : str(str) { }
-	~Partial() throw() {}
-	virtual const char* what() const throw() { return str.c_str(); }
+	~Partial() noexcept {}
+	virtual const char* what() const noexcept { return str.c_str(); }
 private:
 	std::string str;
 };
