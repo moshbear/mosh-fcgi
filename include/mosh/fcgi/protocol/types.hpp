@@ -26,6 +26,7 @@
 
 #include <map>
 #include <string>
+#include <type_traits>
 #include <cstdint>
 #include <mosh/fcgi/bits/aligned.hpp>
 #include <mosh/fcgi/bits/namespace.hpp>
@@ -46,7 +47,7 @@ namespace protocol {
 	typedef uint16_t Request_id;
 
 	//! Typedef for aligned header bitstream
-	typedef char MOSH_FCGI_ALIGNED(8, Header_data[8]);
+	typedef typename std::aligned_storage<1, 8>::type Header_data[8];
 
 	/*! @brief  A full ID value for a FasTCGI request
 	 *

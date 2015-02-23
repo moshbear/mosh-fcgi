@@ -25,23 +25,6 @@
 #include <cstring>
 #include <mosh/fcgi/bits/namespace.hpp>
 
-#if MOSH_FCGI_HAVE_CXX11_ALIGNAS
-#define MOSH_FCGI_ALIGNEDAS(AlignT, Expr) alignas(AlignT) Expr
-#define MOSH_FCGI_ALIGNED(n, Expr) alignas(n) Expr
-#elif __GNUC__ || HAVE_GCC_ALIGN_EMULATION
-#define MOSH_FCGI_ALIGNEDAS(AlignT, Expr) Expr __attribute__((aligned(__alignof__(AlignT))))
-#define MOSH_FCGI_ALIGNED(n, Expr) Expr __attribute__((aligned(n)))
-#else
-#error "Non-gcc / non-C++11 alignment support not implemented"
-#endif
-
-#define MOSH_FCGI_GROUP(...) __VA_ARGS__
-
-
-#ifndef MOSH_FCGI_ALIGNEDAS
-#error "No alignment support"
-#endif
-
 MOSH_FCGI_BEGIN
 
 /*! @name Aligned class template
@@ -56,9 +39,10 @@ MOSH_FCGI_BEGIN
  *  @tparam AsT align-as type (must be POD)
  *  @tparam T value type (must be POD)
  */
-MOSH_FCGI_ALIGNEDAS(AsT, MOSH_FCGI_GROUP(
 	template <typename AsT, typename T>
-	class aligned_as { 
+	class
+	alignas(alignof(AsT))
+	aligned_as { 
 	protected:
 		typename std::enable_if<std::is_pod<AsT>::value, T>::type x;
 	public: 
@@ -109,8 +93,8 @@ MOSH_FCGI_ALIGNEDAS(AsT, MOSH_FCGI_GROUP(
 			return &x;
 		}
 
-	} 
-));
+	};
+
 /*! @brief Aligned class template
  *
  *  If in doubt about alignment and want to be sure that access won't cause an unaligned access,
@@ -119,9 +103,10 @@ MOSH_FCGI_ALIGNEDAS(AsT, MOSH_FCGI_GROUP(
  *  @tparam N alignment
  *  @tparam T value type (must be POD)
  */
-MOSH_FCGI_ALIGNED(N, MOSH_FCGI_GROUP(
 	template <size_t N, typename T> 
-	class aligned { 
+	class
+	alignas(N)
+	aligned { 
 	protected:
 		T x;
 	public: 
@@ -163,8 +148,7 @@ MOSH_FCGI_ALIGNED(N, MOSH_FCGI_GROUP(
 		operator T const& () const { 
 			return x; 
 		} 
-	} 
-));
+	} ;
 //@}
 /* @name Zero-filled aligned class template
  */
@@ -184,35 +168,35 @@ struct zerofill_aligned : public aligned<N, typename std::enable_if<std::is_pod<
 	zerofill_aligned() { }
 	//! construct from reference
 	zerofill_aligned(T2 const& t) {
-		MOSH_FCGI_ALIGNED(N, T2) t_a(t);
+		aligned<N, T2> t_a(t);
 		this->x = t_a;
 	}
 	//! construct from pointer
 	zerofill_aligned(T2 const* const pt) {
-		MOSH_FCGI_ALIGNED(N, T2) t_a(*pt);
+		aligned<N, T2> t_a(*pt);
 		this->x = t_a;
 	}
 	//! construct from void pointer
 	zerofill_aligned(void const* const pv) {
-		MOSH_FCGI_ALIGNED(N, T2) t_a(*static_cast<T2 const* const>(pv));
+		aligned<N, T2> t_a(*static_cast<T2 const* const>(pv));
 		this->x = t_a;
 	}
 	virtual ~zerofill_aligned() { }
 	//! assign from reference
 	zerofill_aligned<N,T,T2>& operator = (T2 const& t) {
-		MOSH_FCGI_ALIGNED(N, T2) t_a(t);
+		aligned<N, T2> t_a(t);
 		this->x = t_a;
 		return *this;
 	}
 	//! assign from pointer
 	zerofill_aligned<N,T,T2>& operator = (T2 const* const pt) {
-		MOSH_FCGI_ALIGNED(N, T2) t_a(*pt);
+		aligned<N, T2> t_a(*pt);
 		this->x = t_a;
 		return *this;
 	}
 	//! assign from void pointer
 	zerofill_aligned<N,T,T2>& operator = (void const* const pv) {
-		MOSH_FCGI_ALIGNED(N, T2) t_a(*static_cast<T2 const* const>(pv));
+		aligned<N, T2> t_a(*static_cast<T2 const* const>(pv));
 		this->x = t_a;
 		return *this;
 	}
@@ -233,35 +217,35 @@ struct zerofill_aligned_as : public aligned_as<AsT, typename std::enable_if<std:
 	zerofill_aligned_as() { }
 	//! construct from reference
 	zerofill_aligned_as(T2 const& t) {
-		MOSH_FCGI_ALIGNEDAS(AsT, T2) t_a(t);
+		aligned_as<AsT, T2> t_a(t);
 		this->x = t_a;
 	}
 	//! construct from pointer
 	zerofill_aligned_as(T2 const* const pt) {
-		MOSH_FCGI_ALIGNEDAS(AsT, T2) t_a(*pt);
+		aligned_as<AsT, T2> t_a(*pt);
 		this->x = t_a;
 	}
 	//! construct from void pointer
 	zerofill_aligned_as(void const* const pv) {
-		MOSH_FCGI_ALIGNEDAS(AsT, T2) t_a(*static_cast<T2 const* const>(pv));
+		aligned_as<AsT, T2> t_a(*static_cast<T2 const* const>(pv));
 		this->x = t_a;
 	}
 	virtual ~zerofill_aligned_as() { }
 	//! assign from reference
 	zerofill_aligned_as<AsT,T,T2>& operator = (T2 const& t) {
-		MOSH_FCGI_ALIGNEDAS(AsT, T2) t_a(t);
+		aligned_as<AsT, T2> t_a(t);
 		this->x = t_a;
 		return *this;
 	}
 	//! assign from pointer
 	zerofill_aligned_as<AsT,T,T2>& operator = (T2 const* const pt) {
-		MOSH_FCGI_ALIGNEDAS(AsT, T2) t_a(*pt);
+		aligned_as<AsT, T2> t_a(*pt);
 		this->x = t_a;
 		return *this;
 	}
 	//! assign from void pointer
 	zerofill_aligned_as<AsT,T,T2>& operator = (void const* const pv) {
-		MOSH_FCGI_ALIGNEDAS(AsT, T2) t_a(*static_cast<T2 const* const>(pv));
+		aligned_as<AsT, T2> t_a(*static_cast<T2 const* const>(pv));
 		this->x = t_a;
 		return *this;
 	}
