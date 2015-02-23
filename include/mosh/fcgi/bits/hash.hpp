@@ -44,9 +44,9 @@ public:
 	std::vector<uchar> finalize();
 };
 	
-template <typename T>
-void hash_update(Hash& h, const std::basic_string<T>&s) {
-	h.update(reinterpret_cast<const uchar*>(s.data()), s.size() * sizeof(T));
+template <typename CharT>
+void hash_update(Hash& h, const std::basic_string<CharT>& s) {
+	h.update(reinterpret_cast<const uchar*>(s.data()), s.size() * sizeof(CharT));
 }
 
 void hash_update(Hash& h, const void* p, size_t len);
